@@ -1,0 +1,1388 @@
+@import '/fonts/fonts.css';
+
+/*
+  Bhada — transit hardware, not a wallet app.
+  Reference world: the Nepali red commercial number plate, manila ticket stock,
+  and a rubber date-stamp. Depth comes from printed rules and punched
+  perforations, never from shadows or rounded cards.
+*/
+
+:root {
+  --ink: #16130f;      /* stamp black, warm-shifted. never pure black */
+  --stock: #e4e1d8;    /* recycled ticket stock. grey-beige, not cream */
+  --plate: #a8202f;    /* Nepali commercial plate red */
+  --panel: #ffffff;    /* conductor ground. max luminance beats daylight glare */
+  --rule: #b8b2a4;     /* printed rule and perforation */
+  --wash: #cfcabb;     /* spent / pressed */
+
+  --display: 'Khand', 'Noto Sans Devanagari', sans-serif;
+  --body: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+
+  --gutter: 20px;
+  --tap: 64px;         /* minimum touch target, one-handed on a moving bus */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.35;
+  background: var(--ink);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+/* Numerals never reflow as their value changes. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ---------------------------------------------------------------- launch */
+
+.launch {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--ink);
+  color: var(--stock);
+  padding: var(--gutter);
+}
+
+.launch__mark {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 15vw;
+  line-height: 0.86;
+  letter-spacing: -0.01em;
+  padding-top: 5vh;
+}
+
+.launch__mark span {
+  display: block;
+  font-size: 0.42em;
+  font-weight: 500;
+  color: var(--rule);
+  letter-spacing: 0.02em;
+}
+
+/*
+  The vehicle this device is bound to, drawn as the number plate it is. Public
+  vehicles in Nepal carry white characters on plate red.
+*/
+.plate {
+  margin: auto 0;
+  align-self: flex-start;
+  background: var(--plate);
+  border: 3px solid var(--stock);
+  padding: 10px 18px 12px;
+  color: var(--stock);
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.plate__row {
+  display: flex;
+  gap: 12px;
+  font-size: 30px;
+  border-bottom: 2px solid rgba(228, 225, 216, 0.55);
+  padding-bottom: 6px;
+}
+
+.plate__digits {
+  font-size: 58px;
+  letter-spacing: 0.04em;
+  padding-top: 6px;
+}
+
+.launch__status {
+  font-size: 15px;
+  color: var(--rule);
+  max-width: 34ch;
+  padding: 0 0 16px;
+}
+
+.launch__roles {
+  display: grid;
+  gap: 2px;
+  background: var(--rule);
+  border: 2px solid var(--rule);
+}
+
+.launch__role {
+  min-height: calc(var(--tap) + 24px);
+  background: var(--stock);
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 18px;
+  text-align: left;
+}
+
+.launch__role:active {
+  background: var(--wash);
+}
+
+.launch__role b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 34px;
+}
+
+.launch__role small {
+  font-size: 14px;
+  color: #5d574c;
+}
+
+/* --------------------------------------------------------------- the stub */
+
+.stub-page {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--ink);
+  padding: 10px 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stub {
+  background: var(--stock);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.stub__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 12px 18px 10px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.stub__wordmark {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.stub__serial {
+  font-size: 12px;
+  color: #5d574c;
+}
+
+/* From/To as printed ticket fields, stacked. No arrow glyph between them. */
+.stub__route {
+  padding: 14px 18px 16px;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+}
+
+.field + .field {
+  border-top: 1px dashed var(--rule);
+}
+
+.field__label {
+  font-size: 13px;
+  color: #5d574c;
+}
+
+.field__value {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+.field__value small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: #5d574c;
+  line-height: 1.2;
+}
+
+/*
+  Real perforation: semicircles bitten out of the edge, so the stub reads as a
+  torn ticket rather than a card with a corner radius.
+*/
+.perf {
+  height: 20px;
+  background:
+    radial-gradient(circle at 12px 10px, var(--ink) 7px, transparent 7.5px) 0 0 / 24px 20px repeat-x;
+  position: relative;
+}
+
+.perf::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 9px;
+  border-top: 1px dashed var(--rule);
+}
+
+.stub__window {
+  background: var(--panel);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: min(84vw, 348px);
+}
+
+.stub__window img {
+  width: min(76vw, 320px);
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.stub__empty {
+  font-size: 15px;
+  color: #5d574c;
+  text-align: center;
+  max-width: 26ch;
+}
+
+.stub__fare {
+  padding: 12px 18px 4px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stub__amount {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 64px;
+  line-height: 0.9;
+  color: var(--plate);
+}
+
+.stub__amount small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: #5d574c;
+  line-height: 1.4;
+}
+
+.stub__seq {
+  font-size: 13px;
+  color: #5d574c;
+  text-align: right;
+}
+
+/*
+  Offline allowance as a punch card, not a progress bar. Ten slots of Rs 50;
+  each spent slot is struck through the way a conductor cancels a paper fare.
+*/
+.punch {
+  padding: 12px 18px 18px;
+  border-top: 1px dashed var(--rule);
+  margin-top: auto;
+}
+
+.punch__label {
+  font-size: 13px;
+  color: #5d574c;
+  margin-bottom: 8px;
+}
+
+.punch__slots {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 3px;
+}
+
+.punch__slot {
+  height: 26px;
+  border: 1px solid var(--rule);
+  background: transparent;
+}
+
+.punch__slot--spent {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 1px), var(--plate) calc(50% - 1px), var(--plate) calc(50% + 1px), transparent calc(50% + 1px)),
+    var(--wash);
+}
+
+/* ----------------------------------------------------------- the ride card */
+
+.ride__status {
+  padding: 14px 18px 12px;
+}
+
+.ride__status b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.ride__status span {
+  font-size: 14px;
+  color: #5d574c;
+}
+
+.ride__caption {
+  font-size: 13px;
+  color: #5d574c;
+  text-align: center;
+  max-width: 34ch;
+}
+
+/* Me + family, on one code. Ticket stock: hard rules, big targets. */
+.ride__family {
+  display: grid;
+  grid-template-columns: var(--tap) 1fr var(--tap);
+  align-items: stretch;
+  width: 100%;
+  max-width: 340px;
+  border: 2px solid var(--ink);
+}
+
+.ride__family button {
+  min-height: var(--tap);
+  border: 0;
+  background: var(--ink);
+  color: var(--stock);
+  font: 700 30px/1 var(--display);
+  cursor: pointer;
+}
+
+.ride__family button:disabled {
+  background: var(--wash);
+  color: #8f897b;
+  cursor: default;
+}
+
+.ride__family span {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+.ride__family b {
+  font: 700 22px/1.1 var(--display);
+}
+
+.ride__family small {
+  font-size: 12px;
+  color: #5d574c;
+}
+
+.ride__witness {
+  padding: 12px 18px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 16px;
+  align-items: end;
+}
+
+.ride__witness small,
+.ride__pair small {
+  display: block;
+  font-size: 13px;
+  color: #5d574c;
+}
+
+.ride__witness b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 0.9;
+}
+
+.ride__witness b span {
+  font-size: 22px;
+  margin-left: 4px;
+}
+
+.ride__witness .ride__fare {
+  color: var(--plate);
+  font-size: 44px;
+  text-align: right;
+}
+
+.ride__witness p,
+.ride__tariff p,
+.ride__compare p,
+.ride__checks p {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #5d574c;
+}
+
+/*
+  The ride that ended with a flat battery. Set apart from the card above it,
+  because it is the one thing on this screen the passenger has to decide about
+  rather than read — and the amount it is asking for is small enough that
+  burying it would be the same as not offering it.
+*/
+.ride__claim {
+  margin: 14px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--plate);
+  background: #fffdf7;
+}
+
+.ride__claim b {
+  display: block;
+  font-family: var(--display);
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.ride__claim p {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5d574c;
+  margin: 0 0 8px;
+}
+
+.ride__claim p:last-child {
+  margin-bottom: 0;
+}
+
+.ride__tariff {
+  padding: 12px 18px 16px;
+}
+
+.ride__tariff-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 16px;
+}
+
+.ride__tariff-row b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+}
+
+.ride__tariff p {
+  margin-top: 10px;
+}
+
+.ride__lines {
+  list-style: none;
+  padding: 6px 18px 14px;
+}
+
+.ride__lines li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 15px;
+}
+
+.ride__lines b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.ride__lines .ride__total {
+  border-bottom: 2px solid var(--ink);
+}
+
+.ride__compare {
+  margin: 0 18px;
+  padding: 14px 16px;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+}
+
+.ride__compare--over {
+  border-color: var(--plate);
+}
+
+.ride__compare--over p {
+  color: var(--plate);
+}
+
+.ride__pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.ride__pair b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.ride__checks {
+  padding: 14px 18px 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.ride__history {
+  padding: 12px 18px 18px;
+  border-top: 1px dashed var(--rule);
+  margin-top: auto;
+}
+
+.ride__history ul {
+  list-style: none;
+}
+
+.ride__history button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0 12px;
+  text-align: left;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--rule);
+  min-height: 48px;
+}
+
+.ride__history button span:first-child {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+}
+
+.ride__history button span:nth-child(2) {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  color: var(--plate);
+}
+
+.ride__history small {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: #5d574c;
+}
+
+/* -------------------------------------------------------------- actions */
+
+.action {
+  min-height: calc(var(--tap) + 12px);
+  width: 100%;
+  background: var(--plate);
+  color: var(--stock);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  flex: none;
+}
+
+.action small {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 14px;
+  opacity: 0.82;
+}
+
+.action:active {
+  background: #8d1a26;
+}
+
+.action:disabled {
+  background: var(--wash);
+  color: #6d675b;
+  cursor: default;
+}
+
+.action--quiet {
+  background: transparent;
+  color: var(--rule);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 16px;
+  min-height: var(--tap);
+  border-top: 1px solid #2c2822;
+}
+
+.notice {
+  background: var(--plate);
+  color: var(--stock);
+  font-size: 15px;
+  padding: 12px 18px;
+}
+
+/* Sync results are information, not alarm, so they do not take the plate red. */
+.notice--quiet {
+  background: var(--wash);
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------- conductor board */
+
+.board {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+}
+
+.board__tally {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 3px solid var(--ink);
+}
+
+.board__stat {
+  padding: 10px 16px 12px;
+}
+
+.board__stat + .board__stat {
+  border-left: 1px solid var(--rule);
+}
+
+.board__stat dt {
+  font-size: 14px;
+  color: #5d574c;
+}
+
+.board__stat dd {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 68px;
+  line-height: 0.92;
+}
+
+.board__stat dd small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: #5d574c;
+  line-height: 1.4;
+}
+
+.board__viewfinder {
+  flex: 1;
+  position: relative;
+  background: var(--ink);
+  overflow: hidden;
+  min-height: 200px;
+}
+
+.board__viewfinder video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Corner marks only. A full frame overlay costs contrast in daylight. */
+.board__reticle {
+  position: absolute;
+  inset: 12% 14%;
+  pointer-events: none;
+}
+
+.board__reticle i {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--stock);
+}
+
+.board__reticle i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.board__reticle i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.board__reticle i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.board__reticle i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+.board__hint small {
+  display: block;
+  font-size: 13px;
+  color: rgba(228, 225, 216, 0.72);
+}
+
+.board__hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 10px 16px;
+  background: rgba(22, 19, 15, 0.82);
+  color: var(--stock);
+  font-size: 15px;
+}
+
+/* Collected fares as ruled lines, not cards. */
+.board__log {
+  border-top: 1px solid var(--rule);
+  max-height: 33vh;
+  overflow-y: auto;
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.log-row__route {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-row__route small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: #5d574c;
+}
+
+.log-row__fare {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+}
+
+.board__empty {
+  padding: 14px 16px;
+  font-size: 15px;
+  color: #5d574c;
+}
+
+/* ------------------------------------------------------- the one loud moment */
+
+/*
+  Scan confirmation. Full-bleed, instant, legible across a bus. Accept is the
+  stamp coming down in ink; refusal is the plate red. No green — green/red is
+  the reflex, and the reference here is a rubber stamp hitting paper.
+*/
+.stamp {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  padding: var(--gutter);
+  color: var(--stock);
+  background: var(--ink);
+  animation: stamp-down 120ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.stamp--refused {
+  background: var(--plate);
+}
+
+@keyframes stamp-down {
+  from { transform: scale(0.94); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stamp { animation: none; }
+}
+
+.stamp__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 15px;
+  color: rgba(228, 225, 216, 0.7);
+  border-bottom: 1px solid rgba(228, 225, 216, 0.3);
+  padding-bottom: 10px;
+}
+
+.stamp__amount {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: min(34vw, 190px);
+  line-height: 0.82;
+  padding-top: 6vh;
+}
+
+.stamp__amount small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 18px;
+  color: rgba(228, 225, 216, 0.75);
+  line-height: 1.4;
+  padding-top: 6px;
+}
+
+.stamp__reason {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: min(15vw, 74px);
+  line-height: 0.95;
+  padding-top: 6vh;
+}
+
+.stamp__detail {
+  font-size: 19px;
+  padding-top: 12px;
+  max-width: 26ch;
+  line-height: 1.35;
+}
+
+.stamp__route {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 30px;
+  padding-top: 14px;
+  line-height: 1.15;
+}
+
+.stamp__route small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 14px;
+  color: rgba(228, 225, 216, 0.75);
+}
+
+.stamp__foot {
+  margin-top: auto;
+}
+
+.stamp .action {
+  background: var(--stock);
+  color: var(--ink);
+}
+
+.stamp .action:active {
+  background: var(--wash);
+}
+
+/* --------------------------------------------------------------- debug */
+
+.debug {
+  border-top: 2px dashed var(--rule);
+  padding: 10px 16px 14px;
+  background: var(--stock);
+}
+
+.debug p {
+  font-size: 12px;
+  color: #5d574c;
+  margin-bottom: 6px;
+}
+
+.debug textarea {
+  width: 100%;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  border: 1px solid var(--rule);
+  padding: 6px;
+  background: var(--panel);
+}
+
+.debug button {
+  margin-top: 6px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid var(--ink);
+  padding: 8px 12px;
+}
+
+/* ------------------------------------------------------- the stop picker */
+
+/*
+  Stop fields are buttons, not labels. They keep the printed-field look of the
+  stub but carry a tap target the full width of the ticket.
+*/
+.field--button {
+  width: 100%;
+  min-height: var(--tap);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.field--button:active {
+  background: var(--wash);
+}
+
+/* A caret drawn as a rule, not a glyph: it belongs to the printed vocabulary. */
+.field--button .field__value {
+  position: relative;
+  padding-right: 22px;
+}
+
+.field--button .field__value::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  top: 12px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--rule);
+  border-bottom: 2px solid var(--rule);
+  transform: rotate(-45deg);
+}
+
+.picker {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--stock);
+}
+
+.picker__head {
+  padding: 16px 18px 12px;
+  border-bottom: 3px solid var(--ink);
+  background: var(--stock);
+}
+
+.picker__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 38px;
+  line-height: 1;
+}
+
+.picker__subtitle {
+  font-size: 14px;
+  color: #5d574c;
+  padding-top: 2px;
+}
+
+.picker__list {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--panel);
+}
+
+.picker__row {
+  width: 100%;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+.picker__row:active {
+  background: var(--wash);
+}
+
+/* The chosen stop is marked with an ink bar, not a tick or a tint. */
+.picker__row--chosen {
+  box-shadow: inset 6px 0 0 var(--ink);
+}
+
+.picker__name {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.05;
+}
+
+.picker__name small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: #5d574c;
+}
+
+.picker__fare {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--plate);
+  white-space: nowrap;
+}
+
+/* ============================================================== motion
+
+   Every transition here answers something the user just did. Nothing loops,
+   nothing plays on arrival for its own sake, nothing fades in because it can.
+
+   Three durations, and only three:
+     --beat    120ms  physical feedback under the thumb
+     --move    200ms  a screen replacing a screen
+     --print   340ms  the ticket being printed, the one thing worth watching
+
+   One easing curve for arrivals: decisive, no bounce. A bus fare is not
+   playful. Exits are faster than entrances, because a screen you are leaving
+   should not keep you waiting.
+   ============================================================== */
+
+:root {
+  --beat: 120ms;
+  --move: 200ms;
+  --print: 340ms;
+  --ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --ease-out: cubic-bezier(0.4, 0, 1, 1);
+}
+
+/* A screen arriving. Direction is meaningful: forward pushes in from the
+   right, back returns from the left, so the stack has a shape you can feel. */
+.screen {
+  height: 100%;
+  animation: screen-in var(--move) var(--ease) both;
+}
+
+.screen--back {
+  animation-name: screen-back;
+}
+
+@keyframes screen-in {
+  from { opacity: 0; transform: translate3d(14px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes screen-back {
+  from { opacity: 0; transform: translate3d(-14px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/*
+  The ticket does not fade in. It prints: the stub is revealed top to bottom
+  the way a thermal printer pushes paper out, then settles. This is the one
+  moment on the passenger side worth looking at, so it gets the longest
+  duration in the system and nothing else competes with it.
+*/
+.stub__window img {
+  animation: print var(--print) var(--ease) both;
+  transform-origin: top center;
+}
+
+@keyframes print {
+  from { clip-path: inset(0 0 100% 0); transform: translate3d(0, -6px, 0); }
+  60%  { clip-path: inset(0 0 0 0);    transform: translate3d(0, -6px, 0); }
+  to   { clip-path: inset(0 0 0 0);    transform: none; }
+}
+
+/* The slot just spent is struck through, rather than appearing already spent. */
+.punch__slot--spent {
+  animation: strike var(--move) var(--ease) both;
+}
+
+@keyframes strike {
+  from { background-size: 0% 100%, 100% 100%; }
+  to   { background-size: 100% 100%, 100% 100%; }
+}
+
+/* Buttons answer the thumb before anything else happens. */
+.action,
+.launch__role,
+.picker__row,
+.field--button {
+  transition: transform var(--beat) var(--ease-out),
+              background-color var(--beat) var(--ease-out);
+}
+
+.action:active,
+.launch__role:active,
+.picker__row:active,
+.field--button:active {
+  transform: scale(0.985);
+}
+
+.action:disabled:active {
+  transform: none;
+}
+
+/* Keyboard focus is visible and uses the printed vocabulary, not a glow. */
+.action:focus-visible,
+.launch__role:focus-visible,
+.picker__row:focus-visible,
+.field--button:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: -3px;
+}
+
+.stamp .action:focus-visible {
+  outline-color: var(--stock);
+}
+
+/*
+  A tally that changes should be seen to change. The digits lift as they are
+  replaced, which is enough to catch the eye of a conductor who is looking at
+  a passenger rather than the phone.
+*/
+.board__stat dd span {
+  display: inline-block;
+  animation: tally var(--move) var(--ease) both;
+}
+
+@keyframes tally {
+  from { opacity: 0; transform: translate3d(0, 0.24em, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/*
+  The reticle marks acknowledge that a code was seen, in the moment between
+  reading it and ruling on it. Triggered by a scan, not running on a loop.
+*/
+.board__reticle--hit i {
+  animation: reticle var(--move) var(--ease) both;
+}
+
+@keyframes reticle {
+  from { transform: scale(1); border-color: var(--stock); }
+  50%  { transform: scale(0.86); border-color: var(--plate); }
+  to   { transform: scale(1); border-color: var(--stock); }
+}
+
+/* Settling is work in progress, shown as a rule filling rather than a spinner. */
+.action--working {
+  position: relative;
+  overflow: hidden;
+}
+
+.action--working::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: var(--ink);
+  transform-origin: left;
+  animation: working 900ms var(--ease) infinite;
+}
+
+@keyframes working {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/*
+  Reduced motion is honoured completely: every animation above is decoration
+  on top of a state change that has already happened, so removing them costs
+  nothing but the flourish.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================ hardware and small screens */
+
+/* Notches and home indicators. The conductor's action bar must not sit under
+   the gesture bar, and the stub must not tuck under a notch. */
+.launch,
+.stub-page,
+.board,
+.picker,
+.stamp {
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-top: env(safe-area-inset-top);
+}
+
+.stamp {
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+
+/* A double tap on a fare button should pay, never zoom. */
+button {
+  touch-action: manipulation;
+}
+
+/* Short screens: the QR window must not push the pay button off the bottom. */
+@media (max-height: 700px) {
+  .stub__window { min-height: min(58vh, 260px); }
+  .stub__amount { font-size: 52px; }
+  .field__value { font-size: 26px; }
+  .board__stat dd { font-size: 54px; }
+}
+
+/* Landscape on a phone: the conductor sometimes holds the bus phone sideways. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .board__tally { grid-template-columns: repeat(2, 1fr); }
+  .board__stat dd { font-size: 40px; }
+  .stamp__amount { font-size: min(18vw, 110px); padding-top: 2vh; }
+  .launch__mark { font-size: 9vw; padding-top: 2vh; }
+  .plate { display: none; }
+}
+
+/* ------------------------------------------------------------------- crew */
+
+/*
+  The conductor's sign-on screen. Deliberately the same shape as the passenger's
+  ride code — a big square, a freshness line, a key — because it is the same
+  gesture from the other side of the door: one consents to being charged, the
+  other to being credited.
+*/
+.crew {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: max(var(--gutter), env(safe-area-inset-left));
+  padding-top: max(18px, env(safe-area-inset-top));
+}
+
+.crew__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.crew__head h1 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.crew__head h1 span {
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0.66;
+}
+
+.crew__plate {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.crew__plate input {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  padding: 12px 14px;
+}
+
+.crew__qr {
+  width: min(100%, 420px);
+  align-self: center;
+  border-radius: 14px;
+  background: #fff;
+  padding: 10px;
+}
+
+.crew__age,
+.crew__key,
+.crew__empty {
+  margin: 0;
+  text-align: center;
+  font-size: 14px;
+  opacity: 0.75;
+}
+
+.crew__note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: 0.65;
+  max-width: 44ch;
+  align-self: center;
+  text-align: center;
+}
+
+/* The crash screen (src/components/Crashed.jsx). Printed register: it can
+   appear on the bus, so it reads like the rest of the ticket stock. */
+.crashed {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  padding: var(--gutter);
+  background: var(--stock);
+  color: var(--ink);
+}
+
+.crashed h1 {
+  font-family: var(--display);
+  font-size: 40px;
+  line-height: 1;
+}
+
+.crashed__reload {
+  min-height: var(--tap);
+  background: var(--plate);
+  color: #fff;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 700;
+  border: 0;
+}
+
+.crashed__detail {
+  font-size: 13px;
+  color: #5b554b;
+  overflow-wrap: anywhere;
+}
