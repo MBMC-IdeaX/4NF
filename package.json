@@ -1,0 +1,20 @@
+{
+  "name": "4nf-bhada",
+  "version": "0.1.0",
+  "description": "Bhada 4NF - Smart Urban Public Transport Fare & Route Information Layer for Nepal",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "bhada",
+    "nepal",
+    "public-transport",
+    "fare-calculator",
+    "smart-mobility"
+  ],
+  "author": "Bhada Team",
+  "license": "MIT"
+}
