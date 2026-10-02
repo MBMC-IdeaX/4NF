@@ -1,0 +1,982 @@
+/* ============================================================ the concession
+
+   Three rates, always visible, never behind a settings screen. A student who
+   cannot find the student rate pays full and stops using the app.
+   ============================================================ */
+
+.concession {
+  padding: 10px 18px 12px;
+  border-top: 1px dashed var(--rule);
+}
+
+.concession__label {
+  font-size: 13px;
+  color: #5d574c;
+  margin-bottom: 7px;
+}
+
+.concession__options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+.concession__option {
+  min-height: 52px;
+  background: var(--stock);
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 21px;
+  line-height: 1;
+  color: var(--ink);
+  padding: 6px 4px;
+  transition: background-color var(--beat) var(--ease-out);
+}
+
+.concession__option small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 11px;
+  color: #5d574c;
+}
+
+/* The chosen rate is inked in, the way a form is filled rather than tinted. */
+.concession__option.is-on {
+  background: var(--ink);
+  color: var(--stock);
+}
+
+.concession__option.is-on small {
+  color: rgba(228, 225, 216, 0.72);
+}
+
+.launch__away {
+  margin-top: 2px;
+  min-height: 52px;
+  width: 100%;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--rule);
+  border: 1px solid #2c2822;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.15;
+}
+
+.launch__away small {
+  font-weight: 400;
+  font-size: 12px;
+  color: #7d766a;
+}
+
+.launch__group {
+  margin: 14px 0 4px;
+  font-size: 12px;
+  color: #7d766a;
+}
+
+/* ================================================================ the site */
+
+.site {
+  background: var(--ink);
+  color: var(--stock);
+  min-height: 100%;
+}
+
+.site__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--gutter);
+  border-bottom: 1px solid #2c2822;
+  position: sticky;
+  top: 0;
+  background: var(--ink);
+  z-index: 5;
+}
+
+.site__mark {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.site__mark span {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--rule);
+  padding-left: 8px;
+}
+
+.site__nav {
+  display: flex;
+  gap: 2px;
+}
+
+.site__nav button {
+  min-height: 44px;
+  padding: 0 14px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--stock);
+  border: 1px solid #2c2822;
+}
+
+.site__nav button:active {
+  background: #2c2822;
+}
+
+.hero {
+  padding: 8vh var(--gutter) 6vh;
+  max-width: 780px;
+}
+
+.hero__kicker {
+  font-size: 15px;
+  color: var(--rule);
+  border-left: 3px solid var(--plate);
+  padding-left: 12px;
+  margin-bottom: 20px;
+}
+
+.hero__line {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(40px, 11vw, 92px);
+  line-height: 0.94;
+  letter-spacing: -0.015em;
+}
+
+.hero__line em {
+  font-style: normal;
+  color: var(--plate);
+}
+
+.hero__body {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--rule);
+  max-width: 52ch;
+  padding-top: 22px;
+}
+
+.hero__claim {
+  margin-top: 28px;
+  border-top: 2px solid var(--stock);
+  padding-top: 14px;
+  max-width: 56ch;
+}
+
+.hero__claim strong {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(22px, 5vw, 34px);
+  line-height: 1.1;
+}
+
+.hero__claim span {
+  display: block;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--rule);
+  padding-top: 10px;
+}
+
+.site__cta {
+  margin-top: 28px;
+  min-height: calc(var(--tap) + 12px);
+  padding: 0 26px;
+  background: var(--plate);
+  color: var(--stock);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.05;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  transition: transform var(--beat) var(--ease-out), background-color var(--beat) var(--ease-out);
+}
+
+.site__cta:active {
+  transform: scale(0.985);
+  background: #8d1a26;
+}
+
+.site__cta small {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.site__cta--quiet {
+  background: transparent;
+  border: 2px solid var(--stock);
+}
+
+.site__cta--quiet:active {
+  background: #2c2822;
+}
+
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  border-top: 1px solid #2c2822;
+  border-bottom: 1px solid #2c2822;
+  background: #1d1a15;
+}
+
+.strip__item {
+  padding: 18px var(--gutter);
+  border-right: 1px solid #2c2822;
+}
+
+.strip__item b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--stock);
+}
+
+.strip__item span {
+  display: block;
+  font-size: 13px;
+  color: var(--rule);
+  padding-top: 5px;
+  max-width: 22ch;
+}
+
+.section__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(28px, 7vw, 46px);
+  line-height: 1;
+  padding-bottom: 18px;
+}
+
+.section__title span {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 15px;
+  color: var(--rule);
+  padding-top: 6px;
+}
+
+.how,
+.route,
+.data {
+  padding: 7vh var(--gutter);
+  max-width: 860px;
+}
+
+.how__steps {
+  list-style: none;
+}
+
+.how__steps li {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid #2c2822;
+}
+
+.how__steps b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 34px;
+  color: var(--plate);
+  line-height: 1;
+}
+
+.how__steps strong {
+  display: block;
+  font-size: 17px;
+  padding-bottom: 4px;
+}
+
+.how__steps div {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--rule);
+}
+
+/* The corridor drawn as a route board: a rule with stops hung off it. */
+.route__line {
+  list-style: none;
+  border-left: 2px solid var(--rule);
+  margin-left: 6px;
+}
+
+.route__line li {
+  position: relative;
+  padding: 10px 0 10px 22px;
+}
+
+.route__dot {
+  position: absolute;
+  left: -7px;
+  top: 18px;
+  width: 12px;
+  height: 12px;
+  background: var(--plate);
+  border: 2px solid var(--ink);
+}
+
+.route__line b {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 26px;
+}
+
+.route__line small {
+  display: block;
+  font-size: 13px;
+  color: var(--rule);
+}
+
+.route__line em {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--stock);
+  background: var(--plate);
+  padding: 2px 7px;
+  display: inline-block;
+  margin-top: 5px;
+}
+
+.data__body {
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--rule);
+  max-width: 60ch;
+}
+
+.site__foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 22px var(--gutter);
+  border-top: 1px solid #2c2822;
+  font-size: 13px;
+  color: var(--rule);
+}
+
+.site__foot div:first-child {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--stock);
+}
+
+/* ===================================================== wider than a phone
+
+   Everything above is written phone-first, because that is where a fare is
+   paid. The site and the dashboard are also read on a laptop at a desk, and a
+   single narrow column on a 1900px screen looks unfinished rather than
+   restrained. These breakpoints give the width back.
+   ===================================================== */
+
+@media (min-width: 900px) {
+  .site__head,
+  .site__foot {
+    padding-left: 40px;
+    padding-right: 40px;
+  }
+
+  /* The claim sits beside the headline rather than under it: on a wide screen
+     the eye reads across, and stacking wastes the half it lands on. */
+  .hero {
+    max-width: none;
+    padding: 12vh 40px 8vh;
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+    gap: 0 56px;
+    align-items: start;
+  }
+
+  .hero__kicker { grid-column: 1 / -1; }
+  .hero__line   { grid-column: 1; font-size: clamp(56px, 6vw, 104px); }
+  .hero__body   { grid-column: 1; }
+
+  .hero__claim {
+    grid-column: 2;
+    grid-row: 2 / span 3;
+    margin-top: 6px;
+    border-top: 0;
+    border-left: 2px solid var(--stock);
+    padding: 0 0 0 22px;
+  }
+
+  .site__cta { grid-column: 1; justify-self: start; }
+
+  .how,
+  .route,
+  .data {
+    max-width: none;
+    padding: 9vh 40px;
+    display: grid;
+    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
+    gap: 0 56px;
+    align-items: start;
+  }
+
+  .section__title { position: sticky; top: 84px; padding-bottom: 0; }
+
+  .how__steps li { grid-template-columns: 64px 1fr; padding: 20px 0; }
+  .how__steps strong { font-size: 19px; }
+  .how__steps div { font-size: 16px; }
+
+  /* On a wide screen the corridor reads better lying down, the way it is
+     painted on the side of the bus. */
+  .route__line {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    border-left: 0;
+    border-top: 2px solid var(--rule);
+    margin-left: 0;
+  }
+
+  .route__line li { padding: 26px 10px 0 0; }
+  .route__dot { left: 0; top: -7px; }
+  .route__line b { font-size: 21px; }
+  .route__line em { font-size: 11px; }
+
+  .data__body { font-size: 18px; }
+  .site__cta--quiet { grid-column: 2; }
+}
+
+@media (min-width: 1280px) {
+  .hero { padding-left: 64px; padding-right: 64px; }
+  .how, .route, .data { padding-left: 64px; padding-right: 64px; }
+  .site__head, .site__foot { padding-left: 64px; padding-right: 64px; }
+  .strip__item { padding-left: 64px; }
+  .strip__item + .strip__item { padding-left: 24px; }
+}
+
+/* A benefit list. Each row is one thing the operator can do that they cannot
+   do today, so the claim is the loud part and the explanation sits under it. */
+.value {
+  list-style: none;
+  margin-top: 22px;
+}
+
+.value li {
+  padding: 16px 0;
+  border-top: 1px solid #2c2822;
+}
+
+.value b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(21px, 4.5vw, 27px);
+  line-height: 1.1;
+  color: var(--stock);
+}
+
+.value span {
+  display: block;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--rule);
+  padding-top: 5px;
+  max-width: 58ch;
+}
+
+.why,
+.cost {
+  padding: 7vh var(--gutter);
+  max-width: 860px;
+}
+
+.data__body + .data__body {
+  padding-top: 16px;
+}
+
+.data__body strong {
+  color: var(--stock);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------ the metered site sections */
+
+.hero__ctas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 28px;
+}
+
+.hero__ctas .site__cta {
+  margin-top: 0;
+}
+
+/*
+  The specimen receipt. The one piece of printed matter on a dark page: ticket
+  stock, stamp black, plate red for the money, perforated top and bottom. It is
+  the product, drawn — so it sits where a stock photo would sit on any other
+  landing page, and every line on it is computed by the tariff the meter runs.
+*/
+.specimen {
+  margin: 36px 0 0;
+  background: var(--stock);
+  color: var(--ink);
+  max-width: 380px;
+  position: relative;
+  padding: 26px 22px 24px;
+}
+
+.specimen::before,
+.specimen::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: radial-gradient(circle at 10px 0, var(--ink) 6px, transparent 6.5px) 0 0 / 20px 14px repeat-x;
+}
+
+.specimen::before { top: 0; }
+.specimen::after { bottom: 0; transform: rotate(180deg); }
+
+.specimen__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 8px;
+}
+
+.specimen__head b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.specimen__head small,
+.specimen__was,
+.specimen__witness small {
+  font-size: 12px;
+  color: #5d574c;
+}
+
+.specimen__route {
+  display: grid;
+  gap: 2px;
+  padding: 12px 0 4px;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 1.05;
+}
+
+.specimen__km {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 58px;
+  line-height: 0.95;
+  padding-top: 6px;
+}
+
+.specimen__km small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: #5d574c;
+}
+
+.specimen__lines {
+  list-style: none;
+  margin-top: 12px;
+}
+
+.specimen__lines li,
+.specimen__total {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--rule);
+  font-size: 14px;
+}
+
+.specimen__lines b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.specimen__total {
+  border-bottom: 2px solid var(--ink);
+  align-items: baseline;
+}
+
+.specimen__total b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  color: var(--plate);
+}
+
+.specimen__was {
+  padding-top: 6px;
+}
+
+.specimen__witness {
+  margin-top: 14px;
+  background: var(--panel);
+  border: 2px solid var(--ink);
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  align-items: baseline;
+}
+
+.specimen__witness span {
+  font-size: 13px;
+}
+
+.specimen__witness b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+}
+
+.specimen__witness small {
+  grid-column: 1 / -1;
+}
+
+.trust,
+.fares,
+.accuracy-site,
+.doors {
+  padding: 7vh var(--gutter);
+  max-width: 860px;
+}
+
+.trust__list > div {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  gap: 16px;
+  padding: 18px 0;
+  border-top: 1px solid #2c2822;
+}
+
+.trust__list dt b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--plate);
+}
+
+.trust__list dt small {
+  font-size: 13px;
+  color: var(--rule);
+}
+
+.trust__list dd {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--rule);
+  max-width: 60ch;
+}
+
+.trust__list dd strong {
+  display: block;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(21px, 4.5vw, 26px);
+  line-height: 1.12;
+  color: var(--stock);
+  padding-bottom: 6px;
+}
+
+.fares__scroll {
+  overflow-x: auto;
+  margin-bottom: 20px;
+}
+
+.fares__table,
+.accuracy-site__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.fares__table th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--rule);
+  padding: 0 12px 10px 0;
+  border-bottom: 2px solid var(--stock);
+  white-space: nowrap;
+}
+
+.fares__table td {
+  padding: 12px 12px 12px 0;
+  border-bottom: 1px solid #2c2822;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+.fares__table td b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 21px;
+  line-height: 1.1;
+}
+
+.fares__table td small {
+  display: block;
+  font-size: 12px;
+  color: var(--rule);
+}
+
+.fares__table td:nth-child(3) {
+  color: var(--rule);
+  text-decoration: line-through;
+  text-decoration-color: var(--plate);
+}
+
+.fares__metered {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--stock);
+}
+
+.fares__metered small {
+  font-family: var(--body);
+  font-weight: 400;
+}
+
+.accuracy-site__grid {
+  display: grid;
+  gap: 28px;
+}
+
+.accuracy-site__table caption {
+  caption-side: bottom;
+  text-align: left;
+  font-size: 12px;
+  color: var(--rule);
+  padding-top: 10px;
+}
+
+.accuracy-site__table caption code {
+  font-size: 12px;
+  color: var(--stock);
+}
+
+.accuracy-site__table th {
+  text-align: left;
+  font-weight: 400;
+  color: var(--rule);
+  padding: 10px 0;
+  border-bottom: 1px solid #2c2822;
+}
+
+.accuracy-site__table td {
+  text-align: right;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  color: var(--stock);
+  border-bottom: 1px solid #2c2822;
+}
+
+@media (min-width: 900px) {
+  .hero--split {
+    grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+    align-items: center;
+  }
+
+  .hero--split > div { grid-column: 1; }
+
+  .specimen {
+    grid-column: 2;
+    margin: 0;
+    justify-self: end;
+    width: 100%;
+  }
+
+  .trust,
+  .fares,
+  .accuracy-site,
+  .doors {
+    max-width: none;
+    padding: 9vh 40px;
+    display: grid;
+    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
+    gap: 0 56px;
+    align-items: start;
+  }
+
+  .fares > .data__body { grid-column: 2; }
+  .fares__scroll { grid-column: 2; }
+
+  .trust__list > div { grid-template-columns: 140px 1fr; }
+  .trust__list dd { font-size: 16px; }
+
+  .accuracy-site__grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr);
+    gap: 48px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .trust, .fares, .accuracy-site, .doors { padding-left: 64px; padding-right: 64px; }
+}
+
+@media (min-width: 900px) {
+  .why,
+  .cost {
+    max-width: none;
+    padding: 9vh 40px;
+    display: grid;
+    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 2fr);
+    gap: 0 56px;
+    align-items: start;
+  }
+
+  .cost .site__cta { margin-top: 30px; }
+}
+
+@media (min-width: 1280px) {
+  .why,
+  .cost {
+    padding-left: 64px;
+    padding-right: 64px;
+  }
+}
+
+/* =============================================================== bus loader
+
+   The bus drives left to right across a dashed road, which is the same dashed
+   rule the ticket stub uses for its perforations. One loop is about a second,
+   so a fast load shows one pass and a slow one keeps moving rather than
+   freezing halfway.
+   =============================================================== */
+
+.busload {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  padding: var(--gutter);
+}
+
+.busload__stage {
+  position: relative;
+  width: min(78vw, 460px);
+  height: 92px;
+  overflow: hidden;
+}
+
+.busload__bus {
+  position: absolute;
+  bottom: 18px;
+  width: 148px;
+  height: 60px;
+  animation: bus-drive 1500ms cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/* Starts fully off the left edge and leaves fully off the right, so the bus is
+   never seen appearing or disappearing in place. */
+@keyframes bus-drive {
+  from { transform: translate3d(-160px, 0, 0); }
+  to   { transform: translate3d(calc(min(78vw, 460px) + 20px), 0, 0); }
+}
+
+.busload__wheel {
+  animation: wheel-turn 620ms linear infinite;
+}
+
+@keyframes wheel-turn {
+  to { transform: rotate(360deg); }
+}
+
+/* The road: a dashed rule that scrolls under the bus. */
+.busload__road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  height: 3px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--rule) 0 22px,
+    transparent 22px 40px
+  );
+  animation: road-run 620ms linear infinite;
+}
+
+@keyframes road-run {
+  to { background-position-x: -40px; }
+}
+
+.busload__label {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--stock);
+  text-align: center;
+}
+
+.busload__label small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--rule);
+  padding-top: 5px;
+}
+
+/*
+  Reduced motion: the bus stops driving and the label carries the message. A
+  moving vehicle is exactly the kind of animation someone with vestibular
+  sensitivity turns that setting on to avoid.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .busload__bus {
+    animation: none;
+    transform: translate3d(calc(min(39vw, 230px) - 74px), 0, 0);
+  }
+
+  .busload__wheel,
+  .busload__road {
+    animation: none;
+  }
+}
