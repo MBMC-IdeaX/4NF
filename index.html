@@ -15,7 +15,7 @@
       rel="stylesheet"
     />
     <link rel="stylesheet" href="src/app/styles.css" />
-    <script src="src/app/main.js" defer></script>
+    <script type="module" src="src/app/main.js"></script>
   </head>
   <body>
     <header class="site-header">
@@ -62,15 +62,36 @@
         <form class="route-form" id="route-form">
           <label>
             <span>From</span>
-            <input name="from" type="text" placeholder="e.g. Ratnapark" required />
+            <input name="from" list="stops-list" type="text" placeholder="e.g. Ratnapark" value="Ratnapark" required />
           </label>
           <span class="route-arrow" aria-hidden="true">&#8594;</span>
           <label>
             <span>To</span>
-            <input name="to" type="text" placeholder="e.g. Lalitpur" required />
+            <input name="to" list="stops-list" type="text" placeholder="e.g. Lagankhel" value="Lagankhel" required />
           </label>
-          <button class="dark-button" type="submit">Check fare <span aria-hidden="true">&#8594;</span></button>
-          <p class="form-message" id="form-message" role="status"></p>
+
+          <datalist id="stops-list">
+            <option value="Ratnapark (Old Buspark)"></option>
+            <option value="Lagankhel (Lalitpur)"></option>
+            <option value="Koteshwor"></option>
+            <option value="Kalanki"></option>
+            <option value="Gongabu (New Buspark)"></option>
+            <option value="Chabahil"></option>
+            <option value="Bhaktapur (Suryabinayak)"></option>
+            <option value="Balkhu"></option>
+            <option value="Maharajgunj"></option>
+            <option value="Satdobato"></option>
+            <option value="Swayambhu"></option>
+            <option value="Airport (TIA)"></option>
+          </datalist>
+
+          <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+            <input type="checkbox" id="concession-check" name="concession" style="width: auto; margin: 0;" />
+            <label for="concession-check" style="cursor: pointer; font-size: 13px; color: var(--ink);">Apply 45% Student / Senior Citizen Concession</label>
+          </div>
+
+          <button class="dark-button" type="submit">Check fare & route <span aria-hidden="true">&#8594;</span></button>
+          <div class="form-message" id="form-message" role="status" style="margin-top: 15px;"></div>
         </form>
       </section>
 
