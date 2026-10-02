@@ -1,153 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="ne">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Bhada helps passengers understand public transport routes and fares across Nepal."
-    />
-    <title>Bhada | Know your ride</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="src/app/styles.css" />
-    <script type="module" src="src/app/main.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#a8202f" />
+    <meta name="description" content="Pay and collect Nepali bus fares with both phones offline." />
+    <link rel="icon" href="/favicon.png" sizes="64x64" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <title>Bhada</title>
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="#top" aria-label="Bhada home">
-        <span class="brand-mark">B</span>
-        <span>Bhada</span>
-      </a>
-      <nav class="site-nav" aria-label="Main navigation">
-        <a href="#how-it-works">How it works</a>
-        <a href="#why-bhada">Why Bhada</a>
-        <a class="nav-button" href="#route-checker">Check a route <span aria-hidden="true">&#8599;</span></a>
-      </nav>
-    </header>
-
-    <main id="top">
-      <section class="hero">
-        <div class="hero-wash"></div>
-        <div class="hero-content page-width">
-          <p class="eyebrow">Urban mobility, made clear</p>
-          <h1>Know your ride<br /><em>before you go.</em></h1>
-          <p class="hero-copy">
-            Simple routes, fair fares, and less uncertainty for every public
-            transport journey in Nepal.
-          </p>
-          <a class="primary-button" href="#route-checker">
-            Find a route <span aria-hidden="true">&#8594;</span>
-          </a>
-        </div>
-        <div class="hero-note">
-          <span class="note-dot"></span>
-          Built for Kathmandu Valley, ready for every city
-        </div>
-        <a class="scroll-cue" href="#how-it-works" aria-label="Scroll to learn more">
-          <span>Scroll to explore</span>
-          <span aria-hidden="true">&#8595;</span>
-        </a>
-      </section>
-
-      <section class="route-checker page-width" id="route-checker">
-        <div class="section-intro">
-          <p class="eyebrow">Start here</p>
-          <h2>Take the guesswork<br />out of the journey.</h2>
-        </div>
-        <form class="route-form" id="route-form">
-          <label>
-            <span>From</span>
-            <input name="from" list="stops-list" type="text" placeholder="e.g. Ratnapark" value="Ratnapark" required />
-          </label>
-          <span class="route-arrow" aria-hidden="true">&#8594;</span>
-          <label>
-            <span>To</span>
-            <input name="to" list="stops-list" type="text" placeholder="e.g. Lagankhel" value="Lagankhel" required />
-          </label>
-
-          <datalist id="stops-list">
-            <option value="Ratnapark (Old Buspark)"></option>
-            <option value="Lagankhel (Lalitpur)"></option>
-            <option value="Koteshwor"></option>
-            <option value="Kalanki"></option>
-            <option value="Gongabu (New Buspark)"></option>
-            <option value="Chabahil"></option>
-            <option value="Bhaktapur (Suryabinayak)"></option>
-            <option value="Balkhu"></option>
-            <option value="Maharajgunj"></option>
-            <option value="Satdobato"></option>
-            <option value="Swayambhu"></option>
-            <option value="Airport (TIA)"></option>
-          </datalist>
-
-          <div style="grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; margin-top: 6px;">
-            <input type="checkbox" id="concession-check" name="concession" style="width: auto; margin: 0;" />
-            <label for="concession-check" style="cursor: pointer; font-size: 13px; color: var(--ink);">Apply 45% Student / Senior Citizen Concession</label>
-          </div>
-
-          <button class="dark-button" type="submit">Check fare & route <span aria-hidden="true">&#8594;</span></button>
-          <div class="form-message" id="form-message" role="status" style="margin-top: 15px;"></div>
-        </form>
-      </section>
-
-      <section class="process-section" id="how-it-works">
-        <div class="page-width">
-          <div class="section-heading-row">
-            <div>
-              <p class="eyebrow">How it works</p>
-              <h2>One clear answer<br />for a moving city.</h2>
-            </div>
-            <p class="section-summary">
-              Bhada brings scattered transport information into one calm,
-              passenger-first experience.
-            </p>
-          </div>
-          <div class="process-grid">
-            <article class="process-item">
-              <span class="step-number">01</span>
-              <h3>Choose your route</h3>
-              <p>Search familiar landmarks, stops, and destinations in plain language.</p>
-            </article>
-            <article class="process-item">
-              <span class="step-number">02</span>
-              <h3>See your options</h3>
-              <p>Compare available public transport modes and understand the journey ahead.</p>
-            </article>
-            <article class="process-item">
-              <span class="step-number">03</span>
-              <h3>Travel with confidence</h3>
-              <p>Know the expected fare before you board and keep the trip moving.</p>
-            </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="impact-section page-width" id="why-bhada">
-        <div class="impact-copy">
-          <p class="eyebrow">Why Bhada</p>
-          <h2>Public transport<br /><em>should feel possible.</em></h2>
-          <p>
-            For students, workers, visitors, and everyone in between, a little
-            more clarity can make a city feel much closer.
-          </p>
-        </div>
-        <div class="impact-list">
-          <div><strong>01</strong><span>Fairer fares</span><small>Know what your journey should cost.</small></div>
-          <div><strong>02</strong><span>Easier decisions</span><small>Find the right mode without the noise.</small></div>
-          <div><strong>03</strong><span>Stronger cities</span><small>Make shared mobility easier to choose.</small></div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer page-width">
-      <a class="brand" href="#top"><span class="brand-mark">B</span><span>Bhada</span></a>
-      <p>Making every ride a little clearer.</p>
-      <span>2026</span>
-    </footer>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
