@@ -1,0 +1,203 @@
+/*
+  /inspect — the bus register (see meter.css): a dark instrument panel, cream
+  readouts, verdicts in the door's three colours, big enough to turn the phone
+  round and show the passenger. Prefixed insp-; loads only with this screen.
+*/
+
+.insp {
+  --i-panel: #0f0e0c;
+  --i-raised: #1a1815;
+  --i-read: #ece7d8;
+  --i-dim: #8f8a7c;
+  --i-rule: #34312b;
+  --i-live: #6fbf73;
+  --i-caution: #e0a437;
+  --i-halt: #d7514b;
+  --i-plate: #a8202f;
+
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding: 0 16px 32px;
+  background: var(--i-panel);
+  color: var(--i-read);
+  font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+}
+
+.insp .tabular { font-variant-numeric: tabular-nums; }
+
+.insp__head {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-top: 6px solid var(--i-plate);
+  border-bottom: 1px solid var(--i-rule);
+}
+
+.insp__head b {
+  display: block;
+  font: 700 28px/1 'Khand', 'Noto Sans Devanagari', sans-serif;
+}
+
+.insp__head span {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--i-dim);
+}
+
+.insp__back,
+.insp__sync,
+.insp__heads button,
+.insp__again {
+  min-height: 48px;
+  border: 1px solid var(--i-rule);
+  background: transparent;
+  color: var(--i-read);
+  font: inherit;
+  cursor: pointer;
+}
+
+.insp__back { font-size: 22px; }
+
+.insp__sync {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 6px 10px;
+  font-weight: 600;
+}
+
+.insp__sync small { color: var(--i-dim); font-weight: 400; }
+
+.insp__problem {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--i-halt);
+  background: var(--i-raised);
+}
+
+.insp__step h1 {
+  font: 700 34px/1.05 'Khand', sans-serif;
+  margin: 24px 0 8px;
+}
+
+.insp__step p { color: var(--i-dim); line-height: 1.5; }
+
+.insp__go {
+  width: 100%;
+  min-height: 64px;
+  margin-top: 12px;
+  border: 0;
+  background: var(--i-read);
+  color: #16130f;
+  font: 700 22px/1 'Khand', sans-serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.insp__go:disabled { opacity: 0.5; cursor: default; }
+
+.insp__bus {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 14px;
+  border: 1px solid var(--i-rule);
+}
+
+.insp__bus div {
+  padding: 8px 10px;
+  border-right: 1px solid var(--i-rule);
+  min-width: 0;
+}
+
+.insp__bus div:last-child { border-right: 0; }
+
+.insp__bus small,
+.insp__heads small {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--i-dim);
+}
+
+.insp__bus b {
+  font: 700 24px/1.1 'Khand', sans-serif;
+  overflow-wrap: anywhere;
+}
+
+.insp__heads {
+  display: grid;
+  grid-template-columns: 1fr 56px 56px 56px;
+  gap: 8px;
+  align-items: stretch;
+  margin-top: 12px;
+}
+
+.insp__heads b { font: 700 40px/1 'Khand', sans-serif; }
+
+.insp__heads button { font: 700 24px/1 'Khand', sans-serif; }
+
+.insp__tally {
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-left: 4px solid var(--i-live);
+  background: var(--i-raised);
+}
+
+.insp__tally.is-short { border-left-color: var(--i-halt); }
+
+.insp__verdict {
+  margin-top: 14px;
+  padding: 16px;
+  border: 3px solid var(--i-rule);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.insp__verdict strong { font: 700 clamp(40px, 12vw, 64px)/0.95 'Khand', sans-serif; }
+
+.insp__verdict--ok { border-color: var(--i-live); }
+.insp__verdict--ok strong { color: var(--i-live); }
+.insp__verdict--no { border-color: var(--i-halt); }
+.insp__verdict--no strong { color: var(--i-halt); }
+.insp__verdict--warn { border-color: var(--i-caution); }
+.insp__verdict--warn strong { color: var(--i-caution); }
+.insp__verdict--idle strong { color: var(--i-dim); font-size: 32px; }
+
+.insp__count {
+  margin: 14px 0 6px;
+  color: var(--i-dim);
+}
+
+.insp__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.insp__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--i-raised);
+  border-left: 4px solid var(--i-rule);
+}
+
+.insp__list li.is-ok { border-left-color: var(--i-live); }
+.insp__list li.is-no { border-left-color: var(--i-halt); }
+.insp__list li.is-warn { border-left-color: var(--i-caution); }
+.insp__list li span { color: var(--i-dim); font-size: 13px; }
+
+.insp__again {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+}
