@@ -1,20 +1,44 @@
 {
-  "name": "4nf-bhada",
-  "version": "0.1.0",
-  "description": "Bhada 4NF - Smart Urban Public Transport Fare & Route Information Layer for Nepal",
+  "name": "bhada",
+  "private": true,
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview --host",
+    "proof": "node scripts/handshake-proof.mjs",
+    "proof:meter": "node scripts/meter-proof.mjs",
+    "proof:reconcile": "node scripts/reconcile-proof.mjs",
+    "proof:legs": "node scripts/legs-proof.mjs",
+    "proof:validator": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs scripts/validator-proof.mjs",
+    "proof:all": "npm run proof && npm run proof:meter && npm run proof:reconcile && npm run proof:legs && npm run proof:validator",
+    "trace:replay": "node scripts/trace-replay.mjs",
+    "sync:protocol": "node scripts/sync-protocol.mjs",
+    "fonts": "node scripts/fetch-fonts.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "serve": "node scripts/serve-dist.mjs",
+    "sync:local": "node scripts/local-sync-server.mjs",
+    "validator": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs validator/main.mjs",
+    "validator:bench": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs validator/bench.mjs",
+    "validator:screens": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs scripts/validator-proof.mjs --screens"
   },
-  "keywords": [
-    "bhada",
-    "nepal",
-    "public-transport",
-    "fare-calculator",
-    "smart-mobility"
-  ],
-  "author": "Bhada Team",
-  "license": "MIT"
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "idb": "^8.0.3",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^3.10.1",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitejs/plugin-react": "^5.0.4",
+    "sharp": "^0.35.4",
+    "vite": "^7.1.14",
+    "vite-plugin-pwa": "^1.0.3"
+  }
 }
