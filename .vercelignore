@@ -1,0 +1,12 @@
+# Never upload local secrets or scratch state. Production VITE_* variables live
+# in the Vercel project settings, not in these files.
+.env
+.env.*
+.pgdata
+.playwright-mcp
+dist
+node_modules
+scripts/__pycache__
+*.pptx
+Bhada-*.html
+.bench
