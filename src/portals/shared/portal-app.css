@@ -1,0 +1,1485 @@
+/*
+  The office and wallet surfaces, as an app rather than a document.
+
+  Bhada's bus screens are deliberately printed matter: ticket stock, hard rules,
+  no shadows, read at arm's length in daylight by someone holding a rail. That
+  is the right answer on a bus and the wrong one at a desk or in a queue at a
+  top-up counter, where the thing people are comparing this to is eSewa, Khalti
+  or their bank's app — white surfaces, soft corners, one confident action per
+  screen, money in green and out in grey.
+
+  So the portals get their own register. Same brand — plate red, Khand for
+  numerals, Devanagari first — but built like an app people already know how to
+  use. This file is loaded after portal.css and takes over the `op-` classes, so
+  every existing screen lifts without being rewritten first.
+
+  The rules it keeps:
+    - one accent, and it marks the primary action and nothing else
+    - a surface gets a hairline or a shadow, never both
+    - money that arrives is green, money that leaves is ink, and the sign is
+      always written out
+    - 48px is the smallest thing anyone taps; 44px only for dense tables
+    - every list has a loaded, loading, empty and error state
+*/
+
+.op {
+  /* ---------------------------------------------------------- foundation */
+  --app-bg: #f3f4f6;
+  --app-surface: #ffffff;
+  --app-surface-sunk: #f7f8fa;
+  --app-line: #e3e5ea;          /* hairline, 1.4:1 — separation only */
+  --app-line-strong: #cfd3da;   /* 3:1, for inputs and anything interactive */
+
+  --app-ink: #15181d;           /* 15.8:1 on surface */
+  --app-ink-2: #454b56;         /* 8.9:1 — secondary body */
+  --app-muted: #5f6673;         /* 6.1:1 — labels, captions */
+  --app-faint: #868d9a;         /* 3.4:1 — never body copy, never alone */
+
+  --app-brand: #a8202f;         /* the plate red, unchanged */
+  --app-brand-deep: #8a1926;
+  --app-brand-tint: #fcecee;
+  --app-brand-line: #f0c7cc;
+
+  --app-ok: #0c6b46;            /* money in */
+  --app-ok-tint: #e7f4ee;
+  --app-warn: #8a5300;
+  --app-warn-tint: #fdf1de;
+  --app-danger: #b3261e;
+  --app-danger-tint: #fdeceb;
+  --app-info-tint: #eaf1fb;
+  --app-info: #1b4d8f;
+
+  --r-xs: 8px;
+  --r-sm: 10px;
+  --r: 14px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* One shadow ramp. Level 1 is "sits on the page", level 2 genuinely floats. */
+  --sh-1: 0 1px 2px rgba(17, 22, 31, 0.05), 0 1px 3px rgba(17, 22, 31, 0.04);
+  --sh-2: 0 8px 24px rgba(17, 22, 31, 0.10), 0 2px 6px rgba(17, 22, 31, 0.06);
+
+  --app-width: 1120px;
+
+  background: var(--app-bg);
+  color: var(--app-ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.45;
+  min-height: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.op :focus-visible {
+  outline: 3px solid var(--app-brand);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+.op-wrap {
+  max-width: var(--app-width);
+  margin: 0 auto;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+@media (min-width: 720px) {
+  .op-wrap { padding-left: 32px; padding-right: 32px; }
+}
+
+.op-main { padding-top: 24px; padding-bottom: 72px; }
+
+/* =============================================================== chrome */
+
+/*
+  A light header, not a black bar.
+
+  The dark bar came from the meter console, where it means "instrument". Here it
+  just made the page feel like a terminal. White with a hairline reads as an app
+  and lets the brand mark be the only red thing above the fold.
+*/
+.op-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--app-surface);
+  color: var(--app-ink);
+  border-bottom: 1px solid var(--app-line);
+}
+
+.op-top .op-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 60px;
+}
+
+.op-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 0;
+  background: none;
+  border: 0;
+  color: var(--app-brand);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: var(--r-sm);
+}
+
+.op-brand span {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  background: var(--app-surface-sunk);
+  white-space: nowrap;
+}
+
+.op-who { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.op-who__name { text-align: right; min-width: 0; }
+
+.op-who__name b {
+  display: block;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--app-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-who__name small {
+  display: block;
+  font-size: 12.5px;
+  color: var(--app-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-signout {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--r-pill);
+  background: var(--app-surface);
+  color: var(--app-ink-2);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, border-color 140ms ease;
+}
+
+.op-signout:hover { background: var(--app-surface-sunk); color: var(--app-ink); }
+
+/* ------------------------------------------------------------------ tabs */
+
+/*
+  Tabs scroll rather than wrap. A wrapped second row of tabs changes the height
+  of the header between pages, which makes the whole app feel like it is
+  twitching as you move through it.
+*/
+.op-nav {
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-line);
+  position: sticky;
+  top: 60px;
+  z-index: 19;
+}
+
+.op-nav .op-wrap {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.op-nav .op-wrap::-webkit-scrollbar { display: none; }
+
+.op-tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  flex: none;
+  min-height: 56px;
+  padding: 0 14px;
+  border: 0;
+  background: none;
+  color: var(--app-muted);
+  cursor: pointer;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.op-tab b {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.op-tab small { font-size: 11.5px; letter-spacing: 0.02em; }
+
+.op-tab:hover { color: var(--app-ink); background: var(--app-surface-sunk); }
+
+.op-tab[aria-current='page'] { color: var(--app-brand); }
+
+.op-tab[aria-current='page']::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--app-brand);
+}
+
+.op-badge {
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: var(--app-brand);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* ============================================================= page head */
+
+.op-pagehead { margin-bottom: 20px; }
+
+.op-pagehead h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(28px, 6vw, 38px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+}
+
+.op-pagehead p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--app-muted);
+  font-size: 15px;
+}
+
+/* =============================================================== surfaces */
+
+/*
+  One surface treatment: white, hairline, soft corner, and a shadow only at the
+  moment something lifts off the page. A card that has a border and a shadow and
+  a tint is three decisions where one would do.
+*/
+.op-card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r);
+  padding: 18px;
+}
+
+.op-section {
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r);
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.op-section__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.op-section__head h2 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 21px;
+  line-height: 1.15;
+}
+
+.op-section__head h2 small {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--app-muted);
+  letter-spacing: 0;
+}
+
+/* ================================================================= stats */
+
+/*
+  A stat tile row is where generated UI usually dies: four numbers the same size
+  as their labels, in four identical boxes. Here the number is the loudest thing
+  on the page by a wide margin, the label is small and quiet above it, and the
+  tiles sit on one surface divided by hairlines rather than four floating cards.
+*/
+.op-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin: 0 0 18px;
+}
+
+/*
+  A nested stat row usually sits inside a section that is itself half the page,
+  so four figures across leaves each one about 90px. Two across, always, and
+  four only when the row has the full width to itself.
+*/
+.op-stats--inset { margin-bottom: 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+@media (min-width: 1100px) {
+  .op-grid--halves .op-stats--inset { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.op-stats--inset .op-stat { padding: 13px 14px 15px; }
+.op-stats--inset .op-stat dd { font-size: clamp(22px, 4vw, 30px); }
+.op-stats--inset .op-stat:nth-child(-n + 2) { border-top: 0; }
+.op-stats--inset .op-stat:nth-child(odd) { border-left: 0; }
+.op-stats--inset .op-stat:nth-child(n + 3) { border-top: 1px solid var(--app-line); }
+
+@media (min-width: 760px) {
+  .op-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.op-stat {
+  padding: 16px 18px 18px;
+  min-width: 0;
+  border-top: 1px solid var(--app-line);
+  border-left: 1px solid var(--app-line);
+}
+
+.op-stat:nth-child(-n + 2) { border-top: 0; }
+.op-stat:nth-child(odd) { border-left: 0; }
+
+@media (min-width: 760px) {
+  .op-stat:nth-child(-n + 4) { border-top: 0; }
+  .op-stat:nth-child(odd) { border-left: 1px solid var(--app-line); }
+  .op-stat:first-child { border-left: 0; }
+}
+
+.op-stat dt {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--app-ink-2);
+  margin-bottom: 8px;
+}
+
+.op-stat dt span {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--app-faint);
+}
+
+/*
+  A figure is never allowed to be clipped.
+
+  The first version ellipsised anything too wide, which turned Rs 7,440 into
+  "Rs 74…" in a narrow tile — a money number that silently reads as a different,
+  smaller money number. Nothing about that is acceptable on a page an owner
+  settles accounts from, so the type scales down to fit and wraps if it still
+  cannot, and the tile grows instead.
+*/
+.op-stat dd {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(26px, 6vw, 38px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  color: var(--app-ink);
+  overflow-wrap: anywhere;
+}
+
+.op-stat dd em {
+  font-style: normal;
+  font-size: 0.56em;
+  font-weight: 600;
+  color: var(--app-muted);
+  margin-right: 3px;
+}
+
+.op-stat--accent dd { color: var(--app-brand); }
+.op-stat--warn dd { color: var(--app-warn); }
+.op-stat--ok dd { color: var(--app-ok); }
+
+/* =============================================================== balance */
+
+/*
+  The one screen element that is allowed to shout. Every bank app opens with the
+  balance and so does this: brand ground, the number at display size, and the
+  actions directly under it where a thumb already is.
+*/
+.op-balance {
+  background: linear-gradient(158deg, var(--app-brand) 0%, var(--app-brand-deep) 100%);
+  color: #fff;
+  border-radius: var(--r-lg);
+  padding: 22px 22px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--sh-1);
+}
+
+.op-balance__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+  margin-bottom: 6px;
+}
+
+.op-balance__value {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(42px, 12vw, 60px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.op-balance__value em {
+  font-style: normal;
+  font-size: 0.42em;
+  font-weight: 600;
+  opacity: 0.85;
+  margin-right: 6px;
+}
+
+.op-balance__sub {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.op-balance__row {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.op-balance__row .op-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  backdrop-filter: blur(2px);
+}
+
+.op-balance__row .op-btn:hover { background: rgba(255, 255, 255, 0.24); }
+
+.op-balance__row .op-btn--primary {
+  background: #fff;
+  border-color: #fff;
+  color: var(--app-brand-deep);
+}
+
+.op-balance__row .op-btn--primary:hover { background: rgba(255, 255, 255, 0.9); }
+
+/* ---------------------------------------------------------- quick actions */
+
+.op-quick {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.op-quick button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 6px 12px;
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r);
+  color: var(--app-ink);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.op-quick button:hover {
+  border-color: var(--app-line-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-1);
+}
+
+.op-quick button:active { transform: none; }
+
+.op-quick i {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-pill);
+  background: var(--app-brand-tint);
+  color: var(--app-brand);
+}
+
+/* ================================================================ buttons */
+
+.op-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--r-sm);
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font-family: var(--body);
+  font-size: 15.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.op-btn:hover { background: var(--app-surface-sunk); border-color: var(--app-faint); }
+
+.op-btn:disabled,
+.op-btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: var(--app-surface-sunk);
+}
+
+.op-btn--primary {
+  background: var(--app-brand);
+  border-color: var(--app-brand);
+  color: #fff;
+  box-shadow: var(--sh-1);
+}
+
+.op-btn--primary:hover { background: var(--app-brand-deep); border-color: var(--app-brand-deep); }
+
+.op-btn--primary:disabled { background: var(--app-brand); border-color: var(--app-brand); box-shadow: none; }
+
+.op-btn--ghost { background: none; border-color: transparent; color: var(--app-brand); }
+.op-btn--ghost:hover { background: var(--app-brand-tint); border-color: transparent; }
+
+.op-btn--danger { color: var(--app-danger); border-color: var(--app-line-strong); }
+.op-btn--danger:hover { background: var(--app-danger-tint); border-color: var(--app-danger); }
+
+.op-btn--block { display: flex; width: 100%; }
+
+.op-btn--lg { min-height: 54px; font-size: 16.5px; }
+
+.op-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--app-brand);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: none;
+  border-radius: var(--r-xs);
+}
+
+.op-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ================================================================= forms */
+
+.op-field { display: block; margin-bottom: 16px; }
+
+.op-field > span,
+.op-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--app-ink-2);
+}
+
+.op-field input,
+.op-field select,
+.op-field textarea,
+.op input[type='text'],
+.op input[type='email'],
+.op input[type='tel'],
+.op input[type='number'],
+.op input[type='password'],
+.op select,
+.op textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--r-sm);
+  background: var(--app-surface);
+  color: var(--app-ink);
+  font-family: var(--body);
+  font-size: 16px; /* 16px or iOS zooms the page on focus */
+  line-height: 1.3;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.op textarea { min-height: 96px; resize: vertical; }
+
+.op input::placeholder,
+.op textarea::placeholder { color: var(--app-faint); }
+
+.op input:focus,
+.op select:focus,
+.op textarea:focus {
+  outline: none;
+  border-color: var(--app-brand);
+  box-shadow: 0 0 0 3px var(--app-brand-tint);
+}
+
+.op input:disabled,
+.op select:disabled { background: var(--app-surface-sunk); color: var(--app-muted); }
+
+.op-field__hint { margin-top: 6px; font-size: 13px; color: var(--app-muted); }
+.op-field__error { margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--app-danger); }
+
+.op-field--bad input,
+.op-field--bad select { border-color: var(--app-danger); }
+
+.op-field--bad input:focus { box-shadow: 0 0 0 3px var(--app-danger-tint); }
+
+/* A currency field: the unit belongs inside the box, not in the label. */
+.op-prefixed {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--app-line-strong);
+  border-radius: var(--r-sm);
+  background: var(--app-surface);
+  overflow: hidden;
+}
+
+.op-prefixed:focus-within { border-color: var(--app-brand); box-shadow: 0 0 0 3px var(--app-brand-tint); }
+
+.op-prefixed > b {
+  display: grid;
+  place-items: center;
+  padding: 0 14px;
+  background: var(--app-surface-sunk);
+  border-right: 1px solid var(--app-line);
+  color: var(--app-muted);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.op-prefixed input { border: 0; border-radius: 0; }
+.op-prefixed input:focus { box-shadow: none; }
+
+/* ------------------------------------------------------------- segmented */
+
+.op-segment {
+  display: flex;
+  gap: 3px;
+  padding: 3px;
+  margin: 4px 0 18px;
+  background: var(--app-surface-sunk);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r-sm);
+  box-shadow: none;
+}
+
+.op-segment button {
+  flex: 1;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--app-muted);
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+}
+
+.op-segment button:hover { color: var(--app-ink); }
+
+.op-segment button[aria-selected='true'] {
+  background: var(--app-surface);
+  color: var(--app-ink);
+  box-shadow: var(--sh-1);
+}
+
+.op-segment--inline { display: inline-flex; margin: 0 0 16px; max-width: 100%; overflow-x: auto; }
+.op-segment--inline button { flex: none; }
+
+/* ================================================================= rows */
+
+/*
+  A statement line, a bus, a request. The pattern every bank app uses: name and
+  context on the left, the number on the right, the whole row tappable, hairlines
+  between rather than boxes around.
+*/
+.op-rows { display: flex; flex-direction: column; }
+
+.op-rows > * {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 64px;
+  padding: 12px 0;
+  border-top: 1px solid var(--app-line);
+  text-align: left;
+}
+
+.op-rows > *:first-child { border-top: 0; }
+
+.op-rows--plain > * { min-height: 56px; }
+
+button.op-row,
+.op-rows > button {
+  width: 100%;
+  background: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  cursor: pointer;
+  border-radius: 0;
+  transition: background 140ms ease;
+}
+
+.op-rows > button:hover { background: var(--app-surface-sunk); }
+
+.op-row__name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 15.5px;
+  color: var(--app-ink);
+}
+
+.op-row__name small {
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--app-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-row__value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
+  color: var(--app-ink);
+}
+
+.op-row__value small {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--app-faint);
+}
+
+.op-row__value--in { color: var(--app-ok); }
+.op-row__value--out { color: var(--app-ink); }
+
+/* An icon disc in front of a row, the way a transaction list reads. */
+.op-row__icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--app-surface-sunk);
+  color: var(--app-ink-2);
+}
+
+.op-row__icon--in { background: var(--app-ok-tint); color: var(--app-ok); }
+.op-row__icon--out { background: var(--app-brand-tint); color: var(--app-brand); }
+.op-row__icon--warn { background: var(--app-warn-tint); color: var(--app-warn); }
+
+.op-row__lead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* ================================================================ chips */
+
+.op-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: var(--app-surface-sunk);
+  color: var(--app-ink-2);
+  font-size: 12.5px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.op-pill--ok { background: var(--app-ok-tint); color: var(--app-ok); }
+.op-pill--warn { background: var(--app-warn-tint); color: var(--app-warn); }
+.op-pill--bad { background: var(--app-danger-tint); color: var(--app-danger); }
+.op-pill--info { background: var(--app-info-tint); color: var(--app-info); }
+
+/* ================================================================ states */
+
+.op-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 20px;
+  text-align: center;
+  background: var(--app-surface-sunk);
+  border-radius: var(--r);
+  border: 1px dashed var(--app-line-strong);
+}
+
+.op-empty i {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 4px;
+  border-radius: var(--r-pill);
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  color: var(--app-faint);
+}
+
+.op-empty b { font-family: var(--display); font-weight: 600; font-size: 20px; }
+
+.op-empty p { margin: 0; max-width: 42ch; color: var(--app-muted); font-size: 14.5px; }
+
+.op-empty .op-btn { margin-top: 8px; }
+
+.op-empty--page { margin: 40px 0; padding: 56px 24px; }
+
+/* A skeleton matches the shape of what is coming, so nothing jumps when it
+   lands. A spinner in the middle of a page cannot do that. */
+.op-skeleton {
+  border-radius: var(--r-xs);
+  background: linear-gradient(90deg, var(--app-surface-sunk) 25%, #eef0f3 37%, var(--app-surface-sunk) 63%);
+  background-size: 400% 100%;
+  animation: op-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes op-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
+}
+
+.op-skeleton--line { height: 14px; margin-bottom: 10px; }
+.op-skeleton--wide { width: 100%; }
+.op-skeleton--half { width: 55%; }
+.op-skeleton--stat { height: 36px; width: 70%; }
+
+.op-note {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: var(--app-surface-sunk);
+  color: var(--app-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.op-note--info { background: var(--app-info-tint); color: var(--app-info); }
+.op-note--warn { background: var(--app-warn-tint); color: var(--app-warn); }
+
+/* ============================================================== sign-in */
+
+/*
+  A sign-in page is the first thing anyone sees and the cheapest place to look
+  untrustworthy. One centred card, the brand above it, nothing else competing.
+*/
+.op-signin {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+  padding: 28px 0 64px;
+}
+
+@media (min-width: 900px) {
+  .op-signin { grid-template-columns: 1.05fr 0.95fr; gap: 56px; padding-top: 56px; }
+}
+
+.op-signin__pitch h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(34px, 8vw, 54px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+}
+
+.op-signin__pitch p {
+  margin: 0 0 22px;
+  max-width: 48ch;
+  color: var(--app-ink-2);
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+
+.op-signin__points { display: flex; flex-direction: column; gap: 10px; }
+
+.op-signin__points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  list-style: none;
+  font-size: 15px;
+  color: var(--app-ink-2);
+}
+
+.op-signin__points i {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  margin-top: 1px;
+  border-radius: var(--r-pill);
+  background: var(--app-ok-tint);
+  color: var(--app-ok);
+}
+
+.op-signin__points b { color: var(--app-ink); font-weight: 600; }
+
+.op-signin__card {
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+  padding: 26px 22px 24px;
+}
+
+.op-signin__card h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.15;
+  margin: 0 0 2px;
+}
+
+.op-signin__card > p {
+  margin: 0 0 20px;
+  color: var(--app-muted);
+  font-size: 14.5px;
+}
+
+.op-signin__foot {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-line);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  font-size: 14.5px;
+  color: var(--app-muted);
+}
+
+/* ================================================================ tables */
+
+.op-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+
+.op-table th {
+  text-align: left;
+  padding: 10px 12px;
+  background: var(--app-surface-sunk);
+  color: var(--app-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.op-table th:first-child { border-radius: var(--r-xs) 0 0 var(--r-xs); }
+.op-table th:last-child { border-radius: 0 var(--r-xs) var(--r-xs) 0; }
+
+.op-table td { padding: 12px; border-bottom: 1px solid var(--app-line); }
+
+.op-table tbody tr:last-child td { border-bottom: 0; }
+
+.op-table tbody tr:hover { background: var(--app-surface-sunk); }
+
+.op-scroll { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+
+/* ============================================================== tooltip */
+
+.op-tip {
+  background: var(--app-ink);
+  color: #fff;
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  box-shadow: var(--sh-2);
+}
+
+.op-tip b { display: block; margin-bottom: 4px; font-size: 13px; }
+
+/* ============================================================== motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .op *,
+  .op *::before,
+  .op *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================================== the rest of the kit
+
+   Classes the three portals already use, brought onto the same system so every
+   screen lifts at once rather than one at a time. Names kept as they were: a
+   rename across 4,000 lines of JSX buys nothing a stylesheet cannot.
+*/
+
+/* ------------------------------------------------------------ auth layout */
+
+.op-auth {
+  display: grid;
+  gap: 28px;
+  align-items: start;
+  padding: 28px 0 64px;
+}
+
+@media (min-width: 900px) {
+  .op-auth { grid-template-columns: 1.05fr 0.95fr; gap: 56px; padding-top: 52px; }
+}
+
+.op-auth__pitch h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(34px, 8vw, 54px);
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  margin: 0 0 14px;
+}
+
+.op-auth__pitch p {
+  margin: 0 0 22px;
+  max-width: 48ch;
+  color: var(--app-ink-2);
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+
+.op-auth__pitch ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+
+.op-auth__pitch li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-line);
+  font-size: 15px;
+  color: var(--app-ink-2);
+}
+
+.op-auth__pitch li:first-child { border-top: 0; }
+.op-auth__pitch li b { color: var(--app-ink); font-weight: 600; }
+
+.op-auth__pitch li svg { flex: none; margin-top: 2px; color: var(--app-ok); }
+
+/* A sheet is the one card on a page that is asking for something. */
+.op-sheet {
+  background: var(--app-surface);
+  border: 1px solid var(--app-line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-2);
+  padding: 26px 22px 24px;
+}
+
+.op-sheet h2 {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 20px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1.15;
+}
+
+.op-sheet h2 small {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 14.5px;
+  color: var(--app-muted);
+}
+
+.op-form { display: flex; flex-direction: column; }
+
+.op-form .op-btn--block { margin-top: 4px; }
+
+.op-form .op-link { align-self: flex-start; margin-top: 14px; }
+
+/* ------------------------------------------------------------- messages */
+
+.op-error,
+.op-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  font-size: 14.5px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.op-error { background: var(--app-danger-tint); color: var(--app-danger); }
+.op-success { background: var(--app-ok-tint); color: var(--app-ok); }
+
+.op-field__help { display: block; margin-top: 6px; font-size: 13px; color: var(--app-muted); }
+
+/* ------------------------------------------------------------- currency */
+
+.op-prefixed > em {
+  display: grid;
+  place-items: center;
+  padding: 0 14px;
+  background: var(--app-surface-sunk);
+  border-right: 1px solid var(--app-line);
+  color: var(--app-muted);
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- layout */
+
+.op-grid { display: grid; gap: 16px; }
+
+@media (min-width: 860px) {
+  .op-grid--halves { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.op-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.op-actions--end { justify-content: flex-end; }
+
+.op-section__aside { display: flex; align-items: center; gap: 10px; flex: none; }
+
+/* ------------------------------------------------------------- up / ups */
+
+/* A stack of small figures beside a chart or a list. */
+.op-ups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+
+@media (min-width: 640px) { .op-ups { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.op-up {
+  padding: 12px 14px;
+  background: var(--app-surface-sunk);
+  border-radius: var(--r-sm);
+  min-width: 0;
+}
+
+.op-up b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--app-ink);
+}
+
+.op-up small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--app-muted); }
+
+/* --------------------------------------------------------------- facts */
+
+.op-facts { display: flex; flex-direction: column; gap: 0; }
+
+.op-facts > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 11px 0;
+  border-top: 1px solid var(--app-line);
+  font-size: 14.5px;
+}
+
+.op-facts > div:first-child { border-top: 0; }
+.op-facts dt { color: var(--app-muted); }
+.op-facts dd { margin: 0; font-weight: 600; color: var(--app-ink); text-align: right; }
+
+.op-cell-sub { display: block; font-size: 12.5px; color: var(--app-muted); }
+
+/* --------------------------------------------------------------- plate */
+
+/*
+  The Nepali commercial plate. The one place the print language stays, because
+  it is a real object people recognise — red ground, white characters.
+*/
+.op-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: var(--app-brand);
+  color: #fff;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.op-plate--big { font-size: 21px; padding: 5px 12px; border-radius: 8px; }
+
+/* --------------------------------------------------------------- tables */
+
+.op-table-scroll { overflow-x: auto; margin: 0 -18px; padding: 0 18px; }
+
+/* -------------------------------------------------------------- buttons */
+
+.op-btn--small { min-height: 38px; padding: 0 12px; font-size: 14px; border-radius: var(--r-xs); }
+
+/* -------------------------------------------------------------- skeleton */
+
+.op-skeleton {
+  border-radius: var(--r-xs);
+  background: linear-gradient(90deg, var(--app-surface-sunk) 25%, #eef0f3 37%, var(--app-surface-sunk) 63%);
+  background-size: 400% 100%;
+  animation: op-shimmer 1.3s ease-in-out infinite;
+  min-height: 14px;
+}
+
+/* ================================================== the passenger's wallet
+
+   The one screen a passenger opens every day, so it is built the way the apps
+   they already use are built: the balance first and loudest, the two things
+   they came to do directly under it, then the money in and out as a list they
+   can scan without reading.
+*/
+
+.op-wallet {
+  background: linear-gradient(158deg, var(--app-brand) 0%, var(--app-brand-deep) 100%);
+  color: #fff;
+  border: 0;
+  border-radius: var(--r-lg);
+  padding: 20px 22px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--sh-1);
+}
+
+/* Owing money is a state, not an error: the same card, in ink, so it reads as
+   serious without looking like something has gone wrong. */
+.op-wallet--owed {
+  background: linear-gradient(158deg, #2a2f3a 0%, #15181d 100%);
+}
+
+.op-wallet__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+  margin-bottom: 8px;
+}
+
+.op-wallet__figure {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(42px, 13vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.op-wallet__note {
+  margin: 10px 0 0;
+  max-width: 46ch;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.op-wallet__actions { display: flex; gap: 10px; margin-top: 18px; }
+
+.op-wallet__actions .op-btn {
+  flex: 1;
+  min-height: 50px;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.34);
+  color: #fff;
+}
+
+.op-wallet__actions .op-btn:hover { background: rgba(255, 255, 255, 0.24); border-color: rgba(255, 255, 255, 0.5); }
+
+/* The first action is the one they came for, so it is the solid one. */
+.op-wallet__actions .op-btn:first-child {
+  background: #fff;
+  border-color: #fff;
+  color: var(--app-brand-deep);
+  font-weight: 700;
+}
+
+.op-wallet--owed .op-wallet__actions .op-btn:first-child { color: #15181d; }
+.op-wallet__actions .op-btn:first-child:hover { background: rgba(255, 255, 255, 0.9); }
+
+/* ------------------------------------------------------------- the ledger */
+
+.op-ledger { display: flex; flex-direction: column; gap: 18px; }
+
+.op-ledger ul { list-style: none; display: flex; flex-direction: column; }
+
+.op-ledger__day {
+  margin: 0 0 6px;
+  font-family: var(--body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-faint);
+}
+
+.op-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 0;
+  border-top: 1px solid var(--app-line);
+}
+
+.op-ledger li:first-child { border-top: 0; }
+
+.op-entry__glyph {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: var(--r-pill);
+  background: var(--app-brand-tint);
+  color: var(--app-brand);
+}
+
+.op-entry--in .op-entry__glyph { background: var(--app-ok-tint); color: var(--app-ok); }
+
+.op-entry__what { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+
+.op-entry__what b {
+  font-weight: 600;
+  font-size: 15.5px;
+  line-height: 1.25;
+  color: var(--app-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-entry__what small { font-size: 12.5px; color: var(--app-muted); }
+
+.op-entry__amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex: none;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 1.1;
+  color: var(--app-ink);
+}
+
+.op-entry--in .op-entry__amount { color: var(--app-ok); }
+
+.op-entry__amount small {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--app-faint);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------- request statuses */
+
+.op-pill--loaded { background: var(--app-ok-tint); color: var(--app-ok); }
+.op-pill--pending,
+.op-pill--initiated { background: var(--app-warn-tint); color: var(--app-warn); }
+.op-pill--rejected,
+.op-pill--failed { background: var(--app-danger-tint); color: var(--app-danger); }
+
+/* --------------------------------------------------------- loading shapes */
+
+/* The old skeleton was three bare spans; give them the shape of a ledger row
+   so nothing jumps when the real rows land. */
+.op-skeleton > span {
+  display: block;
+  height: 44px;
+  margin-bottom: 10px;
+  border-radius: var(--r-sm);
+  background: linear-gradient(90deg, var(--app-surface-sunk) 25%, #eef0f3 37%, var(--app-surface-sunk) 63%);
+  background-size: 400% 100%;
+  animation: op-shimmer 1.3s ease-in-out infinite;
+}
+
+.op-skeleton { background: none; animation: none; min-height: 0; }
+
+/* Bilingual quick actions: Devanagari first at reading size, English under it
+   small — the same order the rest of the product uses, so a passenger who reads
+   only one of the two never has to hunt. */
+.op-quick__en {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--app-muted);
+  letter-spacing: 0.01em;
+}

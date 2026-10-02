@@ -1,0 +1,879 @@
+/*
+  The operator dashboard.
+
+  An office tool, read at a desk and on a phone in a depot. Same world as the
+  rest of Bhada — stamp ink, ticket stock, plate red, printed rules — but a
+  document rather than an instrument: light ground, ruled tables, one accent.
+
+  Every class here starts with `op-`. The meter console owns `.panel`, `.card`
+  and `.chip`, and all stylesheets load globally, so sharing a name with it
+  turned every dashboard section into a black console block.
+*/
+
+.op {
+  --op-muted: #5d574c;      /* 5.4:1 on stock */
+  --op-faint: #7a7366;      /* labels only, never body copy */
+  --op-ok: #2e6b36;
+  --op-warn: #7a4d00;
+  --op-width: 1160px;
+  min-height: 100%;
+  background: var(--stock);
+  color: var(--ink);
+}
+
+.op :focus-visible {
+  outline: 3px solid var(--plate);
+  outline-offset: 2px;
+}
+
+.op-wrap {
+  max-width: var(--op-width);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+/* ------------------------------------------------------------------ header */
+
+.op-top {
+  background: var(--ink);
+  color: var(--stock);
+}
+
+.op-top .op-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 64px;
+}
+
+.op-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: var(--stock);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.op-brand span {
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rule);
+}
+
+.op-who {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.op-who__name {
+  text-align: right;
+  min-width: 0;
+}
+
+.op-who__name b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-who__name small {
+  display: block;
+  font-size: 12px;
+  color: var(--rule);
+}
+
+.op-signout {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #4a443a;
+  color: var(--stock);
+  font-weight: 600;
+  font-size: 14px;
+  transition: background var(--beat) var(--ease), border-color var(--beat) var(--ease);
+}
+
+.op-signout:hover { background: #2a261f; border-color: #6a6355; }
+
+/* ------------------------------------------------------------------- tabs */
+
+.op-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--stock);
+  border-bottom: 1px solid var(--rule);
+}
+
+.op-nav .op-wrap {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.op-tab {
+  flex: none;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 56px;
+  padding: 0 14px;
+  margin-bottom: -1px;
+  border-bottom: 3px solid transparent;
+  color: var(--op-muted);
+  transition: color var(--beat) var(--ease), border-color var(--beat) var(--ease);
+}
+
+.op-tab:first-child { padding-left: 0; }
+
+.op-tab b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 21px;
+  line-height: 56px;
+}
+
+.op-tab small { font-size: 13px; }
+
+.op-tab:hover { color: var(--ink); }
+
+.op-tab[aria-current='page'] {
+  color: var(--ink);
+  border-bottom-color: var(--plate);
+}
+
+/* ------------------------------------------------------------------- page */
+
+.op-main {
+  padding-top: 28px;
+  padding-bottom: 72px;
+}
+
+.op-pagehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+}
+
+.op-pagehead h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(34px, 5vw, 46px);
+  line-height: 0.95;
+}
+
+.op-pagehead p {
+  margin-top: 8px;
+  max-width: 60ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--op-muted);
+}
+
+.op-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* A section is a heading on a heavy rule, then its content. No boxes. */
+.op-section {
+  min-width: 0;
+}
+
+.op-section + .op-section { margin-top: 44px; }
+
+.op-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--ink);
+}
+
+.op-section__head h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.op-section__head h2 small {
+  display: block;
+  padding-top: 4px;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--op-muted);
+}
+
+.op-section__aside {
+  font-size: 13px;
+  color: var(--op-muted);
+  white-space: nowrap;
+}
+
+.op-note {
+  margin-top: 12px;
+  max-width: 68ch;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--op-muted);
+}
+
+.op-error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-left: 4px solid var(--plate);
+  background: var(--panel);
+  color: var(--plate);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.op-success {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-left: 4px solid var(--op-ok);
+  background: var(--panel);
+  color: var(--op-ok);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.op-grid {
+  display: grid;
+  gap: 44px;
+}
+
+.op-grid > .op-section + .op-section { margin-top: 0; }
+
+@media (min-width: 960px) {
+  .op-grid--split { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 44px 48px; }
+  .op-grid--halves { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 44px 48px; }
+  .op-fleet-layout {
+    grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-areas: 'fleet form' 'routes form';
+    align-items: start;
+    gap: 44px 48px;
+  }
+  .op-area-fleet { grid-area: fleet; }
+  .op-area-form { grid-area: form; }
+  .op-area-routes { grid-area: routes; }
+  .op-sticky { position: sticky; top: 80px; }
+}
+
+@media (max-width: 479px) {
+  .op-tab small { display: none; }
+  .op-tab { padding: 0 10px; }
+}
+
+/* ------------------------------------------------------------------ stats */
+
+.op-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 3px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 44px;
+}
+
+.op-stats--inset { margin: 0 0 20px; border-top: 0; }
+
+@media (min-width: 720px) {
+  .op-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.op-stat {
+  padding: 14px 16px 16px 0;
+  min-width: 0;
+}
+
+.op-stat + .op-stat { padding-left: 16px; border-left: 1px solid var(--rule); }
+
+@media (max-width: 719px) {
+  .op-stat:nth-child(odd) { padding-left: 0; border-left: 0; }
+  .op-stat:nth-child(n + 3) { border-top: 1px solid var(--rule); }
+}
+
+.op-stat dt {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1.1;
+}
+
+.op-stat dt span {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--op-muted);
+}
+
+.op-stat dd {
+  padding-top: 8px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(36px, 4.4vw, 52px);
+  line-height: 0.9;
+  white-space: nowrap;
+}
+
+.op-stats--inset .op-stat dd { font-size: clamp(28px, 3vw, 36px); }
+
+.op-stat dd em {
+  font-style: normal;
+  font-size: 0.45em;
+  padding-right: 4px;
+  color: var(--op-muted);
+}
+
+.op-stat--accent dd { color: var(--plate); }
+
+/* ------------------------------------------------------------------- rows */
+
+.op-rows > * {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(48px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.op-rows--plain > * { grid-template-columns: minmax(0, 1fr) auto; }
+
+.op-row__name {
+  min-width: 0;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.op-row__name small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--op-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.op-row__bar {
+  height: 8px;
+  background: var(--wash);
+}
+
+.op-row__bar span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+.op-row__value {
+  text-align: right;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.op-row__value small {
+  display: block;
+  padding-top: 3px;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--op-muted);
+}
+
+/* ------------------------------------------------------------------ empty */
+
+.op-empty {
+  padding: 28px 0 8px;
+  max-width: 56ch;
+}
+
+.op-empty b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.op-empty p {
+  max-width: 56ch;
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--op-muted);
+}
+
+.op-empty .op-btn { margin-top: 16px; }
+
+.op-empty--page {
+  max-width: none;
+  padding: 48px 0;
+  border-top: 3px solid var(--ink);
+}
+
+.op-empty--page b { font-size: clamp(28px, 4vw, 36px); }
+
+/* ---------------------------------------------------------------- buttons */
+
+.op-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  background: var(--plate);
+  color: #fff;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 16px;
+  transition: background var(--beat) var(--ease), transform var(--beat) var(--ease);
+}
+
+.op-btn:hover { background: #8d1a26; }
+.op-btn:active { transform: translateY(1px); }
+
+.op-btn:disabled {
+  background: var(--wash);
+  color: var(--op-muted);
+  cursor: default;
+  transform: none;
+}
+
+.op-btn--block { width: 100%; }
+
+.op-btn--ghost {
+  background: transparent;
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--ink);
+}
+
+.op-btn--ghost:hover { background: var(--panel); }
+
+.op-btn--ghost:disabled {
+  background: transparent;
+  color: var(--op-faint);
+  box-shadow: inset 0 0 0 2px var(--wash);
+}
+
+.op-link {
+  min-height: 44px;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--op-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.op-link:hover { color: var(--ink); }
+
+/* ------------------------------------------------------------------ forms */
+
+.op-form {
+  display: grid;
+  gap: 16px;
+}
+
+.op-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.op-field > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--op-muted);
+}
+
+.op-field input,
+.op-field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 12px;
+  font-family: var(--body);
+  font-size: 17px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid #8f8878;
+  border-radius: 0;
+  transition: border-color var(--beat) var(--ease), box-shadow var(--beat) var(--ease);
+}
+
+.op-field select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--ink) 50%), linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 21px, calc(100% - 13px) 21px;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.op-field input:hover,
+.op-field select:hover { border-color: var(--ink); }
+
+.op-field input:focus,
+.op-field select:focus {
+  outline: none;
+  border-color: var(--ink);
+  box-shadow: 0 0 0 3px rgba(168, 32, 47, 0.35);
+}
+
+.op-field input[aria-invalid='true'] { border-color: var(--plate); }
+
+.op-field__help {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--op-muted);
+}
+
+/* The register card is the one surface that is a box: it is a form you fill,
+   set apart from the list it adds to. */
+.op-sheet {
+  background: var(--panel);
+  border-top: 3px solid var(--ink);
+  padding: 20px;
+}
+
+.op-sheet h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.op-sheet h2 small {
+  display: block;
+  padding-top: 4px;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--op-muted);
+}
+
+.op-sheet .op-form { margin-top: 18px; }
+
+/* Plate: zone, lot, series, number, in the order they are painted. */
+.op-plate-fields {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr 1.35fr 1.15fr;
+  align-items: end;
+  gap: 8px;
+}
+
+.op-plate-fields .op-field input,
+.op-plate-fields .op-field select { padding-left: 8px; font-size: 16px; }
+
+.op-plate-fields .op-field select {
+  padding-right: 22px;
+  background-position: calc(100% - 13px) 21px, calc(100% - 8px) 21px;
+}
+
+.op-field input::placeholder { color: #9a9385; }
+
+@media (max-width: 420px) {
+  .op-plate-fields { grid-template-columns: 1fr 1fr; }
+}
+
+/* A painted plate. Red ground, white lettering, the way it reads on the bus. */
+.op-plate {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 132px;
+  padding: 6px 12px 5px;
+  background: var(--plate);
+  color: #fff;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85), inset 0 0 0 4px var(--plate);
+  line-height: 1;
+}
+
+.op-plate b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.op-plate small,
+.op-row__name .op-plate small {
+  display: block;
+  color: #fff;
+  white-space: nowrap;
+  padding-top: 3px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  opacity: 0.88;
+}
+
+.op-plate--big { min-width: 0; width: 100%; padding: 14px 12px 12px; }
+.op-plate--big b { font-size: 38px; }
+.op-plate--big small { font-size: 13px; }
+.op-plate--empty { background: var(--wash); color: var(--op-muted); box-shadow: inset 0 0 0 2px var(--rule); }
+.op-plate--empty small { color: var(--op-muted); }
+.op-row__name .op-plate { margin-bottom: 6px; }
+
+.op-routecard {
+  padding: 10px 12px;
+  background: var(--stock);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--op-muted);
+}
+
+.op-routecard b { color: var(--ink); }
+
+/* ------------------------------------------------------------------ fleet */
+
+.op-fleet > * {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.op-fleet__route b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.op-fleet__route span {
+  display: block;
+  font-size: 13px;
+  color: var(--op-muted);
+}
+
+.op-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.op-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.op-status--ok { color: var(--op-ok); }
+.op-status--stale { color: var(--op-warn); }
+.op-status--never { color: var(--op-muted); }
+
+.op-fleet__numbers {
+  display: flex;
+  gap: 20px;
+  text-align: right;
+}
+
+.op-fleet__numbers div {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.op-fleet__numbers small {
+  display: block;
+  padding-top: 3px;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--op-muted);
+}
+
+@media (max-width: 640px) {
+  .op-fleet > * { grid-template-columns: auto minmax(0, 1fr); }
+  .op-fleet__numbers { grid-column: 1 / -1; justify-content: flex-start; text-align: left; }
+}
+
+/* ----------------------------------------------------------------- routes */
+
+.op-routes > * {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.op-routes__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.op-routes__top b {
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 19px;
+  line-height: 1.15;
+}
+
+.op-routes__top span {
+  flex: none;
+  font-size: 13px;
+  color: var(--op-muted);
+}
+
+.op-routes__via {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--op-muted);
+}
+
+.op-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  vertical-align: 3px;
+  color: var(--op-muted);
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+/* ------------------------------------------------------------------ table */
+
+.op-table-scroll {
+  overflow-x: auto;
+  margin-top: 4px;
+}
+
+.op-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.op-table th {
+  padding: 10px 12px 10px 0;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--op-muted);
+  border-bottom: 1px solid var(--ink);
+  white-space: nowrap;
+}
+
+.op-table td {
+  padding: 11px 12px 11px 0;
+  border-bottom: 1px solid var(--rule);
+  white-space: nowrap;
+}
+
+.op-table .num { text-align: right; }
+.op-table th:last-child,
+.op-table td:last-child { padding-right: 0; }
+.op-table tbody tr:hover { background: rgba(255, 255, 255, 0.45); }
+.op-table .warn { color: var(--op-warn); font-weight: 700; }
+
+/* ------------------------------------------------------------------ chart */
+
+.op-chart { margin: 12px 0 0 -8px; }
+
+.op-tip {
+  background: var(--ink);
+  color: var(--stock);
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.op-tip b { display: block; font-family: var(--display); font-size: 17px; }
+
+/* ------------------------------------------------------------------- auth */
+
+.op-auth {
+  display: grid;
+  gap: 40px;
+  padding-top: 8vh;
+  padding-bottom: 8vh;
+}
+
+@media (min-width: 960px) {
+  .op-auth { grid-template-columns: minmax(0, 1fr) 420px; align-items: start; gap: 72px; }
+}
+
+.op-auth__pitch h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(40px, 6vw, 68px);
+  line-height: 0.92;
+}
+
+.op-auth__pitch p {
+  margin-top: 16px;
+  max-width: 46ch;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--op-muted);
+}
+
+.op-auth__pitch ul {
+  margin-top: 24px;
+  list-style: none;
+  border-top: 1px solid var(--rule);
+  max-width: 46ch;
+}
+
+.op-auth__pitch li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 15px;
+}
+
+.op-auth__pitch li b { font-family: var(--display); font-size: 18px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .op *,
+  .op *::before { transition: none !important; }
+}
