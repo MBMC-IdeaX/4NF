@@ -1,0 +1,631 @@
+/*
+  The public site, in the same register as the portals.
+
+  The old landing was a dark editorial spread: near-black ground, display type
+  at poster size, hard rules. It looked serious and it read as a manifesto. The
+  people who actually land here are a bus owner deciding whether this is real
+  and a passenger deciding whether to trust it with money — and what both of
+  them are unconsciously comparing it to is eSewa, Khalti or a bank's site:
+  light, rounded, friendly, obviously an app rather than a document.
+
+  So the ground turns over and the structure stays. Every figure on the page is
+  still computed from the same code the meter runs; nothing here changes a
+  claim. What changes is the medium, and one thing is kept from the old
+  treatment on purpose: the specimen receipt, perforations and all. It is the
+  clearest single illustration of what the product does, and as a card on a
+  light page it finally reads as an object rather than as the interface.
+
+  Loaded after surfaces.css, which it overrides.
+*/
+
+.site {
+  --s-bg: #ffffff;
+  --s-sunk: #f5f6f8;
+  --s-line: #e3e5ea;
+  --s-line-strong: #cfd3da;
+  --s-ink: #15181d;
+  --s-ink-2: #454b56;
+  --s-muted: #5f6673;
+  --s-faint: #868d9a;
+  --s-brand: #a8202f;
+  --s-brand-deep: #8a1926;
+  --s-brand-tint: #fcecee;
+  --s-ok: #0c6b46;
+  --s-ok-tint: #e7f4ee;
+
+  --s-r: 16px;
+  --s-r-lg: 24px;
+  --s-sh: 0 1px 2px rgba(17, 22, 31, 0.05), 0 1px 3px rgba(17, 22, 31, 0.04);
+  --s-sh-lift: 0 14px 40px rgba(17, 22, 31, 0.12), 0 3px 10px rgba(17, 22, 31, 0.06);
+
+  --s-width: 1140px;
+
+  background: var(--s-bg);
+  color: var(--s-ink);
+  font-family: var(--body);
+  font-size: 16.5px;
+  line-height: 1.55;
+}
+
+.site :focus-visible { outline: 3px solid var(--s-brand); outline-offset: 3px; border-radius: 8px; }
+
+/* =============================================================== header */
+
+.site__head {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: var(--s-width);
+  margin: 0 auto;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: saturate(160%) blur(12px);
+  border-bottom: 1px solid var(--s-line);
+}
+
+@media (min-width: 900px) { .site__head { padding: 14px 28px; } }
+
+.site__head { max-width: none; }
+
+.site__mark {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  color: var(--s-brand);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.site__mark span {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--s-faint);
+}
+
+.site__nav { display: flex; align-items: center; gap: 6px; }
+
+.site__nav button {
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--s-ink-2);
+  font-family: var(--body);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.site__nav button:hover { background: var(--s-sunk); color: var(--s-ink); }
+
+/* The last item in the nav is the one thing we want pressed. */
+.site__nav button:last-child {
+  background: var(--s-brand);
+  color: #fff;
+  padding: 0 18px;
+  box-shadow: var(--s-sh);
+}
+
+.site__nav button:last-child:hover { background: var(--s-brand-deep); color: #fff; }
+
+@media (max-width: 599px) {
+  .site__nav button:nth-child(2) { display: none; }
+  .site__mark span { display: none; }
+}
+
+/* ================================================================= hero */
+
+.hero {
+  max-width: var(--s-width);
+  margin: 0 auto;
+  padding: 48px 20px 40px;
+}
+
+@media (min-width: 900px) {
+  .hero--split {
+    display: grid;
+    grid-template-columns: 1.08fr 0.92fr;
+    gap: 64px;
+    align-items: center;
+    padding: 80px 28px 72px;
+  }
+}
+
+.hero__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--s-brand-tint);
+  color: var(--s-brand);
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.hero__line {
+  margin: 0 0 20px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(42px, 8.5vw, 74px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--s-ink);
+}
+
+.hero__line em { font-style: normal; color: var(--s-brand); }
+
+.hero__body {
+  margin: 0 0 28px;
+  max-width: 54ch;
+  color: var(--s-ink-2);
+  font-size: 17.5px;
+  line-height: 1.6;
+}
+
+.hero__ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.site__cta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+  min-height: 62px;
+  padding: 11px 22px;
+  border: 1px solid var(--s-brand);
+  border-radius: 14px;
+  background: var(--s-brand);
+  color: #fff;
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: 16.5px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--s-sh);
+  transition: transform 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+
+.site__cta small {
+  font-weight: 400;
+  font-size: 13px;
+  opacity: 0.88;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.site__cta:hover { background: var(--s-brand-deep); transform: translateY(-1px); box-shadow: var(--s-sh-lift); }
+.site__cta:active { transform: none; }
+
+.site__cta--quiet {
+  background: var(--s-bg);
+  border-color: var(--s-line-strong);
+  color: var(--s-ink);
+  box-shadow: none;
+}
+
+.site__cta--quiet:hover { background: var(--s-sunk); border-color: var(--s-faint); }
+.site__cta--quiet small { color: var(--s-muted); opacity: 1; }
+
+/* -------------------------------------------------------- the receipt */
+
+/*
+  Kept as printed matter, because that is what it is: the thing the passenger
+  ends up holding. On a light page it now reads as a specimen pinned to the
+  wall rather than as the product's interface.
+*/
+.specimen {
+  margin: 36px 0 0;
+  border-radius: 10px;
+  box-shadow: var(--s-sh-lift);
+  transform: rotate(-0.6deg);
+}
+
+@media (min-width: 900px) { .specimen { margin: 0; } }
+
+/* ================================================================ bands */
+
+/*
+  Alternating ground rather than rules. A band of very light grey separates two
+  sections more quietly than a line does, and costs nothing to read past.
+*/
+.site > section { max-width: var(--s-width); margin: 0 auto; padding: 56px 20px; }
+
+@media (min-width: 900px) { .site > section { padding: 76px 28px; } }
+
+.data,
+.how,
+.cost {
+  max-width: none;
+  background: var(--s-sunk);
+  border-top: 1px solid var(--s-line);
+  border-bottom: 1px solid var(--s-line);
+}
+
+.data__body,
+.how__steps,
+.fares__scroll,
+.accuracy-site__grid,
+.doors,
+.cost > * { max-width: var(--s-width); margin-left: auto; margin-right: auto; }
+
+.section__title {
+  margin: 0 0 8px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--s-ink);
+}
+
+.section__title span,
+.section__title small {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 16px;
+  color: var(--s-muted);
+  letter-spacing: 0;
+}
+
+/* ------------------------------------------------------------ prose */
+
+/*
+  `data__body` is a paragraph, not a grid — it carries the explanatory copy
+  under a section's title. (The four proof figures are `.strip`, further down.)
+*/
+.data__body {
+  max-width: 64ch;
+  color: var(--s-ink-2);
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.data__body + .data__body { margin-top: 14px; }
+
+/* --------------------------------------------------------------- steps */
+
+.how__steps {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+  list-style: none;
+}
+
+@media (min-width: 860px) { .how__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
+
+.how__steps > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: var(--s-bg);
+  border: 1px solid var(--s-line);
+  border-radius: var(--s-r);
+}
+
+.how__steps > li > *:first-child {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--s-brand-tint);
+  color: var(--s-brand);
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1;
+}
+
+.how__steps strong { display: block; margin-bottom: 3px; font-size: 16.5px; color: var(--s-ink); }
+.how__steps li > *:last-child { font-size: 15px; color: var(--s-ink-2); }
+
+/* --------------------------------------------------------------- tables */
+
+.fares__table,
+.accuracy-site__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--s-bg);
+  font-size: 15px;
+}
+
+.fares__scroll { overflow-x: auto; border: 1px solid var(--s-line); border-radius: var(--s-r); }
+
+.fares__table th,
+.accuracy-site__table th {
+  padding: 13px 16px;
+  background: var(--s-sunk);
+  color: var(--s-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--s-line);
+}
+
+.fares__table td,
+.accuracy-site__table td,
+.accuracy-site__table th[scope='row'] {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--s-line);
+  color: var(--s-ink);
+}
+
+.accuracy-site__table th[scope='row'] {
+  background: none;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--s-ink-2);
+}
+
+.fares__table tbody tr:last-child td,
+.accuracy-site__table tbody tr:last-child td,
+.accuracy-site__table tbody tr:last-child th { border-bottom: 0; }
+
+.fares__table tbody tr:hover { background: var(--s-sunk); }
+
+/* A saving is the good news on this page, so it is the only green — and only
+   in the column that states it. Scoped to the last cell because the first one
+   carries the stop's English name in the same element. */
+.fares__table td:last-child span,
+.fares__table td:last-child small {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--s-ok-tint);
+  color: var(--s-ok);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------- doors */
+
+.doors {
+  display: grid;
+  gap: 14px;
+  margin-top: 28px;
+  list-style: none;
+}
+
+@media (min-width: 860px) { .doors { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+.doors > li {
+  padding: 22px 20px;
+  background: var(--s-bg);
+  border: 1px solid var(--s-line);
+  border-radius: var(--s-r);
+}
+
+.doors > li > *:first-child {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--display);
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--s-ink);
+}
+
+.doors > li > *:last-child { font-size: 15px; color: var(--s-ink-2); }
+
+/* ------------------------------------------------------------ accuracy */
+
+@media (min-width: 900px) {
+  .accuracy-site__grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 44px; align-items: start; }
+}
+
+.accuracy-site__grid > div:first-child p { margin-bottom: 16px; max-width: 62ch; color: var(--s-ink-2); }
+
+.accuracy-site__table { border: 1px solid var(--s-line); border-radius: var(--s-r); overflow: hidden; }
+
+.accuracy-site__table caption {
+  padding: 0 0 10px;
+  text-align: left;
+  font-size: 13.5px;
+  color: var(--s-muted);
+}
+
+.accuracy-site__table caption code {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--s-sunk);
+  font-size: 12.5px;
+  color: var(--s-ink-2);
+}
+
+/* ---------------------------------------------------------------- cost */
+
+.cost p { max-width: 68ch; color: var(--s-ink-2); font-size: 16.5px; }
+.cost p + p { margin-top: 14px; }
+
+/* ================================================================ footer */
+
+.site__foot {
+  max-width: none;
+  padding: 36px 20px 48px;
+  background: var(--s-ink);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  text-align: center;
+}
+
+.site__foot > *:first-child {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  color: #fff;
+}
+
+/* =============================================================== motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .site *,
+  .site *::before,
+  .site *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+  .specimen { transform: none; }
+}
+
+/* ===================================================== sections that were
+   built for a dark ground
+
+   The old page was near-black, so several blocks set their own dark panel and
+   light text. On a white page those became either a black slab in the middle of
+   the flow or grey-on-white at 2:1. Each one is turned over here rather than
+   left to inherit.
+*/
+
+/* The proof numbers under the hero. One light surface, hairline-split, with the
+   figure carrying the weight instead of the background. */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: var(--s-width);
+  margin: 0 auto;
+  padding: 0 20px 8px;
+  background: none;
+  border: 0;
+  gap: 0;
+}
+
+@media (min-width: 900px) { .strip { grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 0 28px 16px; } }
+
+.strip__item {
+  padding: 22px 20px;
+  background: var(--s-bg);
+  border: 1px solid var(--s-line);
+  border-radius: 0;
+  margin: 0 0 -1px -1px;
+  color: var(--s-ink);
+}
+
+.strip__item:first-child { border-radius: var(--s-r) 0 0 0; }
+.strip__item:last-child { border-radius: 0 0 var(--s-r) 0; }
+
+@media (min-width: 900px) {
+  .strip__item:first-child { border-radius: var(--s-r) 0 0 var(--s-r); }
+  .strip__item:last-child { border-radius: 0 var(--s-r) var(--s-r) 0; }
+}
+
+.strip__item b {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(32px, 5vw, 42px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--s-brand);
+}
+
+.strip__item span { display: block; font-size: 14px; line-height: 1.45; color: var(--s-muted); }
+
+/* Who has to trust it. Four roles as cards, so the claim and the detail stop
+   fighting each other for the same grey. */
+.trust,
+.fares,
+.accuracy-site,
+.doors,
+.how,
+.cost,
+.data { max-width: var(--s-width); }
+
+.trust__list { display: grid; gap: 14px; margin-top: 28px; }
+
+@media (min-width: 860px) { .trust__list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; } }
+
+.trust__list > div {
+  display: block;
+  gap: 0;
+  padding: 22px 20px;
+  background: var(--s-bg);
+  border: 1px solid var(--s-line);
+  border-top: 1px solid var(--s-line);
+  border-radius: var(--s-r);
+}
+
+.trust__list dt { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+
+.trust__list dt b { font-size: 24px; color: var(--s-brand); }
+
+.trust__list dt small { font-size: 13px; color: var(--s-faint); }
+
+.trust__list dd { margin: 0; color: var(--s-ink-2); font-size: 15px; max-width: none; }
+
+.trust__list dd strong {
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 16.5px;
+  line-height: 1.4;
+  color: var(--s-ink);
+  padding-bottom: 6px;
+}
+
+/* The step list under "what actually happens on the bus". */
+.how__steps li {
+  grid-template-columns: none;
+  border-top: 0;
+}
+
+.how__steps li > b,
+.how__steps li > span:first-child {
+  background: var(--s-brand-tint);
+  color: var(--s-brand);
+}
+
+/* Anything still drawing the old hairline colour. */
+.site [style*='2c2822'],
+.trust__list > div,
+.how__steps > li,
+.doors > li { border-color: var(--s-line); }
+
+.site__foot { border-top: 0; display: block; }
+.site__foot > * { color: rgba(255, 255, 255, 0.72); }
+
+/* The stop's English name under the Nepali one: a quiet caption, not a badge. */
+.fares__table td:first-child span,
+.fares__table td:first-child small {
+  display: block;
+  margin: 2px 0 0;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  color: var(--s-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* The fare the stage table charges today, struck through where the meter is
+   cheaper. Muted rather than red: it is the old number, not a warning. */
+.fares__table td s,
+.fares__table del { color: var(--s-faint); text-decoration-thickness: 1px; }
+
+/* The sticky section title clears the new header height. */
+.section__title { top: 78px; }
