@@ -1,0 +1,82 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+dist
+.playwright-mcp
+
+.env.local
+
+.pgdata
+
+.vercel
+.env*
+
+# agent tooling
+.claude/
+CLAUDE.md
+
+# scratch decks and duplicate screenshots (canonical set lives in docs/screens)
+Bhada-*.html
+Bhada-*.pptx
+B1-busloader.png
+D1-dashboard.png
+L1-landing.png
+L2-landing-desktop.png
+L3-landing-desktop.png
+L4-copy.png
+M1-meter-console.png
+M2-terminal-pass.png
+M3-terminal-fare.png
+p1-picker-boarding.png
+p2-picker-fares.png
+qr-bhada.png
+
+# python bytecode
+__pycache__/
+*.pyc
+
+# Screenshots and traces taken while working on the UI. They belong in the
+# scratchpad, not in the repository — a previous commit swept a handful of them
+# in before this rule existed.
+/*.png
+.playwright-mcp/
+.bench/
