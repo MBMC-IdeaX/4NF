@@ -1,0 +1,31 @@
+# Every push and pull request runs the four proofs, checks the Edge Function's
+# copy of protocol/ is current, and builds the site.
+#
+# Vercel builds production from the same push, and its build command runs
+# proof:all first, so a red proof also stops the deploy. This workflow is where
+# the failure is easy to read.
+name: proofs
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  proofs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run proof:all
+      - name: Edge Function protocol copy is current
+        run: |
+          npm run sync:protocol
+          git diff --exit-code -- supabase/functions/_shared/protocol \
+            || { echo "::error::Run npm run sync:protocol and commit the result."; exit 1; }
+      - run: npm run build
