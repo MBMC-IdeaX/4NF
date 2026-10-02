@@ -1,0 +1,10 @@
+# /etc/systemd/system/bhada-rtc-sync.timer
+[Unit]
+Description=Keep the DS3231 on network time when there is a network
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+
+[Install]
+WantedBy=timers.target

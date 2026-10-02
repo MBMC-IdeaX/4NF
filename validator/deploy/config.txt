@@ -1,0 +1,16 @@
+# Append to /boot/firmware/config.txt on Raspberry Pi OS Bookworm (Lite, 64-bit).
+
+# UART0 (PL011) on GPIO 14/15 for the PN532. Bluetooth gives it up.
+enable_uart=1
+dtoverlay=disable-bt
+
+# I2C for the DS3231, bound to the kernel's rtc-ds1307 driver as /dev/rtc0.
+dtparam=i2c_arm=on
+dtoverlay=i2c-rtc,ds3231
+
+# SPI0 for the ILI9341, as a 320x240 16-bit framebuffer at /dev/fb1.
+# DC on GPIO 24, RESET on GPIO 25. rotate=90 gives landscape; if the picture is
+# upside down use rotate=270. Check the result with:
+#   cat /sys/class/graphics/fb1/virtual_size   ->  320,240
+dtparam=spi=on
+dtoverlay=fbtft,spi0-0,ili9341,dc_pin=24,reset_pin=25,rotate=90,speed=32000000

@@ -1,0 +1,8 @@
+# /etc/systemd/system/bhada-rtc-sync.service
+# Writes the network's time back to the DS3231, only when NTP has synchronised.
+[Unit]
+Description=Write NTP time to the DS3231
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'timedatectl show -p NTPSynchronized --value | grep -qx yes && /sbin/hwclock --systohc --utc || true'

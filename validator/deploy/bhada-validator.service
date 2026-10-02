@@ -1,0 +1,29 @@
+# /etc/systemd/system/bhada-validator.service
+#
+# Starts at boot, restarts two seconds after any exit, and sets the system clock
+# from the DS3231 before the validator reads it. The '+' runs that one command
+# with full privileges; the validator itself runs as an unprivileged user.
+
+[Unit]
+Description=Bhada door validator
+After=local-fs.target var-lib-bhada.mount
+Wants=var-lib-bhada.mount
+
+[Service]
+Type=simple
+User=bhada
+Group=bhada
+SupplementaryGroups=dialout gpio video i2c
+WorkingDirectory=/opt/bhada
+EnvironmentFile=/etc/bhada/validator.env
+ExecStartPre=+-/sbin/hwclock --hctosys --utc
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning --import ./validator/register.mjs validator/main.mjs
+Restart=always
+RestartSec=2
+# Three serial lines are open for as long as the process lives.
+Environment=UV_THREADPOOL_SIZE=8
+KillSignal=SIGTERM
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
