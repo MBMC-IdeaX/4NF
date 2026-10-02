@@ -1,0 +1,1532 @@
+/*
+  The meter console and the door terminals.
+
+  Same world as the ticket surfaces — plate red, stamp black, recycled stock —
+  but a different register. Those are printed matter; this is an instrument.
+  Instruments are dark because they are read at night through a windscreen, they
+  rule their fields rather than card them, and they never animate a number that
+  a person might be about to act on.
+
+  Three rules hold the whole thing together:
+    1. Every readout is tabular. A figure that reflows as it counts is unreadable
+       at a glance, which is the only way anyone reads this screen.
+    2. Colour means state, never decoration. Green, amber and red appear on
+       exactly the things that can be wrong.
+    3. No shadows, no rounded cards, no gradients. Depth comes from rules.
+*/
+
+:root {
+  --instrument: #0f0e0c;   /* the panel itself, a shade under --ink */
+  --instrument-2: #17150f; /* a field inset into it */
+  --etch: #2b2721;         /* hairline between fields */
+  --etch-bright: #453f34;
+  --read: #ece7d8;         /* primary readout */
+  --read-dim: #8e8779;     /* labels, units, secondary */
+  --live: #6fbf73;         /* good: locked, clear, settled */
+  --caution: #e0a437;      /* degraded, near capacity, estimated */
+  --halt: #d7514b;         /* full, refused, overridden */
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
+}
+
+/* ================================================================= console */
+
+.panel {
+  min-height: 100%;
+  background: var(--instrument);
+  color: var(--read);
+  padding-bottom: 40px;
+}
+
+.panel__head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 14px var(--gutter);
+  border-bottom: 1px solid var(--etch);
+  position: sticky;
+  top: 0;
+  background: var(--instrument);
+  z-index: 5;
+}
+
+.panel__plate {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  background: var(--plate);
+  color: #fff;
+  padding: 6px 10px;
+  font-family: var(--display);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.panel__plate b {
+  font-size: 20px;
+  letter-spacing: 0.04em;
+}
+
+.panel__ident {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.panel__ident b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 1.1;
+}
+
+.panel__ident small {
+  color: var(--read-dim);
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.panel__chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  align-items: center;
+}
+
+.chip {
+  border: 1px solid var(--etch-bright);
+  padding: 4px 9px;
+  min-width: 74px;
+}
+
+.chip small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+}
+
+.chip b {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chip--ok b { color: var(--live); }
+.chip--warn b { color: var(--caution); }
+.chip--bad b { color: var(--halt); }
+
+.panel__away {
+  color: var(--read-dim);
+  border: 1px solid var(--etch-bright);
+  padding: 8px 12px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/*
+  Cards are ruled, not gapped. A 1px grid gap over a lighter ground looks right
+  until a row is short one card, at which point the empty track shows as a grey
+  block that reads like a broken panel. Borders on the cards themselves leave
+  the empty track looking like what it is: panel.
+
+  `dense` because the wide cards would otherwise leave a hole every time one
+  will not fit the remaining columns.
+*/
+.panel__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  grid-auto-flow: row dense;
+  align-items: start;
+  background: var(--instrument);
+  border-bottom: 1px solid var(--etch);
+}
+
+.card {
+  background: var(--instrument);
+  padding: 18px var(--gutter) 22px;
+  min-width: 0;
+  border-right: 1px solid var(--etch);
+  border-bottom: 1px solid var(--etch);
+}
+
+@media (min-width: 900px) {
+  .card--wide { grid-column: span 2; }
+}
+
+.card__title {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 19px;
+  line-height: 1.15;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.card__title span {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--read-dim);
+  letter-spacing: 0;
+}
+
+.card__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.card__row button {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--etch);
+  background: transparent;
+  color: var(--read-dim);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.card__note {
+  margin-top: 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--read-dim);
+  border-top: 1px solid var(--etch);
+  padding-top: 10px;
+}
+
+.card__empty {
+  color: var(--read-dim);
+  font-size: 13px;
+  padding: 18px 0;
+  border-top: 1px solid var(--etch);
+}
+
+/* --------------------------------------------------------------- readouts */
+
+.readouts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1px;
+  background: var(--etch);
+  border: 1px solid var(--etch);
+}
+
+.readout {
+  background: var(--instrument-2);
+  padding: 12px 14px 10px;
+}
+
+.readout small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+}
+
+.readout b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1.05;
+  margin: 2px 0 1px;
+}
+
+.readout--big b { font-size: 46px; }
+
+.readout b span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--read-dim);
+  margin-left: 4px;
+}
+
+.readout em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--read-dim);
+}
+
+.readout--warn b { color: var(--caution); }
+.readout--bad b,
+.readout--bad em { color: var(--halt); }
+
+.gauge {
+  display: flex;
+  gap: 2px;
+  margin-top: 12px;
+  height: 16px;
+}
+
+.gauge__cell {
+  flex: 1;
+  border: 1px solid var(--etch-bright);
+}
+
+.gauge__cell--full {
+  background: var(--live);
+  border-color: var(--live);
+}
+
+/* --------------------------------------------------------------- corridor */
+
+.corridor {
+  position: relative;
+  /* The first and last stage names sit centred on the rail's endpoints, so the
+     rail needs half a label of room on each side or they clip. */
+  padding: 22px 42px 54px;
+}
+
+.corridor__rail {
+  position: relative;
+  height: 3px;
+  background: var(--etch-bright);
+}
+
+.corridor__tick {
+  position: absolute;
+  top: -4px;
+  width: 1px;
+  height: 11px;
+  background: var(--read-dim);
+}
+
+.corridor__bus {
+  position: absolute;
+  top: -7px;
+  width: 18px;
+  height: 17px;
+  margin-left: -9px;
+  background: var(--plate);
+  transition: left 900ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corridor__bus { transition: none; }
+}
+
+.corridor__names {
+  position: relative;
+  list-style: none;
+  height: 44px;
+  margin-top: 10px;
+}
+
+.corridor__names li {
+  position: absolute;
+  transform: translateX(-50%);
+  text-align: center;
+  width: 78px;
+}
+
+.corridor__names b {
+  display: block;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.corridor__names small {
+  font-size: 10px;
+  color: var(--read-dim);
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--etch);
+  border: 1px solid var(--etch);
+}
+
+.kv > div {
+  background: var(--instrument-2);
+  padding: 8px 12px;
+}
+
+.kv dt {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+}
+
+.kv dd { font-size: 14px; }
+
+.kv--tight > div { padding: 6px 10px; }
+.kv--tight dd { font-size: 12px; font-family: var(--mono); }
+
+/* --------------------------------------------------------------- accuracy */
+
+.accuracy__row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.truth {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin-top: 14px;
+  background: var(--etch);
+  border: 1px solid var(--etch);
+}
+
+.truth > div {
+  background: var(--instrument-2);
+  padding: 10px 12px;
+}
+
+.truth small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+}
+
+.truth b {
+  font-family: var(--display);
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--read);
+}
+
+.truth--ok b { color: var(--live); }
+.truth--off b { color: var(--caution); }
+
+.recorder {
+  margin-top: 14px;
+  border-top: 1px solid var(--etch);
+  padding-top: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--read-dim);
+}
+
+.recorder > button,
+.recorder__row button {
+  margin-top: 10px;
+  border: 1px solid var(--etch-bright);
+  padding: 11px 14px;
+  min-height: 44px;
+  font-size: 13px;
+  color: var(--read);
+}
+
+.recorder__row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.recorder__row input {
+  flex: 1 1 220px;
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--instrument-2);
+  border: 1px solid var(--etch-bright);
+  color: var(--read);
+  font: inherit;
+}
+
+.recorder__row .quiet {
+  width: auto;
+  display: inline-block;
+}
+
+.recorder code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--read);
+}
+
+@media (max-width: 560px) {
+  .truth b { font-size: 20px; }
+}
+
+/* ------------------------------------------------------------------ doors */
+
+.door {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--etch-bright);
+  margin-bottom: 8px;
+  border-left-width: 4px;
+}
+
+.door--open { border-left-color: var(--live); }
+.door--locked { border-left-color: var(--halt); }
+.door--closed { border-left-color: var(--etch-bright); }
+.door--override { border-left-color: var(--caution); }
+
+.door__id b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.door__id small {
+  display: block;
+  font-size: 10px;
+  color: var(--read-dim);
+}
+
+.door__state {
+  flex: 1;
+  min-width: 0;
+}
+
+.door__state b {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+
+.door--locked .door__state b { color: var(--halt); }
+.door--open .door__state b { color: var(--live); }
+
+.door__state small {
+  display: block;
+  font-size: 11px;
+  color: var(--read-dim);
+}
+
+.door__cmd {
+  border: 1px solid var(--etch-bright);
+  padding: 10px 14px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  min-height: 44px;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 10px;
+  font-size: 12px;
+  color: var(--read-dim);
+}
+
+.stepper > div {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.stepper button {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--etch-bright);
+  font-size: 18px;
+}
+
+.stepper b {
+  min-width: 52px;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 24px;
+  color: var(--read);
+}
+
+.quiet,
+.danger {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--etch-bright);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  min-height: 48px;
+}
+
+.quiet { color: var(--read-dim); }
+
+.danger {
+  border-color: var(--halt);
+  color: var(--halt);
+}
+
+.danger--on {
+  background: var(--halt);
+  color: #fff;
+}
+
+.confirm {
+  border: 1px solid var(--halt);
+  padding: 12px;
+}
+
+.confirm p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--read-dim);
+  margin-bottom: 10px;
+}
+
+.confirm > div {
+  display: grid;
+  gap: 6px;
+}
+
+/* ------------------------------------------------------------------ table */
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.grid th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+  font-weight: 500;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--etch-bright);
+}
+
+.grid td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--etch);
+  vertical-align: top;
+}
+
+.grid td b { font-weight: 600; }
+
+.grid td small {
+  display: block;
+  font-size: 10px;
+  color: var(--read-dim);
+  font-family: var(--mono);
+}
+
+.grid__fare {
+  font-family: var(--display);
+  font-size: 17px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--etch-bright);
+  padding: 1px 6px;
+}
+
+.badge--odometer { border-color: var(--live); color: var(--live); }
+.badge--gps { border-color: var(--caution); color: var(--caution); }
+.badge--stage { border-color: var(--read-dim); color: var(--read-dim); }
+
+/* ----------------------------------------------------------------- people */
+
+.people {
+  list-style: none;
+  border-top: 1px solid var(--etch);
+}
+
+.people li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--etch);
+}
+
+.people b { font-size: 14px; }
+
+.people small {
+  display: block;
+  font-size: 11px;
+  color: var(--read-dim);
+}
+
+/* -------------------------------------------------------------- telemetry */
+
+.hex {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  line-height: 1.6;
+  color: var(--live);
+  background: var(--instrument-2);
+  border: 1px solid var(--etch-bright);
+  padding: 12px;
+  margin-bottom: 12px;
+  /* Wrap on the byte-group spaces rather than scrolling: the whole point of
+     printing the frame is that someone can read all 32 bytes at once. */
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ------------------------------------------------------------------- tape */
+
+.tape {
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  max-height: 320px;
+  overflow-y: auto;
+  border-top: 1px solid var(--etch);
+}
+
+.tape li {
+  display: grid;
+  grid-template-columns: 72px 76px 1fr;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--etch);
+  color: var(--read-dim);
+}
+
+.tape li b {
+  color: var(--read-dim);
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding-top: 1px;
+}
+
+.tape li span { color: var(--read); }
+.tape--warn span { color: var(--caution); }
+.tape--alarm span { color: var(--halt); }
+
+/* ------------------------------------------------------------------ bench */
+
+.bench {
+  display: grid;
+  gap: 6px;
+}
+
+.bench button {
+  text-align: left;
+  border: 1px solid var(--etch-bright);
+  padding: 11px 13px;
+  font-size: 13px;
+  min-height: 48px;
+}
+
+.bench button small {
+  display: block;
+  font-size: 11px;
+  color: var(--read-dim);
+  margin-top: 2px;
+}
+
+.bench__on {
+  border-color: var(--live);
+  color: var(--live);
+}
+
+.bench__end {
+  border-color: var(--caution);
+  color: var(--caution);
+}
+
+/* ------------------------------------------------------------------ sheet */
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 9, 8, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gutter);
+  z-index: 40;
+}
+
+.sheet__body {
+  background: var(--instrument);
+  border: 1px solid var(--etch-bright);
+  padding: 20px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.sheet__body h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.sheet__body p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--read-dim);
+  margin-bottom: 12px;
+}
+
+.sheet__body img {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto 12px;
+  background: #fff;
+  padding: 8px;
+}
+
+.sheet__body textarea,
+.sheet__body input,
+.sheet__body select {
+  width: 100%;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--instrument-2);
+  color: var(--read);
+  border: 1px solid var(--etch-bright);
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.sheet__body label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sheet__body label span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+  margin-bottom: 4px;
+}
+
+.sheet__body button {
+  width: 100%;
+  border: 1px solid var(--etch-bright);
+  padding: 12px;
+  min-height: 48px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.sheet__row {
+  display: grid;
+  gap: 6px;
+}
+
+/* ================================================================ terminal */
+
+.term {
+  min-height: 100%;
+  background: var(--instrument);
+  color: var(--read);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 24px;
+}
+
+.term__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px var(--gutter);
+  border-bottom: 1px solid var(--etch);
+}
+
+.term__door {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  border: 1px solid var(--etch-bright);
+  padding: 6px 12px;
+}
+
+.term__door b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.term__door small { font-size: 10px; color: var(--read-dim); }
+
+.term__flags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.flag {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--etch-bright);
+  padding: 3px 7px;
+  color: var(--read-dim);
+}
+
+.flag--ok { border-color: var(--live); color: var(--live); }
+.flag--warn { border-color: var(--caution); color: var(--caution); }
+.flag--bad { border-color: var(--halt); color: var(--halt); }
+
+.term__state {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 1px;
+  background: var(--etch);
+  border-bottom: 1px solid var(--etch);
+}
+
+.term__state > div {
+  background: var(--instrument-2);
+  padding: 9px 12px;
+}
+
+.term__state dt {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+}
+
+.term__state dd {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.term__state dd.is-full { color: var(--halt); }
+
+.term__state--quiet {
+  display: block;
+  padding: 12px var(--gutter);
+  font-size: 12px;
+  color: var(--caution);
+  border-bottom: 1px solid var(--etch);
+}
+
+/* The one target. Deliberately enormous: it is pressed by someone hanging off
+   a step with one hand, and every millimetre of it is the difference between a
+   fare collected and a fare waved through. */
+.term__tap {
+  margin: var(--gutter);
+  min-height: 210px;
+  border: 2px solid var(--read);
+  background: var(--read);
+  color: var(--instrument);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.term__tap b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 44px;
+  line-height: 1;
+}
+
+.term__tap span { font-size: 13px; }
+
+.term__tap:active {
+  background: var(--live);
+  border-color: var(--live);
+}
+
+.term__tap:disabled {
+  background: var(--instrument);
+  color: var(--halt);
+  border-color: var(--halt);
+}
+
+.term--alighting .term__tap {
+  background: var(--instrument);
+  color: var(--read);
+}
+
+.term__paste,
+.term__log {
+  margin: 0 var(--gutter);
+}
+
+/* A cash rider: the conductor's second most common action after watching the
+   door, so a real target, in the caution colour cash has always been. */
+.term__cash {
+  margin: 0 var(--gutter);
+  min-height: var(--tap);
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 12px 16px;
+  border: 2px solid var(--caution);
+  background: transparent;
+  color: var(--read);
+  text-align: left;
+}
+
+.term__cash b {
+  font: 700 28px/1 var(--display);
+  color: var(--caution);
+}
+
+.term__cash span {
+  font-size: 14px;
+  color: var(--read-dim);
+}
+
+.term__cash-stops {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.term__cash-stops button {
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 8px 12px;
+  border: 1px solid var(--etch);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.term__cash-stops button small { color: var(--read-dim); }
+
+.term__cash-stops button.is-on {
+  border-color: var(--caution);
+  box-shadow: inset 4px 0 0 var(--caution);
+}
+
+.term__paste {
+  color: var(--read-dim);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--etch);
+  padding: 12px;
+  min-height: 44px;
+}
+
+.term__log {
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--read-dim);
+  margin-bottom: 12px;
+}
+
+.term__log li {
+  display: grid;
+  grid-template-columns: 66px 1fr;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--etch);
+}
+
+.term__log .is-warn { color: var(--caution); }
+.term__log .is-alarm { color: var(--halt); }
+
+.term__unpaired {
+  padding: var(--gutter);
+  display: grid;
+  gap: 10px;
+}
+
+.term__unpaired h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--caution);
+}
+
+.term__unpaired p {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--read-dim);
+}
+
+.term__unpaired button {
+  border: 1px solid var(--read);
+  padding: 14px;
+  min-height: 52px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ cards */
+
+.cards {
+  padding: 0 var(--gutter) 16px;
+}
+
+.cards h2 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 17px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 10px;
+}
+
+.cards h2 span {
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--read-dim);
+}
+
+.cards__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+.cards__card {
+  border: 1px solid var(--etch-bright);
+  padding: 12px 10px;
+  min-height: 64px;
+  text-align: left;
+}
+
+.cards__card b { display: block; font-size: 14px; }
+
+.cards__card small {
+  display: block;
+  font-size: 10px;
+  color: var(--read-dim);
+  margin-top: 2px;
+}
+
+.cards__card--riding {
+  border-color: var(--live);
+  color: var(--live);
+}
+
+.cards__card--riding small { color: var(--live); }
+
+.cards__card--new {
+  border-style: dashed;
+  color: var(--read-dim);
+}
+
+.cards p {
+  font-size: 11px;
+  color: var(--read-dim);
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* ---------------------------------------------------------------- verdict */
+
+.result {
+  flex: 1;
+  margin: var(--gutter);
+  padding: 22px 18px;
+  border: 2px solid var(--etch-bright);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.result b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 46px;
+  line-height: 1;
+}
+
+.result span { font-size: 14px; color: var(--read-dim); }
+
+.result small {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+}
+
+.result--yes,
+.result--in { border-color: var(--live); }
+.result--yes b,
+.result--in b { color: var(--live); }
+
+.result--no { border-color: var(--halt); }
+.result--no b { color: var(--halt); }
+
+.result--out { border-color: var(--read); }
+
+.result img {
+  width: 100%;
+  max-width: 260px;
+  background: #fff;
+  padding: 8px;
+}
+
+.result dl,
+.result ul {
+  width: 100%;
+  list-style: none;
+  border-top: 1px solid var(--etch);
+}
+
+.result dl > div,
+.result ul li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--etch);
+  font-size: 12px;
+  text-align: left;
+}
+
+.result dt,
+.result ul li span {
+  color: var(--read-dim);
+  font-size: 12px;
+}
+
+.result dd,
+.result ul li b {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.result p {
+  font-size: 12px;
+  color: var(--read-dim);
+  line-height: 1.5;
+}
+
+.result__note { color: var(--caution); }
+
+.result__receipt {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 100%;
+  border-top: 1px solid var(--etch);
+  padding-top: 12px;
+}
+
+.result__receipt p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--read-dim);
+  text-align: center;
+  max-width: 34ch;
+}
+
+.term__upload {
+  margin: 0 var(--gutter);
+}
+
+.term__upload button {
+  width: 100%;
+  border: 1px solid var(--etch-bright);
+  padding: 12px;
+  min-height: 44px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--read);
+}
+
+.term__upload p {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--read-dim);
+}
+
+.result > button {
+  width: 100%;
+  margin-top: auto;
+  border: 1px solid var(--read);
+  padding: 14px;
+  min-height: 52px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------- scanner */
+
+.scan {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+
+.scan video {
+  flex: 1;
+  width: 100%;
+  object-fit: cover;
+}
+
+.scan__reticle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 62vw;
+  height: 62vw;
+  max-width: 300px;
+  max-height: 300px;
+  transform: translate(-50%, -60%);
+  pointer-events: none;
+}
+
+.scan__reticle i {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--read);
+}
+
+.scan__reticle i:nth-child(1) { top: 0; left: 0; border-right: 0; border-bottom: 0; }
+.scan__reticle i:nth-child(2) { top: 0; right: 0; border-left: 0; border-bottom: 0; }
+.scan__reticle i:nth-child(3) { bottom: 0; left: 0; border-right: 0; border-top: 0; }
+.scan__reticle i:nth-child(4) { bottom: 0; right: 0; border-left: 0; border-top: 0; }
+
+.scan p {
+  padding: 14px var(--gutter);
+  color: var(--read);
+  font-size: 13px;
+  text-align: center;
+}
+
+.scan button {
+  border-top: 1px solid var(--etch);
+  padding: 16px;
+  color: var(--read);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  min-height: 56px;
+}
+
+/* ------------------------------------------------------------ door picker */
+
+.pick {
+  min-height: 100%;
+  background: var(--instrument);
+  color: var(--read);
+  padding: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  justify-content: center;
+}
+
+.pick h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.pick h1 span {
+  display: block;
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--read-dim);
+  margin-top: 6px;
+}
+
+.pick > button {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--etch-bright);
+  padding: 18px;
+  min-height: 84px;
+  text-align: left;
+}
+
+.pick > button b {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1;
+  width: 44px;
+}
+
+.pick > button span {
+  font-family: var(--display);
+  font-size: 20px;
+}
+
+.pick > button small {
+  display: block;
+  font-family: var(--body);
+  font-size: 12px;
+  color: var(--read-dim);
+}
+
+.pick p {
+  font-size: 12px;
+  color: var(--read-dim);
+  line-height: 1.5;
+}
+
+.pick__away {
+  color: var(--read-dim);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--etch);
+  padding: 12px;
+  min-height: 44px;
+}
+
+/* --------------------------------------------------------- launch buttons */
+
+.launch__aways {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 6px;
+}
+
+/* ---------------------------------------------------- transit mode
+
+   The same door terminal, for a phone being held at arm's length in Kathmandu
+   daylight by somebody with one hand on a rail and a queue pushing.
+
+   Three changes, and only three, because a mode that rearranges the screen is a
+   mode the crew has to learn twice:
+
+     - the figures that matter get much bigger. Occupancy and the fare are the
+       two numbers a conductor reads mid-tap, and at 20px in sun they are not
+       read, they are guessed at.
+     - every control clears 84px in both directions, which is a thumb with a
+       glove or a wet hand on a lurching bus.
+     - the mid-greys go. Dim text on a dark panel is legible indoors and gone
+       outdoors, so in this mode everything is either full white or the one
+       colour that carries its meaning — live, caution, halt.
+
+   Nothing moves. A conductor switching modes mid-shift finds every target where
+   it was, only larger. */
+
+.term--transit .flag,
+.term--transit .term__state dt {
+  color: var(--read);
+  font-size: 12px;
+}
+
+.term--transit .term__door b { font-size: 34px; }
+.term--transit .term__door small { color: var(--read); font-size: 12px; }
+
+.term--transit .term__state dd {
+  font-size: 46px;
+  line-height: 1;
+}
+
+.term--transit .term__state > div { padding: 14px 12px; }
+
+.term--transit .term__tap {
+  min-height: 280px;
+}
+
+.term--transit .term__tap b {
+  font-size: 72px;
+}
+
+.term--transit .term__tap span { font-size: 17px; }
+
+/* Every control, not only the big one: the small quiet buttons are the ones a
+   fat thumb misses, and missing them mid-queue is what makes a crew stop using
+   the machine. */
+.term--transit button,
+.term--transit .flag--toggle {
+  min-height: 84px;
+  min-width: 84px;
+  font-size: 17px;
+}
+
+.term--transit .term__door {
+  min-height: 84px;
+}
+
+/* The verdict, which is the whole point of the screen. */
+.term--transit .result b { font-size: 60px; }
+.term--transit .result span,
+.term--transit .result p { font-size: 17px; color: var(--read); }
+
+.flag--toggle {
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.flag--toggle.flag--on {
+  border-color: var(--live);
+  color: var(--live);
+}
+
+/* ------------------------------------------------- the regulator's return
+
+   A return is read across, not down: a row is one vehicle on one day and every
+   column on it is a number somebody will check against another number. So the
+   table scrolls sideways on a phone rather than wrapping, because a wrapped
+   figure in a regulatory filing is a figure in the wrong column. */
+
+.table-scroll {
+  overflow-x: auto;
+  margin: 12px 0;
+  border: 1px solid var(--etch);
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.ledger-table th {
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--read-dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--etch);
+  background: var(--instrument-2);
+}
+
+.ledger-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--etch);
+}
+
+.ledger-table tr:last-child td { border-bottom: 0; }
