@@ -61,9 +61,15 @@ Rules that are easy to break:
   names: since daily keys (0016) that key is a pseudonym with no money behind it.
   `settle_leg()`, `settle_fare()` and `file_dispute()` all follow this (0022).
 - Every `admin_*` SQL function checks `is_platform_admin()` itself and returns
-  `not_admin` otherwise. Never grant a table to `authenticated` to make an admin
-  screen work; add a function. `proof:legs` section 18 calls every one as a
-  rider and as nobody.
+  `not_admin` otherwise — or, for the staff work a reviewer does (onboarding,
+  buses, papers, routes), `is_reviewer()` and `not_reviewer`. Never grant a
+  table to `authenticated` to make an admin screen work; add a function.
+  `proof:legs` section 34 finds every `admin_*` and `review_*` function in the
+  catalogue and calls it as an owner, a rider and nobody.
+- A bus's fares belong to whoever owned it when it carried them: ownership is
+  dated in `vehicle_owners` and changed only by `set_vehicle_owner()` (0034);
+  party balances read it through `fare_party()`. Never write
+  `vehicles.owner_member` directly.
 - A login joins a wallet only through an AL1 signed by the wallet, verified in
   `settleBatch()` against the caller's access token (`protocol/account.mjs`).
 - A gateway top-up is credited only by `gateway_complete_topup()`, after the

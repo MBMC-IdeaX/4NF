@@ -2,12 +2,13 @@
 
 const npr = new Intl.NumberFormat('en-IN');
 
-// Rs 1,250 and −Rs 25. Lakh grouping, because that is how Nepal writes money.
+// रु 1,250 and −रु 25, as every app writes it. Lakh grouping, because that is
+// how Nepal writes money.
 export function rupees(amount, { sign = false } = {}) {
   const n = Number(amount ?? 0);
-  const body = `Rs ${npr.format(Math.abs(n))}`;
-  if (n < 0) return `−${body}`;
-  return sign && n > 0 ? `+${body}` : body;
+  const body = `रु ${npr.format(Math.abs(n))}`;
+  if (n < 0) return `− ${body}`;
+  return sign && n > 0 ? `+ ${body}` : body;
 }
 
 export function when(iso) {

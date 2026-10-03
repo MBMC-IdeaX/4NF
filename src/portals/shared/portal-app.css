@@ -8,9 +8,9 @@
   or their bank's app — white surfaces, soft corners, one confident action per
   screen, money in green and out in grey.
 
-  So the portals get their own register. Same brand — plate red, Khand for
-  numerals, Devanagari first — but built like an app people already know how to
-  use. This file is loaded after portal.css and takes over the `op-` classes, so
+  So the portals get their own register, now on the same tokens as the apps
+  (src/styles/tokens.css): one red, white ground, Mukta throughout — built like
+  an app people already know how to use. This file is loaded after portal.css and takes over the `op-` classes, so
   every existing screen lifts without being rewritten first.
 
   The rules it keeps:
@@ -24,23 +24,23 @@
 
 .op {
   /* ---------------------------------------------------------- foundation */
-  --app-bg: #f3f4f6;
+  --app-bg: var(--b-ground, #ffffff);
   --app-surface: #ffffff;
-  --app-surface-sunk: #f7f8fa;
-  --app-line: #e3e5ea;          /* hairline, 1.4:1 — separation only */
-  --app-line-strong: #cfd3da;   /* 3:1, for inputs and anything interactive */
+  --app-surface-sunk: var(--b-surface-2, #f3f4f6);
+  --app-line: var(--b-line, #e8e8ec);          /* hairline, 1.4:1 — separation only */
+  --app-line-strong: var(--b-line-strong, #d1d5db);   /* 3:1, for inputs and anything interactive */
 
   --app-ink: #15181d;           /* 15.8:1 on surface */
   --app-ink-2: #454b56;         /* 8.9:1 — secondary body */
   --app-muted: #5f6673;         /* 6.1:1 — labels, captions */
   --app-faint: #868d9a;         /* 3.4:1 — never body copy, never alone */
 
-  --app-brand: #a8202f;         /* the plate red, unchanged */
-  --app-brand-deep: #8a1926;
-  --app-brand-tint: #fcecee;
+  --app-brand: var(--b-accent, #c8102e);
+  --app-brand-deep: var(--b-accent-hover, #a90d26);
+  --app-brand-tint: var(--b-accent-soft, #fdecee);
   --app-brand-line: #f0c7cc;
 
-  --app-ok: #0c6b46;            /* money in */
+  --app-ok: var(--b-in, #0b7a43);            /* money in */
   --app-ok-tint: #e7f4ee;
   --app-warn: #8a5300;
   --app-warn-tint: #fdf1de;
@@ -50,8 +50,8 @@
   --app-info: #1b4d8f;
 
   --r-xs: 8px;
-  --r-sm: 10px;
-  --r: 14px;
+  --r-sm: 8px;
+  --r: 12px;
   --r-lg: 20px;
   --r-pill: 999px;
 
@@ -1483,3 +1483,18 @@ button.op-row,
   color: var(--app-muted);
   letter-spacing: 0.01em;
 }
+
+/* ======================================================== inside an app */
+
+/*
+  The wallet also lives inside the Rider app (/app/wallet), whose frame already
+  has the brand, the tabs and the sync pill. There the portal drops its own
+  brand bar and grey page, keeps only who is signed in and the sign-out, and
+  sits on the app's ground like every other tab.
+*/
+.bx .op { background: transparent; min-height: 0; }
+.bx .op-brand { display: none; }
+.bx .op-top { position: static; background: transparent; border-bottom: 0; }
+.bx .op-top .op-wrap { justify-content: flex-end; min-height: 48px; }
+.bx .op-wrap { padding-left: 0; padding-right: 0; }
+.bx .op-main { padding-top: 8px; }

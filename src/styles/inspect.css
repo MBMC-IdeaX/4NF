@@ -37,7 +37,7 @@
 
 .insp__head b {
   display: block;
-  font: 700 28px/1 'Khand', 'Noto Sans Devanagari', sans-serif;
+  font: 700 28px/1 var(--display);
 }
 
 .insp__head span {
@@ -79,7 +79,7 @@
 }
 
 .insp__step h1 {
-  font: 700 34px/1.05 'Khand', sans-serif;
+  font: 700 34px/1.05 var(--display);
   margin: 24px 0 8px;
 }
 
@@ -92,7 +92,7 @@
   border: 0;
   background: var(--i-read);
   color: #16130f;
-  font: 700 22px/1 'Khand', sans-serif;
+  font: 700 22px/1 var(--display);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   cursor: pointer;
@@ -125,7 +125,7 @@
 }
 
 .insp__bus b {
-  font: 700 24px/1.1 'Khand', sans-serif;
+  font: 700 24px/1.1 var(--display);
   overflow-wrap: anywhere;
 }
 
@@ -137,9 +137,9 @@
   margin-top: 12px;
 }
 
-.insp__heads b { font: 700 40px/1 'Khand', sans-serif; }
+.insp__heads b { font: 700 40px/1 var(--display); }
 
-.insp__heads button { font: 700 24px/1 'Khand', sans-serif; }
+.insp__heads button { font: 700 24px/1 var(--display); }
 
 .insp__tally {
   margin: 10px 0 0;
@@ -159,7 +159,7 @@
   gap: 6px;
 }
 
-.insp__verdict strong { font: 700 clamp(40px, 12vw, 64px)/0.95 'Khand', sans-serif; }
+.insp__verdict strong { font: 700 clamp(40px, 12vw, 64px)/0.95 var(--display); }
 
 .insp__verdict--ok { border-color: var(--i-live); }
 .insp__verdict--ok strong { color: var(--i-live); }

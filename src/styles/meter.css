@@ -28,6 +28,21 @@
   --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
 }
 
+/* Inside the Crew app (night tone) the instrument takes the kit's night
+   palette, so the meter and the door read as part of the same app. The
+   readings keep their roles: green clear, amber caution, red halt. */
+[data-tone='night'] {
+  --instrument: var(--b-ground);
+  --instrument-2: var(--b-surface);
+  --etch: var(--b-line);
+  --etch-bright: var(--b-line-strong);
+  --read: var(--b-ink);
+  --read-dim: var(--b-ink-3);
+  --live: var(--b-in);
+  --caution: var(--b-warn);
+  --halt: var(--b-bad);
+}
+
 /* ================================================================= console */
 
 .panel {
@@ -51,6 +66,7 @@
 }
 
 .panel__plate {
+  font-family: var(--plate-face);
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -1530,3 +1546,13 @@
 }
 
 .ledger-table tr:last-child td { border-bottom: 0; }
+
+/* In the Crew app the door's controls take the kit's corners and focus ring,
+   like every other button in the four apps. */
+[data-tone='night'] :is(.pick button, .pick__away, .term__tap, .term__cash, .term__paste, .term__upload, .term__door, .cards__card, .sheet, .notice, .result) {
+  border-radius: var(--b-radius);
+}
+[data-tone='night'] :is(.pick button, .pick__away, .term__tap, .term__cash, .term__paste):focus-visible {
+  outline: none;
+  box-shadow: var(--b-focus);
+}

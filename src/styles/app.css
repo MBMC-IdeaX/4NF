@@ -8,14 +8,19 @@
 */
 
 :root {
-  --ink: #16130f;      /* stamp black, warm-shifted. never pure black */
-  --stock: #e4e1d8;    /* recycled ticket stock. grey-beige, not cream */
-  --plate: #a8202f;    /* Nepali commercial plate red */
+  /* The kit's palette (src/styles/tokens.css), so the bus screens read as the
+     same product as the apps: one red, white and cool grey, near-black ink. */
+  --ink: #111318;
+  --stock: #f3f4f6;    /* the ticket ground, now the kit's surface grey */
+  --plate: #c8102e;    /* the one red */
   --panel: #ffffff;    /* conductor ground. max luminance beats daylight glare */
-  --rule: #b8b2a4;     /* printed rule and perforation */
-  --wash: #cfcabb;     /* spent / pressed */
+  --rule: #d1d5db;     /* printed rule and perforation */
+  --wash: #e5e7eb;     /* spent / pressed */
 
-  --display: 'Khand', 'Noto Sans Devanagari', sans-serif;
+  /* One face everywhere (3 Oct 2026). Khand is kept for number plates only:
+     --plate-face, used by .plate, .panel__plate, .op-plate and the kit's Plate. */
+  --display: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+  --plate-face: 'Khand', 'Mukta', sans-serif;
   --body: 'Mukta', 'Noto Sans Devanagari', sans-serif;
 
   --gutter: 20px;
@@ -92,6 +97,7 @@ button {
   vehicles in Nepal carry white characters on plate red.
 */
 .plate {
+  font-family: var(--plate-face);
   margin: auto 0;
   align-self: flex-start;
   background: var(--plate);
