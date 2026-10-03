@@ -16,7 +16,7 @@ const sent = new Set();
 
 function surfaceOf(path) {
   const first = path.split('/')[1] || 'site';
-  return path.startsWith('/app/account') ? 'account' : first;
+  return path.startsWith('/app/wallet') ? 'account' : first;
 }
 
 function readQueue() {

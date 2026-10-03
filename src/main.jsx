@@ -4,6 +4,7 @@ import App from './App';
 import { loadVehicle } from './device/fleet';
 import Crashed from './components/Crashed';
 import { watchErrors } from './lib/report';
+import { followRedirect } from './lib/router';
 import './styles/app.css';
 import './styles/surfaces.css';
 // Turns the public site over to the same light, rounded register as the
@@ -22,8 +23,9 @@ import './styles/meter.css';
 // Crashes outside React (a handler, a promise nobody awaited) are reported from
 // here; crashes during a render are caught by <Crashed>.
 watchErrors();
+const here = followRedirect();
 
-loadVehicle().finally(() => {
+if (here) loadVehicle().finally(() => {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <Crashed>

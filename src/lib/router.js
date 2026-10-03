@@ -5,6 +5,7 @@
 // phone can go offline.
 
 import { useEffect, useState } from 'react';
+import { redirectTarget, resolveSurface } from './surface.mjs';
 
 // How long the bus is held on screen during a route change. Long enough to
 // read as an arrival rather than a flash, short enough that nobody waiting to
@@ -42,8 +43,46 @@ export function useRoute() {
   return [path, crossing];
 }
 
+// An old path printed on a sticker or kept on a home screen is moved to the app
+// that took it over, keeping its query (an eSewa return carries its payment
+// there). Called once at boot, before the first render.
+export function followRedirect() {
+  const target = redirectTarget(window.location);
+  if (!target) return true;
+  if (!servedHere(new URL(target, window.location.origin).pathname)) {
+    window.location.replace(target);
+    return false;
+  }
+  window.history.replaceState({}, '', target);
+  return true;
+}
+
+/*
+  Which surfaces this build serves. The site and the three apps are separate
+  builds, so a link into another one is a page load, not a history push: the
+  other app's code is not in this bundle.
+*/
+const BUILD = typeof __BHADA_APP__ === 'string' ? __BHADA_APP__ : 'site';
+const OWNS = {
+  site: ['site', 'admin', 'inspect', 'demo', 'kit'],
+  rider: ['rider'],
+  crew: ['crew'],
+  owner: ['owner'],
+  staff: ['staff'],
+};
+
+export function servedHere(pathname) {
+  return (OWNS[BUILD] ?? OWNS.site).includes(resolveSurface(pathname).app);
+}
+
 export function navigate(to) {
-  if (window.location.pathname === to) return;
+  const url = new URL(to, window.location.origin);
+  to = redirectTarget(url) ?? to;
+  if (!servedHere(new URL(to, window.location.origin).pathname)) {
+    window.location.assign(to);
+    return;
+  }
+  if (window.location.pathname + window.location.search === to) return;
   window.history.pushState({}, '', to);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
