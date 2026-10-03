@@ -588,6 +588,50 @@ body:has(> #root > .bx) #root {
 .bx-stamp--in { --b-stamp: var(--b-in); }
 .bx-stamp--sm { font-size: 0.95rem; padding: 3px 8px 1px; border-width: 3px; }
 
+/* State in words. The mark beside it carries the meaning for anyone who cannot
+   tell the colours apart: solid = now, ring = waiting, cross = refused. */
+.bx-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 var(--b-text-xs)/1 var(--b-font-body);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--b-ink-2);
+}
+.bx-status i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+.bx-status--live { color: var(--b-in); }
+.bx-status--live i { box-shadow: 0 0 0 3px var(--b-in-soft); }
+.bx-status--ok { color: var(--b-in); }
+.bx-status--wait { color: var(--b-warn); }
+.bx-status--wait i { background: transparent; border: 2px solid currentColor; }
+.bx-status--bad { color: var(--b-bad); }
+.bx-status--bad i { background: none; border-radius: 0; width: 10px; height: 10px;
+  background:
+    linear-gradient(45deg, transparent 42%, currentColor 42% 58%, transparent 58%),
+    linear-gradient(-45deg, transparent 42%, currentColor 42% 58%, transparent 58%); }
+.bx-status--off { color: var(--b-ink-3); }
+.bx-status--off i { background: transparent; border: 2px solid currentColor; }
+
+.bx-demo {
+  display: inline-block;
+  padding: 2px 7px;
+  border: 1px dashed currentColor;
+  border-radius: var(--b-radius-sm);
+  color: var(--b-warn);
+  font: 700 0.6875rem/1.3 var(--b-font-body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 /* LED destination board: amber dots, the way a Sajha front board reads. */
 .bx-led {
   font-family: var(--b-font-display);

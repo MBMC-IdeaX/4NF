@@ -209,6 +209,29 @@ export function Stamp({ children, tone, small }) {
   return <span className={cx('bx-stamp', tone === 'in' && 'bx-stamp--in', small && 'bx-stamp--sm')}>{children}</span>;
 }
 
+/*
+  A state in words, with a shape beside it so it never rests on colour alone:
+  a solid dot is happening now, a ring is waiting, a cross is refused.
+  tone: live | ok | wait | bad | off
+*/
+export function Status({ tone = 'off', children }) {
+  return (
+    <span className={cx('bx-status', `bx-status--${tone}`)}>
+      <i aria-hidden="true" />
+      {children}
+    </span>
+  );
+}
+
+/*
+  Marks anything a judge could take for real data when it is not: the demo
+  fleet, sample audit rows, a simulated odometer. Small on purpose — honest,
+  not a warning banner.
+*/
+export function DemoTag({ children = 'Demo', title }) {
+  return <span className="bx-demo" title={title}>{children}</span>;
+}
+
 export function Segmented({ options, value, onChange, label }) {
   return (
     <div className="bx-seg" role="group" aria-label={label}>
