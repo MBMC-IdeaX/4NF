@@ -8,10 +8,11 @@ import { fileURLToPath } from 'node:url';
 
 // Only the weights the design actually sets. Each Devanagari face is ~90KB and
 // must be precached before a phone can go offline, so unused weights are not free.
-// Khand 500 stop names / 700 fares and counts. Mukta 400 body / 600 labels.
+// Khand 700 for number plates only. Mukta 400 body, 600 labels, 700 headings and
+// figures, 800 the one big figure on a screen.
 const FAMILIES = [
-  { name: 'Khand', spec: 'Khand:wght@500;700', weights: ['500', '700'] },
-  { name: 'Mukta', spec: 'Mukta:wght@400;600', weights: ['400', '600'] },
+  { name: 'Khand', spec: 'Khand:wght@700', weights: ['700'] },
+  { name: 'Mukta', spec: 'Mukta:wght@400;600;700;800', weights: ['400', '600', '700', '800'] },
 ];
 const AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
