@@ -1,4 +1,4 @@
-# Every push and pull request runs the four proofs, checks the Edge Function's
+# Every push and pull request runs tests and all five proofs, checks the Edge Function's
 # copy of protocol/ is current, and builds the site.
 #
 # Vercel builds production from the same push, and its build command runs
@@ -8,7 +8,7 @@ name: proofs
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'fix/**']
   pull_request:
 
 jobs:
@@ -22,6 +22,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm test
       - run: npm run proof:all
       - name: Edge Function protocol copy is current
         run: |
@@ -29,3 +30,5 @@ jobs:
           git diff --exit-code -- supabase/functions/_shared/protocol \
             || { echo "::error::Run npm run sync:protocol and commit the result."; exit 1; }
       - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser

@@ -181,7 +181,7 @@ if (!app) throw new Error(`BHADA_APP must be one of ${Object.keys(APPS).join(', 
 const LOCAL_BACKEND = process.env.BHADA_LOCAL_BACKEND || 'http://localhost:8787';
 const proxy = APP === 'site'
   ? {
-    ...Object.fromEntries(['rider', 'crew', 'owner', 'staff'].map((name) => [`^${APPS[name].base.slice(0, -1)}(/|$)`, { target: `http${HTTPS ? 's' : ''}://localhost:${APPS[name].port}`, ws: true, secure: false, rewrite: (path) => (path === APPS[name].base.slice(0, -1) ? APPS[name].base : path) }])),
+    ...Object.fromEntries(['rider', 'crew', 'owner', 'staff'].map((name) => [`^${APPS[name].base.slice(0, -1)}(/|$)`, { target: `http${HTTPS ? 's' : ''}://localhost:${APPS[name].port + Number(process.env.BHADA_DEMO_PORT_OFFSET ?? 0)}`, ws: true, secure: false, rewrite: (path) => (path === APPS[name].base.slice(0, -1) ? APPS[name].base : path) }])),
     '^/sync$': { target: LOCAL_BACKEND, changeOrigin: true },
     '^/local/': { target: LOCAL_BACKEND, changeOrigin: true },
   }
@@ -198,7 +198,7 @@ export default defineConfig({
     __BHADA_APP__: JSON.stringify(APP),
   },
   server: {
-    port: app.port,
+    port: app.port + Number(process.env.BHADA_DEMO_PORT_OFFSET ?? 0),
     strictPort: true,
     // Reachable from a phone on the same Wi-Fi.
     host: true,

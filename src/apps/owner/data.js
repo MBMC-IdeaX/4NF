@@ -3,13 +3,25 @@
 // Every write is an owner_* function (migrations 0033–0036) that checks the
 // caller's company and role itself; the screens never write a table.
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { supabase } from '../../lib/supabase';
 import { plateFromId } from '../../device/fleet';
+
+const WRITES = new Set([
+  'accept_agreement', 'accept_invite', 'request_payout', 'cancel_payout', 'set_bus_owner',
+  'owner_bus_setup', 'owner_request', 'owner_retire_vehicle', 'owner_update_vehicle',
+  'owner_withdraw_request', 'owner_submit_document', 'owner_invite', 'owner_revoke_invite',
+  'owner_save_driver', 'owner_set_member', 'admin_create_company', 'admin_invite_owner',
+  'admin_record_agreement', 'admin_register_vehicle', 'admin_set_company_live', 'admin_set_levy',
+  'admin_submit_document', 'admin_update_vehicle', 'admin_decide_payout', 'admin_bill_month',
+  'admin_publish_agreement', 'admin_set_fee', 'admin_set_reviewer', 'admin_build_route',
+  'review_request', 'review_document',
+]);
 
 export async function call(name, args) {
   const { data, error } = await supabase.rpc(name, args);
   if (error) return { ok: false, reason: 'server_error', message: error.message };
+  if (data?.ok && WRITES.has(name)) window.dispatchEvent(new Event('bhada:data-changed'));
   return data;
 }
 
@@ -24,16 +36,50 @@ export async function rows(table, order) {
 // Load something, with loading / error / reload, the same way on every tab.
 export function useLoad(load, deps = []) {
   const [state, setState] = useState({ data: null, error: null, loading: true });
+  const loader = useRef(load);
+  loader.current = load;
+  const generation = useRef(0);
+  const busy = useRef(false);
   const run = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true, error: null }));
+    if (busy.current) return;
+    busy.current = true;
+    const version = generation.current;
+    setState((s) => ({ ...s, loading: s.data === null, error: null }));
     try {
-      setState({ data: await load(), error: null, loading: false });
+      const data = await loader.current();
+      if (version === generation.current) setState({ data, error: null, loading: false });
     } catch (error) {
-      setState({ data: null, error: error.message ?? String(error), loading: false });
-    }
+      if (version === generation.current) setState((s) => ({ ...s, error: error.message ?? String(error), loading: false }));
+    } finally { busy.current = false; }
+  }, []);
+  useEffect(() => {
+    generation.current += 1;
+    // A previous dependency's response is ignored, then the new load runs.
+    let cancelled = false;
+    let deferred;
+    const refresh = () => {
+      if (cancelled || document.hidden) return;
+      if (busy.current) { clearTimeout(deferred); deferred = setTimeout(refresh, 250); return; }
+      run();
+    };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    window.addEventListener('online', refresh);
+    window.addEventListener('bhada:data-changed', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    refresh();
+    return () => {
+      cancelled = true;
+      generation.current += 1;
+      clearInterval(timer);
+      clearTimeout(deferred);
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('online', refresh);
+      window.removeEventListener('bhada:data-changed', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
-  useEffect(() => { run(); }, [run]);
+  }, [run, ...deps]);
   return { ...state, reload: run };
 }
 

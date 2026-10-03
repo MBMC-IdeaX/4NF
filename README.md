@@ -386,15 +386,20 @@ This is the real system, on your laptop, with nothing touching the live database
 **Set up (once, about 2 minutes)**
 
 ```bash
-npm install
-npm run sync:local
-# in a second terminal:
-BHADA_LOCAL_DB=1 VITE_SYNC_URL=http://localhost:8787/sync BHADA_HTTP=1 npm run dev
+npm ci
+npm run demo:phones
 ```
 
-- Open <http://localhost:5199> on the laptop.
-- To use real phones on the same Wi-Fi, open `http://<laptop-ip>:5199`. The dev server prints
-  the Network address. Phones need camera permission; allow it when asked.
+- The command starts the local backend and all five HTTPS apps, checks readiness, and prints
+  the discovered LAN links for Site, Rider, Crew, Owner and Staff. No live service is used.
+- Open the printed HTTPS address on the laptop and on phones connected to the same Wi-Fi.
+  Accept the local development certificate once, then allow camera and GPS when asked.
+- Stop with Ctrl+C. Local database contents and demo credentials are preserved.
+- For a presentation on a fresh demo device, open `/crew?presentation=1` and choose
+  **Start local presentation**. This selects DEMOBUS01 and starts simulated GPS after that
+  explicit action. It is gated to the local backend and refuses a real bus.
+- See [debug and automation delivery notes](docs/debug-automation.md) for checks, recovery
+  rules, warnings and remaining limits.
 - Two browser windows on one laptop also work. Show the passenger's code to the laptop camera,
   or use one phone and one laptop.
 

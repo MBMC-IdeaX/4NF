@@ -13,6 +13,7 @@
 
 import { createServer } from 'node:http';
 import { randomBytes as nodeRandomBytes } from 'node:crypto';
+import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { useRandomSource } from '../protocol/random.mjs';
 import { openBackend, handleSync } from './lib/pg-backend.mjs';
@@ -21,7 +22,7 @@ import { prepareLocalAuth, handleLocalSupabase, seedDemo, DEMO_LOGINS, DEMO_PASS
 useRandomSource((length) => new Uint8Array(nodeRandomBytes(length)));
 
 const PORT = Number(process.env.PORT ?? 8787);
-const DATA_DIR = fileURLToPath(new URL('../.pgdata/', import.meta.url));
+const DATA_DIR = process.env.BHADA_LOCAL_DATA_DIR ? resolve(process.env.BHADA_LOCAL_DATA_DIR) : fileURLToPath(new URL('../.pgdata/', import.meta.url));
 
 // Persisted to disk, so restarting the server does not silently forget that a
 // fare was already settled — which would make replay protection look broken.
@@ -30,7 +31,7 @@ const { db, migrations } = await openBackend({ dataDir: DATA_DIR });
 
 // The office screens' Supabase calls, answered locally (scripts/lib/local-supabase.mjs),
 // with a login for every role.
-const FILES_DIR = fileURLToPath(new URL('../.pgdata-files/', import.meta.url));
+const FILES_DIR = process.env.BHADA_LOCAL_DATA_DIR ? `${DATA_DIR}-files` : fileURLToPath(new URL('../.pgdata-files/', import.meta.url));
 await prepareLocalAuth(db);
 const demo = await seedDemo(db, FILES_DIR);
 
@@ -75,6 +76,7 @@ createServer(async (request, response) => {
   const url = new URL(request.url, `http://localhost:${PORT}`);
 
   try {
+    if (request.method === 'GET' && url.pathname === '/health') { send(response, 200, { ok: true, local: true }); return; }
     if (request.method === 'POST' && url.pathname === '/sync') {
       const [status, body] = await handleSync(db, await readBody(request));
       console.log(

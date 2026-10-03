@@ -16,7 +16,8 @@ import { navigate } from '../../lib/router';
 import { useSyncStatus } from '../../lib/useSyncStatus';
 import { pendingConductor } from '../../device/outbox';
 import { syncConductor } from '../../device/sync';
-import { isProvisioned } from '../../device/fleet';
+import { meter } from '../../device/meter';
+import { isProvisioned, currentVehicle, DEFAULT_VEHICLE, provisionVehicle } from '../../device/fleet';
 import Setup from './Setup';
 import UnitStatus from './UnitStatus';
 import './crew.css';
@@ -63,7 +64,15 @@ export default function CrewApp({ page }) {
       <AppFrame brand="खलासी">
         <Setup
           onDone={() => { setSetup(false); go('bus'); }}
-          onDemo={() => { chooseDemo(); setSetup(false); }}
+          onDemo={async () => {
+            if (currentVehicle().id !== 'DEMOBUS01') return;
+            if (import.meta.env.VITE_LOCAL_DB_URL && new URLSearchParams(location.search).has('presentation')) {
+              await provisionVehicle(DEFAULT_VEHICLE);
+              await meter().boot();
+              meter().simulate(true);
+            }
+            chooseDemo(); setSetup(false);
+          }}
         />
       </AppFrame>
     );

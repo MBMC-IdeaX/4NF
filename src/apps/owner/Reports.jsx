@@ -22,6 +22,7 @@ export default function Reports({ go }) {
         <Segmented label="Report" value={view} onChange={setView}
           options={[{ value: 'analysis', label: 'Analysis' }, { value: 'returns', label: 'DoTM return' }]} />
       </header>
+      <p className="op-note">Fare records, cash recorded by the crew, accepted ledger settlement and unpaid fares are separate records. A payable balance is not an externally confirmed transfer. Check the payout record for confirmed transfers.</p>
       <div className="op-app">
         {view === 'analysis' ? <Overview onAddBus={() => go('buses/new')} /> : <Returns />}
       </div>

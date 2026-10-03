@@ -111,7 +111,7 @@ export default function Setup({ onDone, onDemo }) {
 
       {mode !== 'scan' ? <Button size="lg" block icon="scan" onClick={() => { setProblem(null); setMode('scan'); }}>Scan setup code</Button> : null}
       {mode !== 'type' ? <Button size="lg" block variant="secondary" onClick={() => { setProblem(null); setMode('type'); }}>Type it instead</Button> : null}
-      <button type="button" className="cs-demo" onClick={onDemo}>Just trying it? Use the demo bus</button>
+      <button type="button" className="cs-demo" onClick={onDemo}>{import.meta.env.VITE_LOCAL_DB_URL && new URLSearchParams(location.search).has('presentation') ? 'Start local presentation - DEMOBUS01 - simulated GPS' : 'Just trying it? Use the demo bus'}</button>
     </div>
   );
 }

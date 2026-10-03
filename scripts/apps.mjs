@@ -18,9 +18,9 @@ for (const name of apps) {
 }
 
 function run(name, args) {
-  return spawn('npx', ['vite', ...args], {
+  return spawn(process.execPath, ['node_modules/vite/bin/vite.js', ...args], {
     stdio: 'inherit',
-    shell: true,
+    windowsHide: true,
     env: { ...process.env, BHADA_APP: name },
   });
 }
@@ -33,9 +33,11 @@ if (command === 'build') {
   }
 } else if (command === 'dev') {
   const children = apps.map((name) => run(name, []));
-  const stop = () => { for (const child of children) child.kill(); process.exit(0); };
-  process.on('SIGINT', stop);
-  process.on('SIGTERM', stop);
+  let stopping = false;
+  const stop = (code = 0) => { if (stopping) return; stopping = true; for (const child of children) child.kill(); process.exit(code); };
+  for (const child of children) { child.on('error', (error) => { console.error(error.message); stop(1); }); child.on('exit', (code) => { if (!stopping) { console.error('App server exited unexpectedly.'); stop(code || 1); } }); }
+  process.on('SIGINT', () => stop());
+  process.on('SIGTERM', () => stop());
 } else {
   throw new Error(`unknown command ${command}; build or dev`);
 }

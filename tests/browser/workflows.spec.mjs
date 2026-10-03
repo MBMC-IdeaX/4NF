@@ -1,0 +1,86 @@
+import { test, expect } from '@playwright/test';
+
+test('map preserves user camera across 20 updates, fresh clicks, hide/show and StrictMode remount', async ({ page }) => {
+  await page.goto('http://localhost:5320/tests/browser/index.html');
+  const icon = page.locator('.custom-bus-marker');
+  await expect(icon).toHaveCount(1);
+  await icon.click();
+  await expect(page.getByRole('button', { name: 'Follow bus' })).toBeVisible();
+  await page.getByRole('button', { name: 'Follow bus' }).click();
+  const map = page.locator('.leaflet-container');
+  const box = await map.boundingBox();
+  await page.mouse.move(box.x + 250, box.y + 250);
+  await page.mouse.down(); await page.mouse.move(box.x + 320, box.y + 280, { steps: 10 }); await page.mouse.up();
+  await expect(page.getByRole('button', { name: 'Follow bus' })).toBeVisible();
+  await page.locator('.leaflet-control-zoom-in').click();
+  await page.waitForTimeout(500);
+  const pane = page.locator('.leaflet-map-pane');
+  const camera = await pane.getAttribute('style');
+  await page.evaluate(() => { window.fixtureMarker = document.querySelector('.custom-bus-marker'); });
+  const before = Number(await page.getByTestId('tick').textContent());
+  await expect.poll(async () => Number(await page.getByTestId('tick').textContent())).toBeGreaterThanOrEqual(before + 20);
+  expect(await pane.getAttribute('style')).toBe(camera);
+  expect(await page.evaluate(() => window.fixtureMarker === document.querySelector('.custom-bus-marker'))).toBe(true);
+  await icon.click();
+  await expect(page.getByTestId('selected')).toContainText('BUS1:');
+  const [speed, callbackTick] = (await page.getByTestId('clicked').textContent()).split(':').map(Number);
+  expect(speed).toBeGreaterThanOrEqual(before + 20);
+  expect(callbackTick).toBe(speed);
+  await page.getByRole('button', { name: 'Hide map' }).click();
+  await page.getByRole('button', { name: 'Hide map' }).click();
+  await page.getByRole('button', { name: 'Remount map' }).click();
+  await expect(icon).toHaveCount(0);
+  await page.getByRole('button', { name: 'Remount map' }).click();
+  await expect(icon).toHaveCount(1);
+  await expect(page.locator('.custom-stop-marker')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Change route' }).click();
+  await expect(page.locator('.custom-stop-marker')).toHaveCount(2);
+  await page.locator('.custom-stop-marker').first().hover();
+  await expect(page.locator('.leaflet-tooltip')).toContainText('<unsafe stop>');
+  expect(await page.locator('.leaflet-tooltip unsafe').count()).toBe(0);
+});
+
+test('cached offline passenger boards, survives reload, rejects a forgery, saves receipt, and reconciles once', async ({ page, context }) => {
+  await page.goto('/tests/browser/index.html');
+  await page.getByRole('button', { name: 'Toggle surface' }).click();
+  await expect(page.getByAltText('Your ride code')).toBeVisible();
+  await page.getByRole('button', { name: 'Cache trusted bus key' }).click();
+  await expect(page.getByText('Trusted bus key cached')).toBeVisible();
+  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+  await page.reload();
+  await page.getByRole('button', { name: 'Toggle surface' }).click();
+  await expect(page.getByAltText('Your ride code')).toBeVisible();
+  await context.setOffline(true);
+  await page.getByRole('button', { name: 'Receive boarding pass' }).click();
+  await expect(page.getByText('On ride - boarding confirmed', { exact: false })).toBeVisible();
+  await page.reload();
+  await page.getByRole('button', { name: 'Toggle surface' }).click();
+  await expect(page.getByAltText('Your boarding pass')).toBeVisible();
+  await page.getByRole('button', { name: 'Receive forged receipt' }).click();
+  await expect(page.getByText('Receipt verification failed.', { exact: false })).toBeVisible();
+  await expect(page.getByAltText('Your boarding pass')).toBeVisible();
+  await page.getByRole('button', { name: 'Receive completion receipt' }).click();
+  await expect(page.getByText('Ride verified', { exact: true })).toBeVisible();
+  await expect(page.getByText('Awaiting reconciliation', { exact: true })).toBeVisible();
+  await context.setOffline(false);
+  await expect(page.getByText('Ledger settled', { exact: true })).toBeVisible({ timeout: 15000 });
+  await page.getByRole('button', { name: 'Reconnect upload' }).click();
+  await expect(page.getByText('Ledger settled', { exact: true })).toBeVisible();
+});
+
+
+test('operator refresh ignores stale responses, keeps edits, and avoids overlapping loads', async ({ page }) => {
+  await page.goto('/tests/browser/index.html');
+  await page.getByRole('button', { name: 'Operator refresh probe' }).click();
+  await page.getByLabel('Unsaved operator edit').fill('Keep this draft');
+  await page.getByRole('button', { name: 'Change report scope' }).click();
+  await page.getByRole('button', { name: 'Refresh report' }).click();
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(page.getByTestId('report')).toHaveText('B');
+  await expect(page.getByLabel('Unsaved operator edit')).toHaveValue('Keep this draft');
+  const count = Number(await page.getByTestId('report-calls').textContent());
+  expect(count).toBeLessThanOrEqual(2);
+  await page.getByRole('button', { name: 'Refresh report' }).click();
+  await expect(page.getByTestId('report-calls')).toHaveText(String(count + 1));
+  await expect(page.getByLabel('Unsaved operator edit')).toHaveValue('Keep this draft');
+});

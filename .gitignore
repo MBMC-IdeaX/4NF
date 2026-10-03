@@ -85,3 +85,7 @@ __pycache__/
 datajewellery-main/
 .superpowers/
 .pgdata-files/
+
+# Browser regression artifacts
+playwright-report/
+test-results/
