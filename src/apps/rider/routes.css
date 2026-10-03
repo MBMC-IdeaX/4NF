@@ -1,0 +1,240 @@
+/* Routes: plain white list of route cards, a search bar, a fare calculator. */
+
+.rt > * + * { margin-top: var(--b-4); }
+.rt-head { padding-top: var(--b-3); }
+.rt-head h1, .rt-titlebar h1 { margin: 0; font: 700 var(--b-text-xl)/1.15 var(--b-font-display); }
+.rt-head p { margin: var(--b-1) 0 0; color: var(--b-ink-3); }
+
+.rt-search {
+  display: flex;
+  align-items: center;
+  gap: var(--b-2);
+  min-height: 52px;
+  padding: 0 var(--b-4);
+  border: 1px solid var(--b-line-strong);
+  border-radius: var(--b-radius);
+  background: var(--b-surface);
+  color: var(--b-ink-3);
+}
+.rt-search:focus-within { border-color: var(--b-accent); box-shadow: 0 0 0 3px var(--b-accent-soft); }
+.rt-search svg { width: 20px; height: 20px; flex: none; }
+.rt-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--b-ink);
+  font: 400 var(--b-text-md) var(--b-font-body);
+}
+
+.rt-fare {
+  display: flex;
+  align-items: center;
+  gap: var(--b-3);
+  width: 100%;
+  padding: var(--b-4);
+  border: 0;
+  border-radius: var(--b-radius);
+  background: var(--b-accent-soft);
+  color: var(--b-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rt-fare > span:nth-child(2) { flex: 1; min-width: 0; }
+.rt-fare b { display: block; font: 700 1.05rem/1.2 var(--b-font-display); }
+.rt-fare small { display: block; margin-top: 2px; font-size: var(--b-text-sm); color: var(--b-ink-2); }
+.rt-fare > svg { width: 20px; height: 20px; color: var(--b-accent); }
+.rt-fare__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+}
+.rt-fare__icon svg { width: 22px; height: 22px; }
+.rt-fare:focus-visible, .rt-card:focus-visible, .rt-back:focus-visible { outline: none; box-shadow: var(--b-focus); }
+
+.rt-note { margin: 0; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.rt-demo { display: flex; align-items: center; gap: var(--b-2); flex-wrap: wrap; margin: 0; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+
+/* ---- a route card: number, the two ends, then buses · stops · km ---- */
+
+.rt-list { list-style: none; margin: var(--b-4) 0 0; padding: 0; display: grid; gap: var(--b-3); }
+.rt-card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--b-line);
+  border-radius: var(--b-radius);
+  background: var(--b-surface);
+  color: var(--b-ink);
+  text-align: left;
+  font: inherit;
+  overflow: hidden;
+  cursor: pointer;
+}
+.rt-card:hover { border-color: var(--b-line-strong); }
+.rt-card__tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 0 0 var(--b-radius-sm) 0;
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+  font: 700 var(--b-text-xs)/1.4 var(--b-font-body);
+  letter-spacing: 0.02em;
+}
+.rt-ends { display: flex; flex-direction: column; gap: 6px; padding: var(--b-3) var(--b-4); position: relative; }
+.rt-ends span { display: flex; align-items: center; gap: var(--b-2); font-weight: 600; }
+.rt-ends i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--b-ink);
+  border-radius: 50%;
+  flex: none;
+}
+.rt-ends span:last-child i { background: var(--b-ink); }
+.rt-ends::before {
+  content: '';
+  position: absolute;
+  left: calc(var(--b-4) + 4px);
+  top: calc(var(--b-3) + 14px);
+  height: 16px;
+  border-left: 2px dotted var(--b-ink-3);
+}
+.rt-card__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--b-2) var(--b-4);
+  padding: var(--b-2) var(--b-4);
+  background: var(--b-surface-2);
+  font-size: var(--b-text-sm);
+  color: var(--b-ink-2);
+}
+.rt-card__facts span { display: inline-flex; align-items: center; gap: 4px; }
+.rt-card__facts svg { width: 16px; height: 16px; }
+
+/* ---- one route ---- */
+
+.rt-banner {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: var(--b-2);
+  margin-top: var(--b-3);
+  padding: 0 var(--b-3) var(--b-2) 0;
+  border-radius: var(--b-radius);
+  background: var(--b-ink);
+  color: var(--b-ink-inverse);
+  overflow: hidden;
+}
+.rt-banner .rt-card__tag { grid-column: 2; justify-self: start; border-radius: 0 0 var(--b-radius-sm) var(--b-radius-sm); }
+.rt-banner .rt-back { grid-row: 1 / span 2; }
+.rt-banner .rt-ends { grid-column: 2; padding: var(--b-2) 0 0; }
+.rt-banner__count { grid-row: 1 / span 2; grid-column: 3; font-size: var(--b-text-sm); font-weight: 700; color: var(--b-led); }
+.rt-ends--light i { border-color: #fff; }
+.rt-ends--light span:last-child i { background: #fff; }
+.rt-ends--light::before { left: 4px; top: calc(var(--b-2) + 14px); border-color: rgb(255 255 255 / 0.6); }
+
+.rt-back {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: var(--b-radius);
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.rt-back svg { width: 22px; height: 22px; }
+.rt-titlebar { display: flex; align-items: center; gap: var(--b-1); padding-top: var(--b-2); }
+.rt-back--ink { color: var(--b-ink); margin-left: -12px; }
+
+.rt-buses { list-style: none; margin: var(--b-2) 0 0; padding: 0; }
+.rt-bus { display: flex; gap: var(--b-3); padding: var(--b-3) 0; border-bottom: 1px solid var(--b-line); }
+.rt-bus__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--b-radius-sm);
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+}
+.rt-bus__icon svg { width: 22px; height: 22px; }
+.rt-bus__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rt-bus__top { display: flex; justify-content: space-between; gap: var(--b-2); }
+.rt-bus__top b { font: 700 1rem/1.3 var(--b-font-display); }
+.rt-bus__speed { font-size: var(--b-text-sm); color: var(--b-ink-3); white-space: nowrap; }
+.rt-bus__body small { font-size: var(--b-text-xs); color: var(--b-ink-3); }
+.rt-bus__line { font-size: var(--b-text-sm); color: var(--b-ink); }
+.rt-bus__line span { color: var(--b-ink-3); }
+.rt-bus__seats { align-self: flex-start; margin-top: 4px; padding: 2px 8px; border-radius: var(--b-radius-pill); background: var(--b-in-soft); color: var(--b-in); font-size: var(--b-text-xs); font-weight: 700; }
+.rt-bus__seats--few_seats { background: var(--b-warn-soft); color: var(--b-warn); }
+.rt-bus__seats--standing { background: var(--b-bad-soft); color: var(--b-bad); }
+
+.rt-stops { list-style: none; margin: var(--b-2) 0 0; padding: 0; }
+.rt-stops li { display: flex; align-items: center; gap: var(--b-3); min-height: 52px; border-bottom: 1px solid var(--b-line); }
+.rt-stops__n {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--b-surface-2);
+  font-size: var(--b-text-sm);
+  font-weight: 700;
+}
+.rt-stops__name { flex: 1; min-width: 0; font-weight: 600; }
+.rt-stops__name small { display: block; font-weight: 400; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.rt-stops__km { font-size: var(--b-text-sm); color: var(--b-ink-3); font-variant-numeric: tabular-nums; }
+
+.rt-map { border-radius: var(--b-radius); overflow: hidden; }
+.rt-map .rt-demo { margin-top: var(--b-2); }
+
+/* ---- fare calculator ---- */
+
+.rt-calc { display: grid; gap: var(--b-3); }
+.rt-field { display: grid; gap: 6px; }
+.rt-field > span { display: flex; align-items: center; gap: var(--b-2); font-size: var(--b-text-sm); font-weight: 600; color: var(--b-ink-2); }
+.rt-field select {
+  min-height: 52px;
+  padding: 0 var(--b-3);
+  border: 1px solid var(--b-line-strong);
+  border-radius: var(--b-radius);
+  background: var(--b-surface);
+  color: var(--b-ink);
+  font: 400 var(--b-text-md) var(--b-font-body);
+}
+.rt-field select:focus-visible { outline: none; border-color: var(--b-accent); box-shadow: 0 0 0 3px var(--b-accent-soft); }
+.rt-dot { width: 10px; height: 10px; border: 2px solid var(--b-ink); border-radius: 50%; }
+.rt-dot--end { background: var(--b-ink); }
+
+.rt-result {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: var(--b-4);
+  border-radius: var(--b-radius-lg);
+  background: var(--b-ink);
+  color: var(--b-ink-inverse);
+}
+.rt-result > div + div { padding-left: var(--b-4); border-left: 1px solid rgb(255 255 255 / 0.16); }
+.rt-result small { display: block; font-size: var(--b-text-xs); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.rt-result b { display: block; margin-top: var(--b-1); font: 700 2.5rem/1 var(--b-font-display); }
+.rt-result b span { margin-left: 4px; font-size: 1rem; opacity: 0.7; }
+.rt-result__fare { color: var(--b-led); }
+
+/* Fit a 360px phone: nothing in the calculator may be wider than the page. */
+.rt-calc, .rt-field { min-width: 0; }
+.rt-field select { width: 100%; max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+.rt .bx-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; max-width: 100%; box-sizing: border-box; }
+.rt .bx-seg button { min-width: 0; }
+.rt-result b span { font-size: 0.85rem; }

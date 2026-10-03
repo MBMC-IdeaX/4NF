@@ -1,326 +1,257 @@
-import { useState, useEffect, useMemo } from 'react';
+// Routes — the screen a passenger opens before a trip, in the shape every
+// Kathmandu bus app uses: search a station, pick a route card, then see its
+// buses, its stops in order, or the map. A fare calculator sits on top,
+// because the fare is the thing Bhada is about.
+//
+// The route lines and stops are real valley corridors. The buses on them are
+// a simulated demo fleet (src/lib/fleet-simulator.js) and say so.
+
+import { useEffect, useMemo, useState } from 'react';
 import OsmFleetMap from '../../ui/OsmFleetMap';
-import LiveBusStatusCard from '../../ui/LiveBusStatusCard';
 import { fleetEngine } from '../../lib/fleet-simulator';
-import { findRoutesByStation, VENDORS } from '../../data/valley-routes';
-import { Icon, Button } from '../../ui';
+import { findRoutesByStation, VALLEY_ROUTES } from '../../data/valley-routes';
+import { Icon, DemoTag, Segmented, Empty } from '../../ui';
+import { CONCESSION_RATE } from '../../../protocol/meter.mjs';
 
-export default function RiderRoutes({ go, onBack }) {
+/*
+  A stage fare between two stops on a route, by the demo rule every seeded
+  fare table uses: Rs 15 to the next stage, Rs 5 for each stage after, at most
+  Rs 25. These valley routes have no published table in Bhada yet, so the
+  calculator says it is a demo. The kilometres are shown, never charged.
+*/
+const DEMO_RULE = { first: 15, perStage: 5, cap: 25 };
+function stageFare(fromIndex, toIndex, concession = 'none') {
+  const gap = Math.abs(toIndex - fromIndex);
+  const base = gap === 0 ? 0 : Math.min(DEMO_RULE.cap, DEMO_RULE.first + (gap - 1) * DEMO_RULE.perStage);
+  return { base, amount: Math.ceil(base * (CONCESSION_RATE[concession] ?? 1)), stages: gap };
+}
+import './routes.css';
+
+export default function RiderRoutes() {
   const [snapshot, setSnapshot] = useState(() => fleetEngine.getSnapshot());
-  const [stationQuery, setStationQuery] = useState('');
-  const [selectedRouteId, setSelectedRouteId] = useState('R1');
-  const [selectedBusId, setSelectedBusId] = useState(null);
-  const [viewMode, setViewMode] = useState('split'); // 'split' | 'map' | 'list'
+  const [query, setQuery] = useState('');
+  const [routeId, setRouteId] = useState(null);
+  const [fareOpen, setFareOpen] = useState(false);
 
-  // Subscribe to the simulated demo fleet
-  useEffect(() => {
-    return fleetEngine.subscribe(setSnapshot);
-  }, []);
+  useEffect(() => fleetEngine.subscribe(setSnapshot), []);
 
-  // Filter routes by station query
-  const filteredRoutes = useMemo(() => {
-    return findRoutesByStation(stationQuery);
-  }, [stationQuery]);
+  const routes = useMemo(() => findRoutesByStation(query), [query]);
+  const live = (id) => snapshot.routes.find((r) => r.id === id);
 
-  // Selected route object
-  const activeRoute = useMemo(() => {
-    return snapshot.routes.find((r) => r.id === selectedRouteId) || snapshot.routes[0];
-  }, [snapshot.routes, selectedRouteId]);
-
-  // Selected bus object
-  const activeBus = useMemo(() => {
-    if (!selectedBusId) return activeRoute?.buses[0] || null;
-    return snapshot.allBuses.find((b) => b.id === selectedBusId) || null;
-  }, [snapshot.allBuses, selectedBusId, activeRoute]);
+  if (fareOpen) return <FareCalculator onBack={() => setFareOpen(false)} />;
+  if (routeId) return <RouteDetail route={live(routeId)} onBack={() => setRouteId(null)} />;
 
   return (
-    <div style={{ padding: '16px', maxWidth: '1080px', margin: '0 auto', fontFamily: 'var(--font-body, system-ui)' }}>
-      {/* Top Header with Back Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <div>
-          <button
-            type="button"
-            onClick={onBack || (() => go('home'))}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--color-brand, #a8202f)',
-              fontSize: '13px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: 0,
-              marginBottom: '4px',
-            }}
-          >
-            ← Back to Home / फर्कनुहोस्
-          </button>
-          <h1 style={{ fontSize: '26px', fontWeight: '800', margin: 0, color: '#16130f' }}>
-            मार्ग र बसहरू · Routes
-          </h1>
-          <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13.5px' }}>
-            Valley routes, stops and fares. Bus positions and seats on this screen are a simulated demo fleet, not live buses.
-          </p>
-        </div>
+    <div className="rt">
+      <header className="rt-head">
+        <h1>मार्गहरू · Routes</h1>
+        <p>Find a route by any stop on it.</p>
+      </header>
 
-        {/* View Mode Toggle */}
-        <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '10px', padding: '3px' }}>
-          <button
-            type="button"
-            onClick={() => setViewMode('split')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '12px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              background: viewMode === 'split' ? '#fff' : 'transparent',
-              color: viewMode === 'split' ? '#0f172a' : '#64748b',
-              boxShadow: viewMode === 'split' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-            }}
-          >
-            Split View
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('map')}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              border: 'none',
-              fontSize: '12px',
-              fontWeight: '700',
-              cursor: 'pointer',
-              background: viewMode === 'map' ? '#fff' : 'transparent',
-              color: viewMode === 'map' ? '#0f172a' : '#64748b',
-              boxShadow: viewMode === 'map' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
-            }}
-          >
-            Full Map
-          </button>
-        </div>
-      </div>
-
-      {/* Search Input: Filter Routes by Station (Like Sajha Plus) */}
-      <div style={{ position: 'relative', marginBottom: '18px' }}>
+      <label className="rt-search">
+        <Icon name="search" />
         <input
-          type="text"
-          placeholder="Filter Routes by Station (e.g. Tripureshwor, Ratnapark, Lagankhel)..."
-          value={stationQuery}
-          onChange={(e) => setStationQuery(e.target.value)}
-          style={{
-            width: '100%',
-            padding: '14px 16px 14px 44px',
-            borderRadius: '12px',
-            border: '2px solid #e2e8f0',
-            fontSize: '15px',
-            background: '#ffffff',
-            boxSizing: 'border-box',
-            outline: 'none',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-          }}
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search a stop — e.g. Tripureshwor"
+          aria-label="Search routes by stop"
         />
-        <span
-          style={{
-            position: 'absolute',
-            left: '16px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            fontSize: '16px',
-            color: '#94a3b8',
-          }}
-        >
-          🔍
+      </label>
+
+      <button type="button" className="rt-fare" onClick={() => setFareOpen(true)}>
+        <span className="rt-fare__icon" aria-hidden="true"><Icon name="gauge" /></span>
+        <span>
+          <b>भाडा कति? · Fare calculator</b>
+          <small>Pick where you get on and off — see the distance and the fare.</small>
         </span>
-        {stationQuery && (
-          <button
-            type="button"
-            onClick={() => setStationQuery('')}
-            style={{
-              position: 'absolute',
-              right: '14px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: '#f1f5f9',
-              border: 'none',
-              borderRadius: '50%',
-              width: '24px',
-              height: '24px',
-              cursor: 'pointer',
-              fontSize: '11px',
-              color: '#64748b',
-            }}
-          >
-            ✕
-          </button>
-        )}
-      </div>
+        <Icon name="chevron" />
+      </button>
 
-      {/* Main Layout Grid */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: viewMode === 'map' ? '1fr' : '360px 1fr',
-          gap: '20px',
-          alignItems: 'start',
-        }}
-      >
-        {/* Left Column: Route List & Individual Buses (Sajha Plus Style) */}
-        {viewMode !== 'map' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Route Selector Cards */}
-            <div>
-              <div style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px' }}>
-                उपलब्ध मार्गहरू · Active Corridors ({filteredRoutes.length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto' }}>
-                {filteredRoutes.map((route) => {
-                  const isSelected = selectedRouteId === route.id;
-                  return (
-                    <button
-                      key={route.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedRouteId(route.id);
-                        setSelectedBusId(route.buses[0]?.id || null);
-                      }}
-                      style={{
-                        padding: '12px 14px',
-                        background: isSelected ? '#fff' : '#f8fafc',
-                        border: `2px solid ${isSelected ? 'var(--color-brand, #a8202f)' : '#e2e8f0'}`,
-                        borderRadius: '12px',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        boxShadow: isSelected ? '0 4px 12px rgba(168, 32, 47, 0.12)' : 'none',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                        <span
-                          style={{
-                            background: isSelected ? 'var(--color-brand, #a8202f)' : '#e2e8f0',
-                            color: isSelected ? '#fff' : '#334155',
-                            padding: '2px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: '700',
-                          }}
-                        >
-                          {route.number}
-                        </span>
-                        <span style={{ fontSize: '11.5px', color: '#16a34a', fontWeight: '700' }}>
-                          {route.buses.length} demo buses
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
-                        {route.fromNe} ⇄ {route.toNe}
-                      </div>
-                      <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
-                        {route.stops.length} stops · {route.distanceKm} km · रु {route.fareNormal}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+      {query && routes.length > 0 ? (
+        <p className="rt-note">Routes that stop at “{query}”:</p>
+      ) : null}
 
-            {/* Individual Buses Running on Selected Route */}
-            {activeRoute && (
-              <div>
-                <div style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px' }}>
-                  {activeRoute.number} का बसहरू · Buses in Transit
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {activeRoute.buses.map((bus) => {
-                    const isSelected = activeBus?.id === bus.id;
-                    const v = VENDORS[bus.vendor] || {};
-                    return (
-                      <div
-                        key={bus.id}
-                        onClick={() => setSelectedBusId(bus.id)}
-                        style={{
-                          background: isSelected ? '#fef2f2' : '#ffffff',
-                          border: `1.5px solid ${isSelected ? 'var(--color-brand, #a8202f)' : '#e2e8f0'}`,
-                          borderRadius: '12px',
-                          padding: '12px',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
-                        }}
-                      >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a' }}>
-                              {bus.plateStr}
-                            </span>
-                            <span
-                              style={{
-                                background: v.badgeBg || '#fee2e2',
-                                color: v.color || '#a8202f',
-                                padding: '1px 6px',
-                                borderRadius: '4px',
-                                fontSize: '10px',
-                                fontWeight: '700',
-                              }}
-                            >
-                              {v.name}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '11px', fontWeight: '700', color: '#475569' }}>
-                            {bus.speedKmh} km/h
-                          </span>
-                        </div>
-
-                        <div style={{ fontSize: '12px', color: '#475569', marginBottom: '4px' }}>
-                          Current: <strong>{bus.currentStop?.name || 'In Transit'}</strong>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#a8202f', fontWeight: '600', marginBottom: '6px' }}>
-                          Next: <strong>{bus.nextStop?.name || 'Next Station'}</strong> · ETA {bus.etaMinutes}m
-                        </div>
-
-                        {/* Available Seats Pill */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px' }}>
-                          <span style={{ color: bus.crowdColor, fontWeight: '700' }}>
-                            ● {bus.crowdNe || `${bus.availableSeats} Seats Open`}
-                          </span>
-                          <span style={{ color: '#94a3b8' }}>{bus.occupiedSeats}/{bus.capacity} seats</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Right Column: OpenStreetMap and Detailed Bus Telemetry Card */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <OsmFleetMap
-            buses={snapshot.allBuses}
-            routes={snapshot.routes}
-            selectedRouteId={selectedRouteId}
-            selectedBusId={selectedBusId}
-            onSelectBus={(bus) => {
-              setSelectedBusId(bus.id);
-              setSelectedRouteId(bus.routeId);
-            }}
-            onSelectRoute={(routeId) => setSelectedRouteId(routeId)}
-            height={viewMode === 'map' ? '680px' : '480px'}
-          />
-
-          {/* Active Bus Telemetry Card */}
-          {activeBus && (
-            <LiveBusStatusCard
-              bus={activeBus}
-              onClose={() => setSelectedBusId(null)}
-              showDetailed={true}
-            />
-          )}
-        </div>
-      </div>
+      {routes.length === 0 ? (
+        <Empty icon="route" title="No route stops there">Try another spelling, or the name of a nearby chowk.</Empty>
+      ) : (
+        <ul className="rt-list">
+          {routes.map((r) => (
+            <li key={r.id}>
+              <button type="button" className="rt-card" onClick={() => setRouteId(r.id)}>
+                <span className="rt-card__tag">{r.number}</span>
+                <span className="rt-ends">
+                  <span><i aria-hidden="true" />{r.from}</span>
+                  <span><i aria-hidden="true" />{r.to}</span>
+                </span>
+                <span className="rt-card__facts">
+                  <span><Icon name="bus" />{(live(r.id)?.buses.length ?? r.buses.length)} demo bus{(live(r.id)?.buses.length ?? r.buses.length) === 1 ? '' : 'es'}</span>
+                  <span><Icon name="pin" />{r.stops.length} stops</span>
+                  <span><Icon name="route" />{r.distanceKm} km</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
+
+/* --------------------------------------------------------------- one route */
+
+function RouteDetail({ route, onBack }) {
+  const [view, setView] = useState('buses');
+  const [busId, setBusId] = useState(null);
+  if (!route) return null;
+  const end = route.stops[route.stops.length - 1];
+  return (
+    <div className="rt">
+      <div className="rt-banner">
+        <button type="button" className="rt-back" onClick={onBack} aria-label="Back to routes"><Icon name="back" /></button>
+        <span className="rt-card__tag">{route.number}</span>
+        <span className="rt-ends rt-ends--light">
+          <span><i aria-hidden="true" />{route.from}</span>
+          <span><i aria-hidden="true" />{route.to}</span>
+        </span>
+        <span className="rt-banner__count">{route.buses.length} bus{route.buses.length === 1 ? '' : 'es'}</span>
+      </div>
+      <p className="rt-note">
+        {route.stops.length} stops · {end.km} km · end to end {rs(stageFare(0, route.stops.length - 1).amount)} (demo fare table)
+      </p>
+
+      <Segmented
+        label="Show"
+        value={view}
+        onChange={setView}
+        options={[{ value: 'buses', label: 'Buses' }, { value: 'stops', label: 'Stops' }, { value: 'map', label: 'Map' }]}
+      />
+
+      {view === 'buses' ? (
+        <>
+          <p className="rt-demo"><DemoTag>Demo fleet</DemoTag> These buses are simulated to show how live buses would appear.</p>
+          <ul className="rt-buses">
+            {route.buses.map((b) => (
+              <li key={b.id} className="rt-bus">
+                <span className="rt-bus__icon" aria-hidden="true"><Icon name="bus" /></span>
+                <span className="rt-bus__body">
+                  <span className="rt-bus__top">
+                    <b>Bus {b.plateStr}</b>
+                    <span className="rt-bus__speed">{Math.round(b.speedKmh)} km/h</span>
+                  </span>
+                  <small>{b.vendorInfo?.en}</small>
+                  <span className="rt-bus__line"><span>Now at</span> {b.currentStop?.name ?? '—'}</span>
+                  <span className="rt-bus__line"><span>Next stop</span> {b.nextStop?.name ?? '—'} · about {b.etaMinutes} min</span>
+                  <span className={`rt-bus__seats rt-bus__seats--${b.crowdLevel ?? 'available'}`}>{b.crowdLabel}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {view === 'stops' ? (
+        <ol className="rt-stops">
+          {route.stops.map((s, i) => (
+            <li key={s.code}>
+              <span className="rt-stops__n">{i + 1}</span>
+              <span className="rt-stops__name">{s.name}<small>{s.ne}</small></span>
+              <span className="rt-stops__km">{s.km} km</span>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      {view === 'map' ? (
+        <div className="rt-map">
+          <OsmFleetMap
+            buses={route.buses}
+            routes={[route]}
+            selectedRouteId={route.id}
+            selectedBusId={busId}
+            onSelectBus={(b) => setBusId(b?.id ?? b)}
+            height="60vh"
+          />
+          <p className="rt-demo"><DemoTag>Simulated</DemoTag> Bus positions are not live.</p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------- fare calculator */
+
+function FareCalculator({ onBack }) {
+  const [routeId, setRouteId] = useState(VALLEY_ROUTES[0].id);
+  const route = VALLEY_ROUTES.find((r) => r.id === routeId);
+  const [from, setFrom] = useState(0);
+  const [to, setTo] = useState(route.stops.length - 1);
+  const [who, setWho] = useState('none');
+
+  const pickRoute = (id) => {
+    const next = VALLEY_ROUTES.find((r) => r.id === id);
+    setRouteId(id);
+    setFrom(0);
+    setTo(next.stops.length - 1);
+  };
+
+  const a = route.stops[Math.min(from, route.stops.length - 1)];
+  const b = route.stops[Math.min(to, route.stops.length - 1)];
+  const km = Math.abs(b.km - a.km);
+  const price = stageFare(Math.min(from, route.stops.length - 1), Math.min(to, route.stops.length - 1), who);
+
+  return (
+    <div className="rt">
+      <div className="rt-titlebar">
+        <button type="button" className="rt-back rt-back--ink" onClick={onBack} aria-label="Back to routes"><Icon name="back" /></button>
+        <h1>भाडा कति? · Fare</h1>
+      </div>
+
+      <div className="rt-calc">
+        <label className="rt-field">
+          <span>Route</span>
+          <select value={routeId} onChange={(e) => pickRoute(e.target.value)}>
+            {VALLEY_ROUTES.map((r) => <option key={r.id} value={r.id}>{r.number}: {r.from} – {r.to}</option>)}
+          </select>
+        </label>
+        <label className="rt-field">
+          <span><i className="rt-dot" aria-hidden="true" />Get on at</span>
+          <select value={from} onChange={(e) => setFrom(Number(e.target.value))}>
+            {route.stops.map((s, i) => <option key={s.code} value={i}>{s.name}</option>)}
+          </select>
+        </label>
+        <label className="rt-field">
+          <span><i className="rt-dot rt-dot--end" aria-hidden="true" />Get off at</span>
+          <select value={to} onChange={(e) => setTo(Number(e.target.value))}>
+            {route.stops.map((s, i) => <option key={s.code} value={i}>{s.name}</option>)}
+          </select>
+        </label>
+        <Segmented
+          label="Fare type"
+          value={who}
+          onChange={setWho}
+          options={[{ value: 'none', label: 'Adult' }, { value: 'student', label: 'Student' }, { value: 'senior', label: 'Senior' }]}
+        />
+      </div>
+
+      <div className="rt-result" aria-live="polite">
+        <div>
+          <small>Fare</small>
+          <b className="rt-result__fare">{price.stages === 0 ? '—' : rs(price.amount)}</b>
+        </div>
+        <div>
+          <small>Stages · km</small>
+          <b>{price.stages}<span>stages · {km.toFixed(1)} km</span></b>
+        </div>
+      </div>
+      <p className="rt-demo"><DemoTag>Demo fare table</DemoTag></p>
+      <p className="rt-note">
+        A bus fare is a stage fare: {rs(DEMO_RULE.first)} to the next stage, {rs(DEMO_RULE.perStage)} for each stage after, never more
+        than {rs(DEMO_RULE.cap)}. Students and seniors pay half. On the bus, its GPS finds the stage you get on and off at,
+        and the fare comes from the route&rsquo;s fare table.
+      </p>
+    </div>
+  );
+}
+
+const rs = (n) => `रु ${n}`;
