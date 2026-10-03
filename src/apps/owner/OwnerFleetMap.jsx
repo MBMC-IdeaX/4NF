@@ -24,8 +24,8 @@ export default function OwnerFleetMap({ go }) {
   // Selected bus object
   const activeBus = useMemo(() => {
     if (!selectedBusId) return null;
-    return snapshot.allBuses.find((b) => b.id === selectedBusId) || null;
-  }, [snapshot.allBuses, selectedBusId]);
+    return filteredBuses.find((b) => b.id === selectedBusId) || null;
+  }, [filteredBuses, selectedBusId]);
 
   // Aggregate telemetry stats
   const totalOccupied = snapshot.allBuses.reduce((acc, b) => acc + (b.occupiedSeats || 0), 0);

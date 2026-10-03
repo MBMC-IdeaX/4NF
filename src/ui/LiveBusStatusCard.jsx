@@ -9,6 +9,8 @@ export default function LiveBusStatusCard({
   if (!bus) return null;
 
   const vInfo = bus.vendorInfo || {};
+  const knownOccupancy = Number.isFinite(bus.occupiedSeats) && Number.isFinite(bus.capacity) && bus.capacity > 0;
+  const emptySeats = knownOccupancy ? Math.max(0, Math.min(bus.capacity, bus.capacity - bus.occupiedSeats)) : null;
   const isMoving = bus.speedKmh > 0;
 
   // Crowd indicator badge styles
@@ -16,7 +18,7 @@ export default function LiveBusStatusCard({
     available: { bg: '#dcfce7', text: '#15803d', border: '#86efac', dot: '#22c55e' },
     few_seats: { bg: '#fef3c7', text: '#b45309', border: '#fcd34d', dot: '#f59e0b' },
     standing: { bg: '#fee2e2', text: '#b91c1c', border: '#fca5a5', dot: '#ef4444' },
-  }[bus.crowdLevel || 'available'];
+  }[bus.crowdLevel] ?? { bg: '#f1f5f9', text: '#475569', border: '#cbd5e1', dot: '#64748b' };
 
   return (
     <div
@@ -171,7 +173,7 @@ export default function LiveBusStatusCard({
               fontWeight: '700',
             }}
           >
-            {bus.crowdNe || bus.crowdLabel}
+            {knownOccupancy ? `${emptySeats} empty seats (simulated)` : 'Occupancy unknown'}
           </span>
         </div>
 
@@ -179,7 +181,7 @@ export default function LiveBusStatusCard({
         <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
           <div
             style={{
-              width: `${Math.min(100, Math.round((bus.occupiedSeats / bus.capacity) * 100))}%`,
+              width: `${knownOccupancy ? Math.max(0, Math.min(100, Math.round((bus.occupiedSeats / bus.capacity) * 100))) : 0}%`,
               height: '100%',
               background: crowdStyles.dot,
               transition: 'width 0.4s ease',
@@ -188,11 +190,12 @@ export default function LiveBusStatusCard({
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-          <span>{bus.occupiedSeats} Passengers aboard</span>
-          <span>Total capacity: {bus.capacity} seats</span>
+          <span>{knownOccupancy ? bus.occupiedSeats : 'Unknown'} passengers aboard</span>
+          <span>Seated places: {bus.capacity ?? 'Unknown'}</span>
         </div>
       </div>
 
+      <p style={{ fontSize: 12 }}>Direction: {bus.direction ?? 'Unknown'} - Updated: {bus.updatedAt ? new Date(bus.updatedAt).toLocaleTimeString() : 'Unknown'}<br />Permitted total capacity: {bus.permittedCapacity ?? 'Unknown'} - Standing: {knownOccupancy ? Math.max(0, bus.occupiedSeats - bus.capacity) : 'Unknown'} (simulated)</p>
       {/* Crew Info & Action Footer */}
       {showDetailed && (
         <div

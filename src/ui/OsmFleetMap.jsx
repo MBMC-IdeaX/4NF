@@ -1,18 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Fix Leaflet default icon asset paths in Vite
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 // Custom HTML DivIcon for Live Buses
 function createBusIcon(bus, isSelected) {
-  const vColor = bus.vendorInfo?.color || '#a8202f';
+  const vColor = (/^#[0-9a-f]{3,8}$/i.test(bus.vendorInfo?.color ?? '') ? bus.vendorInfo.color : '#a8202f');
   const size = isSelected ? 48 : 40;
 
   const html = `
@@ -60,15 +54,15 @@ function createBusIcon(bus, isSelected) {
           background: ${bus.speedKmh > 0 ? '#22c55e' : '#f59e0b'};
           display: inline-block;
         "></span>
-        <span style="color: #fff;">${bus.plateStr || bus.id}</span>
-        <span style="
+        <span aria-hidden="true">??</span><span style="color: #fff;">${escapeHtml(bus.plateStr || bus.id)}</span>
+        <span data-speed style="
           background: rgba(255,255,255,0.18);
           padding: 1px 5px;
           border-radius: 4px;
           font-size: 9.5px;
           font-weight: 600;
           color: #f1f5f9;
-        ">${bus.speedKmh} km/h</span>
+        ">${escapeHtml(bus.speedKmh)} km/h</span>
       </div>
 
       <!-- Pointer Stem -->
@@ -128,6 +122,13 @@ export default function OsmFleetMap({
   const routeLayersRef = useRef(new Map());
   const stopMarkersRef = useRef([]);
 
+  const latest = useRef({});
+  latest.current = { buses, onSelectBus, onSelectRoute };
+  const [following, setFollowing] = useState(false);
+  const geometry = JSON.stringify(routes.map(({ id, color, stops }) => ({ id, color, stops })));
+
+  useEffect(() => setFollowing(false), [selectedBusId, selectedRouteId]);
+
   // Initialize Leaflet Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -154,12 +155,26 @@ export default function OsmFleetMap({
     mapInstanceRef.current = map;
 
     // Ensure map tiles properly calibrate and fill container upon mounting or tab switching
-    const resizeTimer = setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
+    let frame;
+    const resize = () => { cancelAnimationFrame(frame); frame = requestAnimationFrame(() => map.invalidateSize({ pan: false })); };
+    const observer = new ResizeObserver(resize);
+    observer.observe(mapContainerRef.current);
+    document.addEventListener('visibilitychange', resize);
+    const pause = () => setFollowing(false);
+    map.on('dragstart', pause);
+    map.getContainer().addEventListener('wheel', pause);
+    map.getContainer().addEventListener('pointerdown', pause);
+    resize();
 
     return () => {
-      clearTimeout(resizeTimer);
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', resize);
+      map.getContainer().removeEventListener('wheel', pause);
+      map.getContainer().removeEventListener('pointerdown', pause);
+      cancelAnimationFrame(frame);
+      markersRef.current.clear();
+      routeLayersRef.current.clear();
+      stopMarkersRef.current = [];
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -203,7 +218,7 @@ export default function OsmFleetMap({
         dashArray: isFocused ? null : '6, 6',
       }).addTo(map);
 
-      line.on('click', () => onSelectRoute(r.id));
+      line.on('click', () => latest.current.onSelectRoute(r.id));
       routeLayersRef.current.set(r.id, line);
 
       // Draw stops
@@ -215,7 +230,7 @@ export default function OsmFleetMap({
         }).addTo(map);
 
         marker.bindTooltip(
-          `<strong>${s.name}</strong><br/><span style="color:#64748b">${s.ne}</span>`,
+          `<strong>${escapeHtml(s.name)}</strong><br/><span style="color:#64748b">${escapeHtml(s.ne)}</span>`,
           { direction: 'top', offset: [0, -8] }
         );
 
@@ -224,10 +239,10 @@ export default function OsmFleetMap({
     }
 
     // Adjust bounds if user switched route
-    if (selectedRouteId && allLatLons.length > 0) {
+    if (allLatLons.length > 0) {
       map.fitBounds(L.latLngBounds(allLatLons), { padding: [40, 40], maxZoom: 14 });
     }
-  }, [routes, selectedRouteId, onSelectRoute]);
+  }, [geometry, selectedRouteId, interactive]);
 
   // Update Bus Markers dynamically
   useEffect(() => {
@@ -247,38 +262,43 @@ export default function OsmFleetMap({
 
     // Add or update live bus positions smoothly
     for (const bus of buses) {
-      if (!bus.lat || !bus.lon) continue;
+      if (!Number.isFinite(bus.lat) || !Number.isFinite(bus.lon)) continue;
       const latLng = [bus.lat, bus.lon];
       const isSelected = selectedBusId === bus.id;
 
       if (currentMarkers.has(bus.id)) {
         const m = currentMarkers.get(bus.id);
         m.setLatLng(latLng);
-        m.setIcon(createBusIcon(bus, isSelected));
+        const styleKey = JSON.stringify([isSelected, bus.vendorInfo?.color, bus.plateStr]);
+        if (m.styleKey !== styleKey) { m.setIcon(createBusIcon(bus, isSelected)); m.styleKey = styleKey; }
+        const speed = m.getElement()?.querySelector('[data-speed]');
+        if (speed) speed.textContent = `${bus.speedKmh} km/h`;
       } else {
         const m = L.marker(latLng, {
           icon: createBusIcon(bus, isSelected),
           zIndexOffset: 500,
         }).addTo(map);
 
-        m.on('click', () => onSelectBus(bus));
+        m.on('click', () => { const fresh = latest.current.buses.find((b) => b.id === bus.id); if (fresh) latest.current.onSelectBus(fresh); });
+        m.styleKey = JSON.stringify([isSelected, bus.vendorInfo?.color, bus.plateStr]);
         currentMarkers.set(bus.id, m);
       }
     }
 
     // Center on selected bus
-    if (selectedBusId) {
+    if (selectedBusId && following) {
       const selected = buses.find((b) => b.id === selectedBusId);
       if (selected && selected.lat && selected.lon) {
         map.panTo([selected.lat, selected.lon], { animate: true });
       }
     }
-  }, [buses, selectedBusId, onSelectBus]);
+  }, [buses, selectedBusId, following, interactive]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height, borderRadius: '14px', overflow: 'hidden' }}>
       <div ref={mapContainerRef} style={{ width: '100%', height: '100%', background: '#f8fafc' }} />
 
+      {selectedBusId ? <button type="button" onClick={() => setFollowing((v) => !v)} style={{ position: 'absolute', top: 12, right: 12, zIndex: 1000 }}>{following ? 'Pause follow' : 'Follow bus'}</button> : null}
       {/* Floating Map Legend & Attribution */}
       <div
         style={{

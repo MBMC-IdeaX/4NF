@@ -7,6 +7,7 @@
 // a simulated demo fleet (src/lib/fleet-simulator.js) and say so.
 
 import { useEffect, useMemo, useState } from 'react';
+import LiveBusStatusCard from '../../ui/LiveBusStatusCard';
 import OsmFleetMap from '../../ui/OsmFleetMap';
 import { fleetEngine } from '../../lib/fleet-simulator';
 import { findRoutesByStation, VALLEY_ROUTES } from '../../data/valley-routes';
@@ -172,6 +173,7 @@ function RouteDetail({ route, onBack }) {
             onSelectBus={(b) => setBusId(b?.id ?? b)}
             height="60vh"
           />
+          {busId ? <LiveBusStatusCard bus={route.buses.find((b) => b.id === busId)} /> : null}
           <p className="rt-demo"><DemoTag>Simulated</DemoTag> Bus positions are not live.</p>
         </div>
       ) : null}

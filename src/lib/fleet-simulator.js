@@ -1,7 +1,7 @@
 // Real-time Fleet Tracking & Motion Simulator for Kathmandu Transit
 // Simulates live GPS telemetry, stop dwell times, traffic speed, and seat occupancy.
 
-import { VALLEY_ROUTES, VENDORS } from '../data/valley-routes';
+import { VALLEY_ROUTES, VENDORS } from '../data/valley-routes.js';
 
 // Interpolate between two lat/lon coordinates
 function interpolate(p1, p2, t) {
@@ -11,14 +11,15 @@ function interpolate(p1, p2, t) {
   };
 }
 
-class FleetSimulationEngine {
-  constructor() {
-    this.routes = JSON.parse(JSON.stringify(VALLEY_ROUTES));
+export class FleetSimulationEngine {
+  constructor({ routes = VALLEY_ROUTES, now = Date.now, random = Math.random } = {}) {
+    this.now = now;
+    this.random = random;
+    this.routes = JSON.parse(JSON.stringify(routes));
     this.listeners = new Set();
     this.timer = null;
-    this.lastTick = Date.now();
+    this.lastTick = this.now();
     this.initFleet();
-    this.start();
   }
 
   initFleet() {
@@ -48,18 +49,23 @@ class FleetSimulationEngine {
     const totalStops = stops.length;
     if (totalStops < 2) return;
 
+    if (bus.dwellUntil > this.now()) { deltaSec = 0; bus.speedKmh = 0; }
+    const lengthKm = stops[totalStops - 1].km - stops[0].km;
+    if (!(lengthKm > 0)) return;
+    const beforeDirection = bus.direction;
+    const beforeKm = stops[0].km + Math.max(0, Math.min(1, bus.progress)) * lengthKm;
     // Advance progress based on current speed
     // 1 km/h = 1000m / 3600s
     if (deltaSec > 0) {
       // Natural traffic speed variation: 15 to 38 km/h, occasional stop crawl
       const baseSpeed = bus.direction === 'forward' ? 24 : 22;
-      const speedWiggle = Math.sin(Date.now() / 4000 + bus.id.charCodeAt(1)) * 10;
+      const speedWiggle = Math.sin(this.now() / 4000 + bus.id.charCodeAt(1)) * 10;
       bus.speedKmh = Math.max(0, Math.min(42, Math.round(baseSpeed + speedWiggle)));
 
       // Step progress along the line
       const speedMps = (bus.speedKmh * 1000) / 3600;
       const distTraveledM = speedMps * deltaSec;
-      const totalRoadM = route.distanceKm * 1000;
+      const totalRoadM = lengthKm * 1000;
       const progressDelta = distTraveledM / totalRoadM;
 
       if (bus.direction === 'forward') {
@@ -82,9 +88,11 @@ class FleetSimulationEngine {
 
     // Determine current segment between stops
     const effectiveProgress = Math.max(0, Math.min(1, bus.progress));
-    const rawIndex = effectiveProgress * (totalStops - 1);
-    const segIdx = Math.min(Math.floor(rawIndex), totalStops - 2);
-    const segT = rawIndex - segIdx;
+    const chainage = stops[0].km + effectiveProgress * lengthKm;
+    const found = stops.findIndex((stop) => stop.km > chainage);
+    const segIdx = found < 0 ? totalStops - 2 : Math.max(0, found - 1);
+    const span = stops[segIdx + 1].km - stops[segIdx].km;
+    const segT = span > 0 ? Math.max(0, Math.min(1, (chainage - stops[segIdx].km) / span)) : 0;
 
     const stopA = stops[segIdx];
     const stopB = stops[segIdx + 1];
@@ -107,13 +115,24 @@ class FleetSimulationEngine {
       bus.etaMinutes = Math.max(1, Math.round((distToNextKm / Math.max(12, bus.speedKmh)) * 60));
     }
 
-    // Dynamic passenger boarding simulation at stops
-    if (deltaSec > 0 && Math.random() < 0.1) {
-      const change = Math.floor(Math.random() * 5) - 2; // -2 to +2
-      bus.occupiedSeats = Math.max(8, Math.min(bus.capacity + 6, bus.occupiedSeats + change));
+    // Occupancy changes only when arriving at a configured stop.
+    if (deltaSec > 0) {
+      const reached = stops.find((stop) => beforeDirection === 'forward'
+        ? stop.km > beforeKm && stop.km <= chainage
+        : stop.km < beforeKm && stop.km >= chainage);
+      if (reached || bus.progress === 0 || bus.progress === 1) {
+        if (reached) { bus.progress = (reached.km - stops[0].km) / lengthKm; bus.lat = reached.lat; bus.lon = reached.lon; }
+        bus.dwellUntil = this.now() + 12000;
+        bus.speedKmh = 0;
+        const change = Math.floor(this.random() * 5) - 2;
+        bus.occupiedSeats = Math.max(0, Math.min(bus.capacity + 6, bus.occupiedSeats + change));
+      }
     }
-
-    bus.availableSeats = Math.max(0, bus.capacity - bus.occupiedSeats);
+    bus.updatedAt = this.now();
+    if (!Number.isFinite(bus.occupiedSeats) || !Number.isFinite(bus.capacity) || bus.capacity <= 0) {
+      bus.availableSeats = null; bus.crowdLevel = 'unknown'; bus.crowdLabel = 'Occupancy unknown'; bus.crowdNe = 'Occupancy unknown'; bus.crowdColor = '#64748b'; return;
+    }
+    bus.availableSeats = Math.max(0, Math.min(bus.capacity, bus.capacity - bus.occupiedSeats));
     const occRatio = bus.occupiedSeats / bus.capacity;
     if (occRatio < 0.75) {
       bus.crowdLevel = 'available';
@@ -135,8 +154,8 @@ class FleetSimulationEngine {
   }
 
   tick() {
-    const now = Date.now();
-    const deltaSec = (now - this.lastTick) / 1000;
+    const now = this.now();
+    const deltaSec = Math.max(0, Math.min(2, (now - this.lastTick) / 1000));
     this.lastTick = now;
 
     for (const route of this.routes) {
@@ -150,6 +169,7 @@ class FleetSimulationEngine {
 
   start() {
     if (this.timer) return;
+    this.lastTick = this.now();
     this.timer = setInterval(() => this.tick(), 1500); // 1.5s updates for fluid animation
   }
 
@@ -162,8 +182,9 @@ class FleetSimulationEngine {
 
   subscribe(listener) {
     this.listeners.add(listener);
+    this.start();
     listener(this.getSnapshot());
-    return () => this.listeners.delete(listener);
+    return () => { this.listeners.delete(listener); if (!this.listeners.size) this.stop(); };
   }
 
   notify() {
@@ -188,7 +209,7 @@ class FleetSimulationEngine {
       routes: this.routes,
       allBuses,
       totalBuses: allBuses.length,
-      timestamp: Date.now(),
+      timestamp: this.now(),
     };
   }
 }
