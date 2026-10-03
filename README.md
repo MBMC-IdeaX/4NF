@@ -84,6 +84,19 @@ longer has to take the cash count on trust.
 
 ---
 
+## Group rides and bulk enrollment
+
+A group can include the profile holder and up to four other people, such as friends,
+family or coworkers. One phone presents a BG1 group code containing a separately signed
+BT1 ride code for each person. Each rider has a separate ride record and counts toward
+bus capacity; every fare is charged to the profile holder's wallet.
+
+The database records companion passenger keys in `passenger_keys`, linked to the paying
+wallet. Settlement uses `wallet_for()` to resolve that wallet. These keys represent rides,
+not named companion profiles. Group rides do not enroll other people into accounts or
+create a persistent membership list. A rider paying independently uses their own signed
+ride code and wallet. Bulk enrollment of named people with separate profiles is not implemented.
+
 ## Fares
 
 - A ride is priced from **boarding stage + exit stage + route + fare table version**.
@@ -118,7 +131,7 @@ a stop-to-stop fare table (`fares`, route R11), cached on the phone for offline 
 | Apps | React 19 + Vite 7, five builds (site, rider, crew, owner, staff), installable PWAs (vite-plugin-pwa) with their own service worker and manifest |
 | On the device | IndexedDB (`idb`) for rides, receipts, keys and the outbox; the phone's GPS through the browser's Geolocation API; the camera for QR scanning (`jsqr`); Web NFC on Android Chrome; screen wake lock while riding |
 | Signing | Ed25519 (`tweetnacl`); every code below is a signed, `\|`-separated text string carried in a QR |
-| Backend | Supabase Postgres: 39 numbered migrations with row-level security, every money rule enforced in SQL functions; Edge Functions `sync` (settlement) and `payments` (eSewa) |
+| Backend | Supabase Postgres: migrations through 0042 with row-level security, every money rule enforced in SQL functions; Edge Functions `sync` (settlement) and `payments` (eSewa) |
 | Shared logic | `protocol/`: platform-free ESM used by the apps, the Edge Function and the proofs. The Edge Function's copy is generated (`npm run sync:protocol`), never edited by hand |
 | Proofs | Node scripts; Postgres runs in-process with PGlite, so settlement is proven on a real database without a server |
 | Maps | Leaflet with OpenStreetMap tiles (free, no key) |
@@ -761,6 +774,15 @@ for writing; screens call functions that check the caller themselves (`is_platfo
 | 0037 company requests | `company_requests` | `owner_request`, `review_requests`, `admin_build_route` |
 | 0038 onboarding | `agreement_texts`, `operator_agreements` | `accept_agreement`, `admin_create_company`, `admin_set_company_live`, `my_onboarding` |
 | 0039 stage tariff | `tariffs.kind`, `tariffs.stage_fares` | tariff row `R11-STAGE-DEMO-1` (demo stage fare table) |
+| 0040 demo bus | `vehicles.is_demo`; dedicated DEMOBUS01 registry entry | demo-only meter registration behavior |
+| 0041 event acknowledgements | `door_events.event_id`, `meter_events.event_id`; unique vehicle/event indexes | `append_door_events`, `append_meter_events`; acknowledged retries do not duplicate events |
+| 0042 rider bus keys | public vehicle verification key lookup; no table grants | `rider_bus_key` |
+
+Migrations 0041/0042 and the matching sync backend were tested locally and committed.
+This delivery has not applied them to live Supabase. Apply the migrations and deploy the
+matching backend before releasing the updated clients. See the
+[debug and automation delivery notes](docs/debug-automation.md) for verification results
+and remaining limitations.
 
 ---
 
