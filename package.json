@@ -17,6 +17,7 @@
     "sync:protocol": "node scripts/sync-protocol.mjs",
     "fonts": "node scripts/fetch-fonts.mjs",
     "icons": "node scripts/make-icons.mjs",
+    "voice": "node scripts/make-voice.mjs",
     "serve": "node scripts/serve-dist.mjs",
     "sync:local": "node scripts/local-sync-server.mjs",
     "validator": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs validator/main.mjs",
