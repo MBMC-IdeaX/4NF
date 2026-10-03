@@ -340,9 +340,18 @@ console.log('\n8. The regulator return computes from the same rows');
     ],
   });
 
-  const ret = await db.query('select * from dotm_daily_return where vehicle_plate = $1 order by service_date desc limit 1', [PLATE]);
+  // A ride is returned on the Kathmandu day it ended. Run near midnight, this
+  // proof's rides end on two days, so the bus's days are added up rather than
+  // one row read — what is checked is that every ride is on the return.
+  const ret = await db.query(`
+    select sum(rides) as rides, sum(rides_measured) as rides_measured, sum(rides_estimated) as rides_estimated,
+           sum(passenger_km) as passenger_km, sum(passenger_km_measured) as passenger_km_measured,
+           sum(fare_npr) as fare_npr, max(peak_onboard) as peak_onboard, max(permitted_capacity) as permitted_capacity,
+           sum(concession_rides) as concession_rides, sum(interlock_refusals) as interlock_refusals,
+           sum(override_events) as override_events
+      from dotm_daily_return where vehicle_plate = $1`, [PLATE]);
   const day = ret.rows[0];
-  line('return, one vehicle-day', `${day.rides} rides, ${day.passenger_km} passenger-km, Rs ${day.fare_npr}, peak ${day.peak_onboard}/${day.permitted_capacity}`);
+  line('return, this vehicle', `${day.rides} rides, ${day.passenger_km} passenger-km, Rs ${day.fare_npr}, peak ${day.peak_onboard}/${day.permitted_capacity}`);
   check('the return counts every settled ride', Number(day.rides) === 10, String(day.rides));
   check('and separates measured distance from estimated',
     Number(day.rides_measured) + Number(day.rides_estimated) === Number(day.rides)
@@ -1541,8 +1550,13 @@ check('only the honest rides moved money', legs.rows[0].n === 15 + overdraftLegs
 
 // The owner's view of the same rides (0011). Run here as the database owner,
 // so RLS does not narrow it; the point is that the view computes.
-const economics = await db.query('select * from operator_distance where vehicle_plate = $1', [PLATE]);
-const day = economics.rows[0];
+// Summed over the bus's days for the same reason as the return in section 8.
+const economics = await db.query(`
+  select sum(rides)::int as rides, sum(passenger_km) as passenger_km,
+         round(sum(collected) / nullif(sum(passenger_km), 0), 2) as npr_per_km,
+         sum(measured)::int as measured, sum(unclosed)::int as unclosed
+    from operator_distance where vehicle_plate = $1`, [PLATE]);
+const day = economics.rows[0]?.rides == null ? null : economics.rows[0];
 line('owner sees, per km', day ? `${day.rides} rides, ${day.passenger_km} passenger-km, Rs ${day.npr_per_km}/km, ${day.measured} measured, ${day.unclosed} unclosed` : 'nothing');
 check('the owner dashboard view reports the metered rides', day?.rides === 15 + overdraftLegs + crewLegs && day?.unclosed === 2);
 const health = await db.query('select * from operator_vehicles where plate = $1', [PLATE]);
