@@ -24,16 +24,19 @@ import { db } from '../storage/db';
 const KEY = 'vehicle';
 
 /*
-  The demo bus. Every field is a fact about a real vehicle that a real
-  deployment reads off the route permit, which is why they are all here together
-  rather than scattered: capacity is what the door interlock enforces, and
-  plate is what every signature on this device names.
+  The demo bus. DEMOBUS01 is not a real vehicle: it belongs to a demo company
+  (migration 0040) and takes the key of whichever phone is giving the demo, so
+  running the demo on the live site never touches a real bus's record. A real
+  bus is set up from the owner's code and reads these fields off its permit:
+  capacity is what the door interlock enforces, and the plate is what every
+  signature on this device names.
 */
 export const DEFAULT_VEHICLE = {
-  id: 'BA2KHA4412',
-  plate: { province: 'बा', number: '२', series: 'ख', digits: '४४१२' },
+  id: 'DEMOBUS01',
+  plate: { province: 'डेमो', number: '', series: 'बस', digits: '०१' },
+  demo: true,
   routeId: 'R11',
-  routeName: 'Ratna Park — Koteshwor',
+  routeName: 'Demo bus · Ratna Park — Koteshwor',
   seated: 30,
   standing: 12,
   capacity: 42,

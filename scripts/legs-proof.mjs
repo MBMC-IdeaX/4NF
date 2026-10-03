@@ -2190,6 +2190,20 @@ let stageLegs = 0;
   if (settled.ok) stageLegs += 1;
 }
 
+console.log('\n38. The demo bus is not a real bus (0040)');
+{
+  const bus = await db.query("select operator_id, is_demo from vehicles where plate = 'DEMOBUS01'");
+  check('DEMOBUS01 exists, marked demo, under the demo company', bus.rows[0]?.is_demo === true && bus.rows[0]?.operator_id === 'BHADA-DEMO');
+  const first = createKeypair();
+  const second = createKeypair();
+  const a = (await db.query('select register_meter($1, $2) as r', ['DEMOBUS01', first.publicKey])).rows[0].r;
+  const b = (await db.query('select register_meter($1, $2) as r', ['DEMOBUS01', second.publicKey])).rows[0].r;
+  check('one phone can take the demo bus', a.ok === true, JSON.stringify(a));
+  check('...and the next phone giving a demo can take it over', b.ok === true && b.demo === true, JSON.stringify(b));
+  const real = (await db.query('select register_meter($1, $2) as r', [PLATE, createKeypair().publicKey])).rows[0].r;
+  check('a real bus still refuses a second phone\'s key', real.ok === false && real.reason === 'key_mismatch', JSON.stringify(real));
+}
+
 console.log('\nLedger');
 const legs = await db.query('select count(*)::int as n, coalesce(sum(amount), 0)::int as rs from legs');
 const taps = await db.query('select count(*)::int as n from leg_taps');
