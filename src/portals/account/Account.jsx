@@ -9,7 +9,7 @@ import { supabaseConfigured } from '../../lib/supabase';
 import { navigate } from '../../lib/router';
 import BusLoader from '../../components/BusLoader';
 import Shell, { PageError } from '../shared/Shell';
-import SignIn from '../shared/SignIn';
+import AppSignIn from '../../ui/AppSignIn';
 import { usePasswordRecovery, SetPassword } from '../shared/Recovery';
 import { useSession, signOut, call } from '../shared/session';
 import { explain, rupees, METHOD_NAMES } from '../shared/format';
@@ -67,7 +67,7 @@ export default function Account() {
       if (!live) return;
       setSettling(false);
       if (!result) return;
-      window.history.replaceState({}, '', '/app/account');
+      window.history.replaceState({}, '', '/app/wallet');
       const name = METHOD_NAMES[result.method];
       setBanner(result.ok
         ? { tone: 'ok', text: `${name} payment received. ${result.balance !== undefined ? `Your balance is ${rupees(result.balance)}.` : ''}` }
@@ -90,29 +90,14 @@ export default function Account() {
   if (session === undefined) return <BusLoader label="पर्खनुहोस्" sub="Opening your account" />;
   if (!session) {
     return (
-      <Shell label="My account" bare>
-        <SignIn
-          title="मेरो खाता"
-          subtitle="Sign in to see your wallet"
-          redirectPath="/app/account"
-          allowPhone
-          pitch={(
-            <>
-              <h1>तपाईंको भाडा,<br />एकै ठाउँमा।</h1>
-              <p>
-                Every ride and every top-up on one statement, with the balance after each. Top up
-                with eSewa.
-              </p>
-              <ul>
-                <li><b>Riding needs no account.</b> Your phone pays offline either way.</li>
-                <li><b>Your wallet stays on your phone.</b> Signing in links it, with a signature only this phone can make.</li>
-                <li><b>Bus companies never see your name.</b> They see a different key every day.</li>
-              </ul>
-              <button type="button" className="op-link" onClick={() => navigate('/app')}>← Back to riding</button>
-            </>
-          )}
-        />
-      </Shell>
+      <AppSignIn
+        embedded
+        app="Rider"
+        title="मेरो खाता"
+        lead="Riding needs no account. Sign in to top up with eSewa and see every ride on one statement."
+        redirectPath="/app/wallet"
+        allowPhone
+      />
     );
   }
   if (error) return <Shell label="My account" onSignOut={leave}><PageError title="Could not open your account" detail={error} onRetry={load} /></Shell>;

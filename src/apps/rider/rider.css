@@ -1,0 +1,201 @@
+/* Rider home: balance, the boarding ticket, rides as torn stubs. */
+
+.rh > * + * { margin-top: var(--b-5); }
+
+/* ---- balance ---- */
+
+.rh-balance {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--b-4);
+  padding-top: var(--b-3);
+}
+.rh-amount {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: var(--b-2) 0 0;
+  font-size: 3.5rem;
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+}
+.rh-amount__cur {
+  font-size: 1.5rem;
+  color: var(--b-ink-3);
+  font-weight: 600;
+}
+.rh-asof {
+  margin: var(--b-1) 0 0;
+  font-size: var(--b-text-sm);
+  color: var(--b-ink-3);
+}
+.rh-over {
+  margin: var(--b-3) 0 0;
+  padding: var(--b-3) var(--b-4);
+  border-left: 3px solid var(--b-warn);
+  background: var(--b-warn-soft);
+  color: var(--b-ink-2);
+  font-size: var(--b-text-sm);
+}
+
+/* ---- the boarding ticket: the loudest thing on the screen ---- */
+
+.rh-board {
+  --tear: calc(100% - 96px);
+  display: flex;
+  width: 100%;
+  min-height: 176px;
+  padding: 0;
+  border: 0;
+  background: var(--b-plate);
+  color: var(--b-plate-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--b-fast) var(--b-ease), filter var(--b-fast);
+}
+.rh-board:hover { filter: brightness(1.06); }
+.rh-board:active { transform: scale(0.985); }
+.rh-board:focus-visible { box-shadow: none; outline: 3px solid var(--b-ink); outline-offset: 3px; }
+
+.rh-board__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: var(--b-5) var(--b-5) var(--b-5);
+  min-width: 0;
+}
+.rh-board__kicker {
+  font-size: var(--b-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+.rh-board__verb {
+  font: 700 3.25rem/0.9 var(--b-font-display);
+  letter-spacing: -0.01em;
+}
+.rh-board__sub {
+  max-width: 28ch;
+  font-size: var(--b-text-sm);
+  line-height: 1.35;
+  opacity: 0.88;
+}
+.rh-board__stub {
+  position: relative;
+  flex: none;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--b-2);
+  font: 700 1.1rem/1 var(--b-font-display);
+}
+.rh-board__stub::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 18px;
+  bottom: 18px;
+  border-left: 2px dashed currentColor;
+  opacity: 0.45;
+}
+.rh-board__stub svg { width: 44px; height: 44px; stroke-width: 1.6; }
+
+.rh-board--riding { background: var(--b-ink); color: var(--b-ink-inverse); }
+.rh-board--riding .rh-board__verb { color: #ffb21a; }
+
+/* ---- other ways to pay: one hairline strip, not three cards ---- */
+
+.rh-more {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--b-ink);
+  border-bottom: 1px solid var(--b-line);
+}
+.rh-more button {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: var(--b-2);
+  align-items: center;
+  min-height: 64px;
+  padding: var(--b-3) var(--b-2) var(--b-3) 0;
+  border: 0;
+  background: none;
+  color: var(--b-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rh-more button + button { padding-left: var(--b-3); border-left: 1px solid var(--b-line); }
+.rh-more button:hover b { color: var(--b-accent); }
+.rh-more svg { grid-row: span 2; width: 22px; height: 22px; color: var(--b-accent); }
+.rh-more b { font: 700 1.05rem/1.1 var(--b-font-display); }
+.rh-more small { font-size: var(--b-text-xs); color: var(--b-ink-3); line-height: 1.2; }
+
+/* ---- rides as stubs ---- */
+
+.rh-trips__head { margin-bottom: var(--b-2); }
+.rh-list { list-style: none; margin: 0; padding: 0; }
+.rh-trip {
+  display: flex;
+  align-items: stretch;
+  gap: var(--b-3);
+  min-height: 72px;
+  padding: var(--b-2) 0;
+  border-bottom: 1px solid var(--b-line);
+  color: var(--b-ink-3);
+}
+.rh-trip__date {
+  flex: none;
+  width: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--b-ink);
+}
+.rh-trip__date b { font-size: 1.6rem; line-height: 1; }
+.rh-trip__date small { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em; color: var(--b-ink-3); }
+.rh-trip .bx-perf { margin: var(--b-2) 0; }
+.rh-trip__body { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.rh-trip__title {
+  color: var(--b-ink);
+  font: 600 1.05rem/1.2 var(--b-font-display);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rh-trip__sub { display: flex; align-items: center; gap: var(--b-2); font-size: var(--b-text-sm); }
+.rh-trip__flag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--b-text-xs); color: var(--b-bad); }
+.rh-trip__flag svg { width: 14px; height: 14px; }
+.rh-trip__end { flex: none; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 6px; font-size: 1.2rem; }
+.rh-trip__end .bx-stamp { transform: rotate(-4deg); }
+
+.rh-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--b-4);
+  padding: var(--b-5) 0;
+  color: var(--b-ink-3);
+}
+.rh-empty p { margin: 0; max-width: 34ch; }
+.rh-empty b { color: var(--b-ink); }
+.rh-empty__ticket {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border: 2px dashed var(--b-line-strong);
+  border-radius: var(--b-radius);
+  color: var(--b-ink-3);
+}
+.rh-empty__ticket svg { width: 28px; height: 28px; }
