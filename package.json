@@ -4,8 +4,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host",
-    "build": "vite build",
+    "dev": "node scripts/apps.mjs dev",
+    "dev:site": "node scripts/apps.mjs dev site",
+    "dev:rider": "node scripts/apps.mjs dev rider",
+    "dev:crew": "node scripts/apps.mjs dev crew",
+    "dev:owner": "node scripts/apps.mjs dev owner",
+    "build": "node scripts/apps.mjs build",
     "preview": "vite preview --host",
     "proof": "node scripts/handshake-proof.mjs",
     "proof:meter": "node scripts/meter-proof.mjs",
@@ -22,7 +26,8 @@
     "sync:local": "node scripts/local-sync-server.mjs",
     "validator": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs validator/main.mjs",
     "validator:bench": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs validator/bench.mjs",
-    "validator:screens": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs scripts/validator-proof.mjs --screens"
+    "validator:screens": "node --disable-warning=ExperimentalWarning --import ./validator/register.mjs scripts/validator-proof.mjs --screens",
+    "test": "node --test tests/ui/*.test.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.4",

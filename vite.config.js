@@ -30,7 +30,15 @@ const HTTPS = process.env.BHADA_HTTP !== '1';
 */
 const FIXTURES = process.env.BHADA_FIXTURES === '1';
 
-const FIXTURE_MODULE = fileURLToPath(new URL('./src/lib/supabase-fixtures.js', import.meta.url));
+/*
+  BHADA_LOCAL_DB=1 swaps the client for lib/supabase-local.js instead, which
+  sends every call to the local sync server: real migrations, real row-level
+  security, demo logins for every role. For driving the office screens end to
+  end before a migration is live. Like the fixtures, unreachable in a normal build.
+*/
+const LOCAL_DB = process.env.BHADA_LOCAL_DB === '1';
+
+const FIXTURE_MODULE = fileURLToPath(new URL(LOCAL_DB ? './src/lib/supabase-local.js' : './src/lib/supabase-fixtures.js', import.meta.url));
 
 // A resolver rather than an alias: every portal imports the client relatively
 // (`../../lib/supabase`), and an alias matches the specifier that was written
@@ -39,64 +47,182 @@ const fixturesPlugin = {
   name: 'bhada-supabase-fixtures',
   enforce: 'pre',
   async resolveId(source, importer, options) {
-    if (!source.includes('lib/supabase') || source.includes('supabase-fixtures')) return null;
+    if (!source.includes('lib/supabase') || source.includes('supabase-fixtures') || source.includes('supabase-local')) return null;
     const resolved = await this.resolve(source, importer, { ...options, skipSelf: true });
     if (!resolved) return null;
     return resolved.id.split('\\').join('/').endsWith('/src/lib/supabase.js') ? FIXTURE_MODULE : null;
   },
 };
+/*
+  Four independent builds from one repository.
+
+  The public site and the three apps share source (protocol/, the UI kit, the
+  device code) but nothing at runtime: each has its own entry, bundle, service
+  worker, manifest and on-device database, and they meet only through the
+  Supabase API. `BHADA_APP` picks which one this run builds or serves:
+
+    site   /        landing, /demo, /inspect, /admin, the /_ui kit
+    rider  /app/    the passenger app, installs as "Bhada"
+    crew   /crew/   the conductor's phone is the bus, installs as "Bhada Crew"
+    owner  /owner/  the bus owner, installs as "Bhada Owner"
+    staff  /staff/  Bhada's own staff: onboarding, review, payouts
+
+  Each app keeps its path prefix, so the four can be served from one domain
+  (dist/, dist/app, dist/crew, dist/owner) or each from its own.
+*/
+const APP = process.env.BHADA_APP || 'site';
+
+const ICONS = (base) => [
+  // Chrome on Android will not offer "install" without 192 and 512.
+  { src: `${base}icon-192.png`, sizes: '192x192', type: 'image/png' },
+  { src: `${base}icon-512.png`, sizes: '512x512', type: 'image/png' },
+  { src: `${base}icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+];
+
+// The voice clips are the recorded Nepali announcements (scripts/make-voice.mjs):
+// a door or a ticket with no signal still has to speak.
+const WITH_VOICE = ['**/*.{js,css,html,svg,png,woff2}', 'voice/*.{json,wav,mp3,ogg,webm}'];
+const NO_VOICE = ['**/*.{js,css,html,svg,png,woff2}'];
+
+const APPS = {
+  site: {
+    root: '.',
+    base: '/',
+    outDir: 'dist',
+    port: 5199,
+    manifest: false,
+    globPatterns: NO_VOICE,
+    // An inspector is exactly the person on a bus with no signal, so /inspect
+    // is precached. The demo carries Postgres (about 16 MB) and the admin
+    // console is an office tool: both are fetched only when opened.
+    globIgnores: ['app/**', 'crew/**', 'owner/**', 'staff/**', 'voice/**', '**/Admin-*.js', '**/supabase-*.js', '**/Demo-*.js', '**/demo-*.js', '**/pglite-*.js', '**/stage-*.js', '**/backend-*.js', '**/Demo-*.css'],
+    denylist: [/^\/app/, /^\/crew/, /^\/owner/, /^\/staff/, /^\/admin/, /^\/demo/],
+  },
+  rider: {
+    root: 'apps/rider',
+    base: '/app/',
+    outDir: '../../dist/app',
+    port: 5201,
+    manifest: {
+      name: 'Bhada — ride with no signal',
+      short_name: 'Bhada',
+      description: 'Pay your bus fare by the kilometre, even with no signal.',
+      theme_color: '#f6f3ec',
+      background_color: '#f6f3ec',
+    },
+    globPatterns: WITH_VOICE,
+    // The wallet is online by nature (statement, eSewa). Its chunk and the
+    // Supabase client are fetched when opened, not on install.
+    globIgnores: ['**/Account-*.js', '**/supabase-*.js'],
+    denylist: [/^\/app\/wallet/],
+  },
+  crew: {
+    root: 'apps/crew',
+    base: '/crew/',
+    outDir: '../../dist/crew',
+    port: 5202,
+    manifest: {
+      name: 'Bhada Crew — the bus in your pocket',
+      short_name: 'Bhada Crew',
+      description: 'Meter, door and fares for the conductor, all offline.',
+      theme_color: '#11100d',
+      background_color: '#11100d',
+    },
+    globPatterns: WITH_VOICE,
+    // The meter loads the Supabase client only to open a realtime channel,
+    // which by definition needs a network.
+    globIgnores: ['**/supabase-*.js'],
+    denylist: [],
+  },
+  owner: {
+    root: 'apps/owner',
+    base: '/owner/',
+    outDir: '../../dist/owner',
+    port: 5203,
+    manifest: {
+      name: 'Bhada Owner — every bus, every rupee',
+      short_name: 'Bhada Owner',
+      description: 'Every bus, every rupee, every conductor, from one screen.',
+      theme_color: '#f6f3ec',
+      background_color: '#f6f3ec',
+    },
+    globPatterns: NO_VOICE,
+    globIgnores: ['voice/**'],
+    denylist: [],
+  },
+  // An office tool on a desk with a connection: installable, but nothing in it
+  // works offline, so only the shell is cached.
+  staff: {
+    root: 'apps/staff',
+    base: '/staff/',
+    outDir: '../../dist/staff',
+    port: 5204,
+    manifest: {
+      name: 'Bhada Staff',
+      short_name: 'Bhada Staff',
+      description: 'Onboarding, review and payouts for Bhada staff.',
+      theme_color: '#ffffff',
+      background_color: '#ffffff',
+    },
+    globPatterns: NO_VOICE,
+    globIgnores: ['voice/**', 'fonts/**'],
+    denylist: [],
+  },
+};
+
+const app = APPS[APP];
+if (!app) throw new Error(`BHADA_APP must be one of ${Object.keys(APPS).join(', ')}`);
+
+// In development the site server stands in front of the three app servers, so
+// one address shows the whole product the way the deployed domain does.
+const proxy = APP === 'site'
+  ? Object.fromEntries(['rider', 'crew', 'owner', 'staff'].map((name) => [`^${APPS[name].base.slice(0, -1)}(/|$)`, { target: `http${HTTPS ? 's' : ''}://localhost:${APPS[name].port}`, ws: true, secure: false, rewrite: (path) => (path === APPS[name].base.slice(0, -1) ? APPS[name].base : path) }]))
+  : undefined;
 
 export default defineConfig({
-  // Which build a crash report came from. Vercel sets the commit it built.
+  root: app.root,
+  base: app.base,
+  publicDir: fileURLToPath(new URL('./public', import.meta.url)),
+  envDir: fileURLToPath(new URL('.', import.meta.url)),
+  // Which build a crash report came from, and which of the four this is.
   define: {
     __BHADA_BUILD__: JSON.stringify((process.env.VERCEL_GIT_COMMIT_SHA || 'local').slice(0, 7)),
+    __BHADA_APP__: JSON.stringify(APP),
+  },
+  server: {
+    port: app.port,
+    strictPort: true,
+    // Reachable from a phone on the same Wi-Fi.
+    host: true,
+    proxy,
+    fs: { allow: [fileURLToPath(new URL('.', import.meta.url))] },
   },
   plugins: [
-    ...(FIXTURES ? [fixturesPlugin] : []),
+    ...(FIXTURES || LOCAL_DB ? [fixturesPlugin] : []),
     react(),
     ...(HTTPS ? [basicSsl()] : []),
     VitePWA({
       registerType: 'autoUpdate',
       // Everything the app needs offline is precached on install, so a phone in
-      // airplane mode can cold-start the app.
+      // airplane mode can cold-start it.
       workbox: {
-        // voice/ is the recorded Nepali announcements (scripts/make-voice.mjs):
-        // a door with no signal still has to speak.
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'voice/*.{json,wav,mp3,ogg,webm}'],
-        // The operator dashboard is an office tool that always has a network.
-        // Precaching it would make every conductor phone download Recharts and
-        // the Supabase client before it could go offline, which is exactly
-        // backwards. It is fetched on demand instead.
-        // Same argument for the Supabase client itself: the meter console and
-        // the door terminals load it only to open a realtime channel, which is
-        // by definition something that needs a network. Precaching it would
-        // make every device download 220 KB it can never use offline.
-        globIgnores: ['**/Operator-*.js', '**/Account-*.js', '**/Admin-*.js', '**/supabase-*.js', '**/Demo-*.js', '**/demo-*.js', '**/pglite-*.js', '**/stage-*.js', '**/backend-*.js', '**/Demo-*.css'],
-        navigateFallback: 'index.html',
-        // /operator must reach the network for its chunk rather than being
-        // served the cached shell when the dashboard has never been opened.
-        navigateFallbackDenylist: [/^\/operator/, /^\/admin/, /^\/app\/account/, /^\/demo/],
+        globPatterns: app.globPatterns,
+        globIgnores: app.globIgnores,
+        navigateFallback: `${app.base}index.html`,
+        navigateFallbackDenylist: app.denylist,
         // The Devanagari faces push the precache past the 2MB default, and a
         // font that misses the precache means no Devanagari offline.
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
       },
-      manifest: {
-        name: 'Bhada — bus fare with no signal',
-        short_name: 'Bhada',
-        description: 'Pay and collect Nepali bus fares with both phones offline.',
-        start_url: '/',
+      manifest: app.manifest && {
+        id: app.base,
+        start_url: app.base,
+        scope: app.base,
         display: 'standalone',
         orientation: 'portrait',
         lang: 'ne',
-        background_color: '#16130f',
-        theme_color: '#a8202f',
-        // Chrome on Android will not offer "install" without 192 and 512.
-        // No install means no offline cold start, which is the product.
-        icons: [
-          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
+        icons: ICONS(app.base),
+        ...app.manifest,
       },
     }),
   ],
@@ -104,6 +230,8 @@ export default defineConfig({
   // it gets a chunk of its own, so the precache rules can leave it out by name.
   optimizeDeps: { exclude: ['@electric-sql/pglite'] },
   build: {
+    outDir: app.outDir,
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         manualChunks(id) {
