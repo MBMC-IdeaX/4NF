@@ -367,6 +367,108 @@ button {
   color: #5d574c;
 }
 
+/* A live dot: the one moving thing on a ride card. */
+.ride__live {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 10px;
+  border-radius: 50%;
+  background: #0b7a43;
+  box-shadow: 0 0 0 4px rgb(11 122 67 / 0.2);
+  vertical-align: 0.15em;
+}
+
+/* How long the code on screen has left, as a draining rule — no numbers to read. */
+.ride__fresh {
+  width: 100%;
+  max-width: 340px;
+  height: 4px;
+  background: var(--wash);
+}
+.ride__fresh i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+  transition: width 1s linear;
+}
+
+/* The engineering, one tap away and never in the way. */
+.ride__security {
+  width: 100%;
+  max-width: 340px;
+  font-size: 13px;
+  color: #5d574c;
+}
+.ride__security summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+.ride__security[open] summary { justify-content: flex-start; }
+.ride__security p { margin: 0 0 10px; line-height: 1.45; text-align: left; }
+
+/* The receipt, read by a person before a machine. */
+.ride__done { padding: 16px 18px 4px; }
+.ride__done b {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 26px/1.1 var(--display);
+}
+.ride__done b i {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #0b7a43;
+  color: #fff;
+  font-style: normal;
+  font-size: 18px;
+}
+.ride__done span { display: block; margin-top: 6px; font-size: 14px; color: #5d574c; }
+
+.ride__final {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 14px 18px 0;
+  border-top: 2px solid var(--ink);
+}
+.ride__final > div { padding-top: 10px; }
+.ride__final > div + div { padding-left: 14px; border-left: 1px solid var(--rule); }
+.ride__final small { display: block; font-size: 13px; color: #5d574c; }
+.ride__final b { font: 700 48px/1 var(--display); }
+.ride__final b span { font-size: 20px; margin-left: 4px; }
+.ride__final > div + div b { color: var(--plate); }
+
+.ride__basis { margin: 8px 18px 0; font-size: 13px; line-height: 1.45; color: #5d574c; }
+.ride__basis--warn { color: #8a5300; font-weight: 600; }
+
+.ride__states { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 18px 0; }
+.ride__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 2px solid currentColor;
+  font: 700 12px/1.2 var(--body, inherit);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ride__state::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.ride__state--ok { color: #0b7a43; }
+.ride__state--bad { color: #b42318; }
+.ride__state--wait { color: #8a5300; }
+.ride__state--wait::before { background: transparent; border: 2px solid currentColor; width: 6px; height: 6px; }
+
+.stub .ride__security { margin: 14px 18px 16px; width: auto; max-width: none; }
+
 .ride__caption {
   font-size: 13px;
   color: #5d574c;

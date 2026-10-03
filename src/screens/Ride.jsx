@@ -22,7 +22,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { loadIdentity, shortKey, companionKeys, noteCompanions } from '../device/identity';
 import { db } from '../storage/db';
-import { currentVehicle } from '../device/fleet';
+import { currentVehicle, plateFromId } from '../device/fleet';
 import { fixFromPosition, holdScreenOn } from '../device/positioning';
 import { nfcSupported, writeNfc } from '../device/nfc';
 import Scanner from '../components/Scanner';
@@ -274,7 +274,9 @@ export default function Ride({ onBack, onStageFare }) {
         setProblem('That receipt is for someone else.');
         return;
       }
-      const repriced = priceDistance(leg.distanceM, { concession: leg.concession });
+      // Re-priced with the tariff the receipt names, never today's: tariffs are
+      // added, not edited, and an old receipt is judged by its own.
+      const repriced = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode });
       const phoneM = ride?.phase === 'riding' ? witness.metres : null;
       const entry = {
         legId: leg.legId,
@@ -376,8 +378,8 @@ export default function Ride({ onBack, onStageFare }) {
         <div className="ride__status">
           {riding ? (
             <>
-              <b>यात्रामा</b>
-              <span>On the bus. Show this when you get off.</span>
+              <b><i className="ride__live" aria-hidden="true" />यात्रामा · On ride</b>
+              <span>Since {new Date(ride.startedAt ?? now).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {Math.max(0, Math.floor((now - (ride.startedAt ?? now)) / 60000))} min. Show the code below when you get off.</span>
             </>
           ) : (
             <>
@@ -386,6 +388,27 @@ export default function Ride({ onBack, onStageFare }) {
             </>
           )}
         </div>
+
+        {riding ? (
+          <div className="ride__witness">
+            <div>
+              <small>Distance</small>
+              <b className="tabular">{(witness.metres / 1000).toFixed(2)}<span>km</span></b>
+            </div>
+            <div>
+              <small>Fare so far · updating</small>
+              <b className="tabular ride__fare">{rupees(soFar.amount)}</b>
+            </div>
+            <p>
+              {witness.doppler === null
+                ? 'Waiting for your phone’s GPS. Keep this screen open.'
+                : witness.doppler
+                  ? 'Measured by your own phone, with the same meter the bus runs. The bus’s reading sets the final fare; compare them on the receipt.'
+                  : 'Your phone reports position only, so its count runs low in traffic. Still a fair check.'}
+              {' '}{typeof navigator !== 'undefined' && !navigator.onLine ? 'Offline — the ride continues normally.' : ''}
+            </p>
+          </div>
+        ) : null}
 
         <div className="perf" />
 
@@ -400,60 +423,30 @@ export default function Ride({ onBack, onStageFare }) {
           <p className="ride__caption tabular">
             {showPass
               ? `Boarding pass ${ride.legId}. Works at any door, signal or not.`
-              : `${family > 0 ? `One code for ${family + 1} people. ` : 'Ride code, '}fresh for ${freshFor} s. Nothing is charged until you get off.`}
+              : `${family > 0 ? `One code for ${family + 1} people · ` : ''}Renews in ${freshFor} s`}
           </p>
 
           {!showPass && code ? (
-            <div style={{ margin: '8px 0', width: '100%' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--bx-ink-2, #6b645b)', marginBottom: '4px' }}>
-                <span>🛡️ Ed25519 रोलिङ टोकन</span>
-                <span className="tabular" style={{ fontWeight: 'bold', color: freshFor <= 5 ? '#a8202f' : 'inherit' }}>{freshFor} s बाँकी</span>
-              </div>
-              <div style={{ height: '4px', background: 'var(--bx-outline, #e4e1d8)', borderRadius: '2px', overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%',
-                  width: `${(freshFor / CODE_REFRESH_S) * 100}%`,
-                  background: freshFor <= 5 ? '#a8202f' : 'var(--bx-accent, #a8202f)',
-                  transition: 'width 1s linear',
-                }} />
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: 'var(--bx-ink-2, #6b645b)',
-                background: 'var(--bx-surface-2, #f6f4ee)',
-                padding: '6px 10px',
-                borderRadius: '6px',
-                marginTop: '8px',
-                textAlign: 'left',
-                lineHeight: 1.4,
-              }}>
-                🔒 <b>एन्टी-स्क्रिनसट सुरक्षा:</b> कोड स्वतः ३० सेकेन्डमा फेरिन्छ। एउटै पास वा स्क्रिनसटबाट दुई जना चढ्न खोजे बसको भ्यालिडेटरले तुरुन्त रोक्का गर्छ।
-              </div>
+            <div className="ride__fresh" aria-hidden="true">
+              <i style={{ width: `${(freshFor / CODE_REFRESH_S) * 100}%` }} />
             </div>
           ) : null}
 
-          {showPass ? (
-            <div style={{
-              margin: '8px 0',
-              padding: '8px 12px',
-              background: '#eef8f2',
-              border: '1px solid #c3e6cb',
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: '#1b6b3e',
-              textAlign: 'left',
-              lineHeight: 1.4,
-            }}>
-              🛡️ <b>करिडोर होल्ड: रु ५०</b> • ओर्लंदा भ्यालिडेटरमा ट्याप गर्दा तय भएको दूरीको खुद भाडा कट्टी भई बाँकी रकम तुरुन्त फिर्ता हुन्छ।
-            </div>
-          ) : null}
+          <details className="ride__security">
+            <summary>Secure ride code · works without internet</summary>
+            <p>
+              The code is signed by a key that never leaves this phone, and a new one is made every {CODE_REFRESH_S} seconds.
+              A door accepts each code once and only for a few minutes, so a screenshot passed to someone else is refused.
+              Nothing is charged when you get on — the fare is worked out from the distance when you get off.
+            </p>
+          </details>
 
           {showPass ? null : (
             <div className="ride__family" role="group" aria-label="People on this code">
               <button type="button" onClick={() => changeFamily(family - 1)} disabled={family === 0} aria-label="One fewer">−</button>
               <span>
                 <b className="tabular">{family === 0 ? 'Just me' : `Me + ${family}`}</b>
-                <small>{family === 0 ? 'Paying for family? Add them.' : 'Each fare is charged to this wallet'}</small>
+                <small>{family === 0 ? 'Paying for family? Add them.' : 'Each fare is charged to your account'}</small>
               </span>
               <button type="button" onClick={() => changeFamily(family + 1)} disabled={family === MAX_COMPANIONS} aria-label="One more">+</button>
             </div>
@@ -465,25 +458,7 @@ export default function Ride({ onBack, onStageFare }) {
 
         <div className="perf" />
 
-        {riding ? (
-          <div className="ride__witness">
-            <div>
-              <small>Your phone has measured</small>
-              <b className="tabular">{(witness.metres / 1000).toFixed(2)}<span>km</span></b>
-            </div>
-            <div>
-              <small>Fare at that distance</small>
-              <b className="tabular ride__fare">{rupees(soFar.amount)}</b>
-            </div>
-            <p>
-              {witness.doppler === null
-                ? 'Waiting for your phone’s GPS. Keep this screen open.'
-                : witness.doppler
-                  ? 'Measured by your own phone, with the same meter the bus runs. When you get off, compare.'
-                  : 'Your phone reports position only, so its count runs low in traffic. Still a fair check.'}
-            </p>
-          </div>
-        ) : (
+        {riding ? null : (
           <div className="ride__tariff">
             <div className="ride__tariff-row">
               <span>First {TARIFF.includedKm} km</span>
@@ -537,8 +512,8 @@ export default function Ride({ onBack, onStageFare }) {
       ) : riding ? (
         <>
           <button type="button" className="action" onClick={() => setScanning('receipt')}>
-            रसिद राख्नुहोस्
-            <small>Got off? Scan the receipt on the door screen</small>
+            यात्रा सकियो
+            <small>Finish ride — scan the receipt on the door screen</small>
           </button>
           {!ride.passQr ? (
             <button type="button" className="action action--quiet" onClick={() => setScanning('pass')}>
@@ -564,7 +539,7 @@ export default function Ride({ onBack, onStageFare }) {
         Pay a fixed stage fare instead
       </button>
       <button type="button" className="action action--quiet" onClick={onBack}>
-        Change role
+        Back to home
       </button>
 
       {scanning ? (
@@ -581,26 +556,59 @@ export default function Ride({ onBack, onStageFare }) {
 function ReceiptView({ entry, onDone }) {
   const { leg } = entry;
   const comparison = compareDistances(leg.distanceM, entry.phoneM);
+  const arithmeticOk = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode }).amount === leg.amount;
+  const plate = plateFromId(leg.vehicleId);
+  const board = leg.boardAt ? new Date(leg.boardAt * 1000) : null;
+  const alight = new Date(leg.alightAt * 1000);
+  const hm = (d) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   return (
     <div className="stub-page">
       <div className="stub">
         <div className="stub__head">
-          <div className="stub__wordmark">रसिद</div>
-          <div className="stub__serial tabular">{leg.legId}</div>
+          <div className="stub__wordmark">भाडा Bhada</div>
+          <div className="stub__serial tabular">{alight.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
         </div>
 
-        <div className="stub__fare">
-          <div className="stub__amount tabular">
-            {rupees(leg.amount)}
-            <small>
-              {(leg.distanceM / 1000).toFixed(2)} km, measured by the bus&apos;s {leg.distanceSource}
-              {leg.concession !== 'none' ? `, ${leg.concession} rate` : ''}
-            </small>
+        <div className="ride__done">
+          <b><i aria-hidden="true">✓</i> यात्रा सकियो · Ride completed</b>
+          <span>
+            {plate ? `Bus ${plate.province} ${plate.number} ${plate.series} ${plate.digits}` : `Vehicle ${leg.vehicleId}`} · {board ? `${hm(board)} → ${hm(alight)}` : `off at ${hm(alight)}`}
+          </span>
+        </div>
+
+        <div className="ride__final">
+          <div>
+            <small>Distance</small>
+            <b className="tabular">{(leg.distanceM / 1000).toFixed(1)}<span>km</span></b>
+          </div>
+          <div>
+            <small>Final fare</small>
+            <b className="tabular">{rupees(leg.amount)}</b>
           </div>
         </div>
+        <p className="ride__basis">
+          Fare basis: distance travelled{leg.concession && leg.concession !== 'none' ? `, ${leg.concession} rate` : ''}
+        </p>
 
+        <div className="ride__states">
+          <span className={`ride__state ride__state--${arithmeticOk ? 'ok' : 'bad'}`}>
+            {arithmeticOk ? 'Ride verified' : 'Fare does not match'}
+          </span>
+          <span className="ride__state ride__state--wait">Payment pending</span>
+        </div>
+        <p className="ride__basis">
+          Signed receipt saved offline on this phone. The fare is taken from your balance when the bus syncs;
+          your statement in Account shows it once it has.
+        </p>
+        {comparison.verdict === 'over' || comparison.verdict === 'under' ? (
+          <p className="ride__basis ride__basis--warn">{comparison.text}</p>
+        ) : null}
+
+        <details className="ride__security">
+          <summary>Fare breakdown and security details</summary>
+          <p className="tabular">Ride {leg.legId}</p>
         <ul className="ride__lines">
-          {entry.breakdown.map((item) => (
+          {(entry.breakdown ?? priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode }).breakdown).map((item) => (
             <li key={item.label}>
               <span>{item.label}</span>
               <b className="tabular">{item.value}</b>
@@ -629,12 +637,13 @@ function ReceiptView({ entry, onDone }) {
         </div>
 
         <div className="ride__checks">
-          <p>{entry.arithmeticOk ? 'The arithmetic on this receipt checks out against the published tariff.' : 'The arithmetic on this receipt does NOT match the published tariff. The office will refuse it too.'}</p>
+          <p>{arithmeticOk ? 'The arithmetic on this receipt checks out against the published tariff.' : 'The arithmetic on this receipt does NOT match the published tariff. The office will refuse it too.'}</p>
           <p>
-            Signed by vehicle {leg.vehicleId}. It settles against your wallet only with the ride code you
+            Signed by vehicle {leg.vehicleId}. It is charged to your account only together with the ride code you
             showed when you got on — nobody can charge you for a ride without it.
           </p>
         </div>
+        </details>
       </div>
       <button type="button" className="action" onClick={onDone}>ठीक छ<small>Done</small></button>
     </div>
