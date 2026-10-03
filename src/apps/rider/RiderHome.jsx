@@ -119,7 +119,7 @@ export default function RiderHome({ go }) {
 
       {balance !== null && balance < 0 ? (
         <p className="rh-over">
-          <b>रु {Math.abs(balance)} short.</b> A bus still lets you ride while you are less than रु {OVERDRAFT_NPR} short. Top up before your next ride.
+          <b>Payment failed — रु {Math.abs(balance)} owed.</b> Your last fare was more than your balance, so you owe it to the bus company. Top up to clear it. A fare that would take you past रु {OVERDRAFT_NPR} owed cannot be charged at all.
         </p>
       ) : null}
 

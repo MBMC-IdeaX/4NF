@@ -46,7 +46,7 @@ export default function Settings({ session, account, onSignOut }) {
             <div><dt>Login</dt><dd>{account.email ?? session.user.phone ?? '—'}</dd></div>
             <div><dt>Account key</dt><dd className="tabular">{shortKey(account.wallet)}</dd></div>
             <div><dt>Linked</dt><dd>{when(account.linked_at)}</dd></div>
-            <div><dt>Short allowance</dt><dd>A fare may leave you up to Rs {account.overdraft} short</dd></div>
+            <div><dt>Unpaid fares</dt><dd>Shown as owed, up to Rs {account.overdraft}, until a top-up clears them</dd></div>
           </dl>
           <p className="op-note">
             Bus companies see a different key for you every day and never your login. Bhada keeps

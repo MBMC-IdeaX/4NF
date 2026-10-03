@@ -225,10 +225,12 @@ and must not take real money until it is.
 - **Payment states.** A ride is *Ride verified* the moment the door signs it. It is *Payment
   pending* until the bus syncs, then *Settled*. Rides are completed and verified offline;
   payment is reconciled online.
-- **Ride balance.** What the passenger sees is their balance on Bhada's ledger. A metered ride
-  may leave a passenger up to Rs 50 short (`OVERDRAFT_NPR`, enforced in SQL), and the next
-  top-up clears it. This allowance is open to every account and has no identity check, so
-  decide before going live whether to keep it.
+- **Ride balance and unpaid fares.** What the passenger sees is their balance on Bhada's ledger.
+  The door cannot check a balance offline, so a passenger with too little still rides. When the
+  fare is more than the balance, the payment has failed and the passenger owes that fare to the
+  bus company: the app shows *Payment failed — रु X owed* and the next top-up clears it. Bhada
+  does not lend; it records the unpaid fare. Up to Rs 50 can be owed (`OVERDRAFT_NPR`,
+  enforced in SQL); a fare that would go past that is refused at settlement (`insufficient_balance`).
 - **Crew bonus.** A trip whose door count matches the rides on record pays its crew Rs 50,
   once. It comes out of the operator's fare payable, never out of a passenger's fare.
 - **What Bhada earns.** No commission on fares. It charges a monthly fee per bus that ran, a

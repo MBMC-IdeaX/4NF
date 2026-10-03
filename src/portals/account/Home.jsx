@@ -31,8 +31,8 @@ export default function Home({ account, onTab }) {
         <div className="op-wallet__figure tabular">{rupees(account.balance)}</div>
         <p className="op-wallet__note">
           {owed
-            ? `You are ${rupees(account.owed)} short. A bus still takes you while you are less than ${rupees(account.overdraft)} short — top up to clear it.`
-            : `Top-ups are paid through eSewa. A bus still takes you if a fare leaves you up to ${rupees(account.overdraft)} short, and the next top-up clears it.`}
+            ? `Payment failed — ${rupees(account.owed)} owed to the bus company. Top up to clear it; a fare that would take you past ${rupees(account.overdraft)} owed cannot be charged at all.`
+            : `Top-ups are paid through eSewa. If a fare is ever more than your balance, it shows here as owed and the next top-up clears it.`}
         </p>
         <div className="op-wallet__actions">
           <button type="button" className="op-btn" onClick={() => onTab('topup')}>
