@@ -1,4 +1,4 @@
-/* Front page: the shape every Nepali payments app uses, in Bhada's red. */
+/* Front page: white, one red, plain sections a person reads top to bottom. */
 
 .hm {
   min-height: 100dvh;
@@ -10,6 +10,7 @@
 }
 .hm a { text-decoration: none; }
 .hm a:not(.bx-btn) { color: inherit; }
+.hm main { width: 100%; max-width: 720px; margin: 0 auto; padding: 0 var(--b-4); flex: 1; }
 
 .hm-nav {
   display: flex;
@@ -17,9 +18,9 @@
   justify-content: space-between;
   gap: var(--b-4);
   width: 100%;
-  max-width: 1120px;
+  max-width: 720px;
   margin: 0 auto;
-  padding: var(--b-4) var(--b-4);
+  padding: var(--b-4);
 }
 .hm-nav nav { display: flex; align-items: center; gap: var(--b-4); }
 .hm-nav nav > a:not(.bx-btn) { font-weight: 600; color: var(--b-ink-2); }
@@ -28,161 +29,98 @@
 
 /* ---- hero ---- */
 
-.hm-hero {
-  display: grid;
-  gap: var(--b-7);
-  align-items: center;
-  width: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: var(--b-6) var(--b-4) var(--b-7);
-}
-.hm-hero__copy h1 {
+.hm-hero { padding: var(--b-6) 0 var(--b-7); }
+.hm-hero h1 {
   margin: 0;
-  font: 700 clamp(2.4rem, 7vw, 4.25rem) / 1 var(--b-font-display);
-  max-width: 16ch;
-  letter-spacing: -0.015em;
+  font: 700 clamp(2.6rem, 11vw, 4.5rem) / 1.05 var(--b-font-display);
 }
-.hm-hero__copy h1 span { display: block; color: var(--b-accent); }
-.hm-hero__copy > .bx-eyebrow { margin: 0 0 var(--b-3); }
-.hm-hero__copy > p:not(.bx-eyebrow) {
-  max-width: 46ch;
-  margin: var(--b-4) 0 0;
-  font-size: 1.2rem;
-  color: var(--b-ink-2);
-}
-.hm-hero__cta { display: flex; flex-wrap: wrap; gap: var(--b-3); margin-top: var(--b-6); }
-.hm-hero__ticks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--b-2) var(--b-5);
-  margin: var(--b-6) 0 0;
-  padding: 0;
-  list-style: none;
-  font-size: var(--b-text-sm);
-  color: var(--b-ink-3);
-}
-.hm-hero__ticks li { display: inline-flex; align-items: center; gap: 6px; }
-.hm-hero__ticks svg { width: 18px; height: 18px; color: var(--b-in); }
+.hm-hero h1 span { color: var(--b-accent); }
+.hm-hero p { margin: var(--b-3) 0 0; max-width: 32ch; font-size: 1.25rem; line-height: 1.4; color: var(--b-ink-2); }
+.hm-hero__cta { display: flex; flex-wrap: wrap; gap: var(--b-3); margin-top: var(--b-5); }
 
-/* ---- the phone ---- */
+/* ---- sections ---- */
 
-.hm-phone {
-  justify-self: center;
-  width: min(300px, 82vw);
-  padding: 12px;
-  border-radius: 40px;
-  background: #15130f;
-  box-shadow: 0 30px 60px -20px rgb(21 19 15 / 0.45);
-}
-.hm-phone__screen {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-height: 540px;
-  padding: 16px 14px;
-  border-radius: 30px;
-  background: var(--b-ground);
-  font-size: 13px;
-}
-.hm-phone__bar { display: flex; align-items: center; justify-content: space-between; }
-.hm-phone__bar .bx-top__mark { font-size: 1.05rem; }
-.hm-phone__pill { font-size: 11px; color: var(--b-ink-3); }
-.hm-phone__pill::first-letter { color: var(--b-in); }
-.hm-phone__card {
-  padding: 14px;
-  border-radius: 16px;
-  background: #15130f;
-  color: #fff;
-}
-.hm-phone__card small { color: #45c98a; font-weight: 700; }
-.hm-phone__card .hm-phone__fare { display: inline; font-size: 1rem; color: var(--b-led); }
-.hm-phone__card small { opacity: 0.85; }
-.hm-phone__card b { display: block; font: 700 1.9rem / 1.1 var(--b-font-display); }
-.hm-phone__actions { display: flex; gap: 8px; margin-top: 10px; }
-.hm-phone__actions span {
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 6px 10px; border-radius: 999px; background: rgb(255 255 255 / 0.18); font-weight: 600; font-size: 12px;
-}
-.hm-phone__actions svg { width: 14px; height: 14px; }
-.hm-phone__board {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 14px; border-radius: 16px; background: var(--b-plate); color: #fbf8f2;
-}
-.hm-phone__verb { font: 700 1.6rem / 1 var(--b-font-display); }
-.hm-phone__qr svg { width: 34px; height: 34px; }
-.hm-phone__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-.hm-phone__grid span {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 10px 2px; border-radius: 12px; background: var(--b-surface); font-size: 11px; font-weight: 600;
-}
-.hm-phone__grid svg { width: 20px; height: 20px; color: var(--b-accent); }
-.hm-phone__row {
-  display: flex; justify-content: space-between; padding: 10px 2px;
-  border-bottom: 1px solid var(--b-line); font-size: 12px;
-}
-.hm-phone__row b { font-family: var(--b-font-display); }
-.hm-phone__row .in { color: var(--b-in); }
+.hm-sec { padding: var(--b-6) 0; border-top: 1px solid var(--b-line); }
+.hm-sec h2 { margin: 0 0 var(--b-4); font: 700 var(--b-text-xl)/1.2 var(--b-font-display); }
+.hm-small { display: flex; align-items: flex-start; gap: var(--b-2); margin: var(--b-4) 0 0; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.hm-small svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
 
-/* ---- the three apps ---- */
-
-.hm-apps {
-  display: grid;
-  gap: var(--b-3);
-  width: 100%;
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 0 var(--b-4) var(--b-7);
-}
-.hm-app {
+/* who are you: three big rows, the whole row is the button */
+.hm-who { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--b-3); }
+.hm-who a {
   display: flex;
   align-items: center;
   gap: var(--b-4);
+  min-height: 84px;
   padding: var(--b-4);
   border: 1px solid var(--b-line);
-  border-radius: 18px;
-  background: var(--b-surface);
-  transition: border-color var(--b-fast), transform var(--b-fast) var(--b-ease);
+  border-radius: var(--b-radius);
+  transition: border-color var(--b-fast);
 }
-.hm-app:hover { border-color: var(--b-accent); transform: translateY(-2px); }
-.hm-app__icon {
-  display: grid; place-items: center; flex: none;
-  width: 52px; height: 52px; border-radius: 14px;
-  background: var(--b-accent-soft); color: var(--b-accent);
+.hm-who a:hover { border-color: var(--b-accent); }
+.hm-who a:focus-visible { outline: none; box-shadow: var(--b-focus); }
+.hm-who__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--b-accent-soft);
+  color: var(--b-accent);
 }
-.hm-app__icon svg { width: 26px; height: 26px; }
-.hm-app__text { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.hm-app__text b { font: 700 1.2rem / 1.1 var(--b-font-display); }
-.hm-app__text small { font-size: var(--b-text-xs); color: var(--b-ink-3); font-weight: 600; }
-.hm-app__text span { font-size: var(--b-text-sm); color: var(--b-ink-2); }
-.hm-app__go { width: 20px; height: 20px; color: var(--b-ink-3); flex: none; }
+.hm-who__icon svg { width: 26px; height: 26px; }
+.hm-who__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.hm-who__text small { font-size: var(--b-text-sm); color: var(--b-accent); font-weight: 600; }
+.hm-who__text b { font: 700 1.2rem/1.2 var(--b-font-display); }
+.hm-who__text span { font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.hm-who__go { flex: none; width: 20px; height: 20px; color: var(--b-ink-3); }
 
+/* three steps, a big round icon each — the shape every onboarding uses */
+.hm-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--b-5); }
+.hm-steps li { display: flex; gap: var(--b-4); align-items: flex-start; }
+.hm-steps__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+}
+.hm-steps__icon svg { width: 28px; height: 28px; }
+.hm-steps li > span:last-child { display: flex; flex-direction: column; }
+.hm-steps small { font-size: var(--b-text-xs); font-weight: 700; color: var(--b-ink-3); }
+.hm-steps b { font: 700 1.2rem/1.25 var(--b-font-display); }
+.hm-steps li > span:last-child > span { color: var(--b-ink-2); }
+
+/* the fare rule as three lines */
+.hm-fare { margin: 0; border-top: 2px solid var(--b-ink); }
+.hm-fare div { display: flex; justify-content: space-between; align-items: baseline; padding: var(--b-3) 0; border-bottom: 1px solid var(--b-line); }
+.hm-fare dt { color: var(--b-ink-2); }
+.hm-fare dd { margin: 0; font: 700 1.5rem/1 var(--b-font-display); font-variant-numeric: tabular-nums; }
+.hm-sec .bx-btn { margin-top: var(--b-4); }
+
+/* footer: every app, plainly */
 .hm-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--b-3);
-  width: 100%;
-  max-width: 1120px;
-  margin: auto auto 0;
-  padding: var(--b-5) var(--b-4) calc(var(--b-5) + env(safe-area-inset-bottom));
-  border-top: 1px solid var(--b-line);
+  margin-top: var(--b-7);
+  padding: var(--b-5) var(--b-4) var(--b-6);
+  background: var(--b-surface-2);
   font-size: var(--b-text-sm);
   color: var(--b-ink-3);
 }
-.hm-foot nav { display: flex; gap: var(--b-4); }
-.hm-foot a:hover { color: var(--b-accent); }
-
-@media (min-width: 900px) {
-  .hm-hero { grid-template-columns: 1.15fr 0.85fr; padding-top: var(--b-8); }
-  .hm-apps { grid-template-columns: repeat(3, 1fr); }
+.hm-foot nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--b-1) var(--b-4);
+  max-width: 720px;
+  margin: 0 auto;
 }
-
-@media (max-width: 420px) {
-  .hm-nav nav > a:not(.bx-btn) { display: none; }
-}
-
-/* The old global sheets paint body dark; the front page owns the ground. */
-body:has(> #root > .hm),
-body:has(> #root > .hm) #root { margin: 0; background: var(--b-ground); }
+.hm-foot nav a { display: flex; align-items: center; min-height: 44px; font-weight: 600; color: var(--b-ink-2); }
+.hm-foot nav a:hover { color: var(--b-accent); }
+.hm-foot p { max-width: 720px; margin: var(--b-4) auto 0; }
+@media (min-width: 640px) { .hm-foot nav { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hm-lead { margin: 0 0 var(--b-4); color: var(--b-ink-2); max-width: 60ch; }
+.hm-sec h2 .bx-demo { margin-left: var(--b-2); }
+.hm-fare dd { font-size: 1.25rem; }
