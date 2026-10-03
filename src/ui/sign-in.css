@@ -1,0 +1,95 @@
+/* App sign-in: the form owns the first screen. */
+
+.bx-auth {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100dvh;
+}
+.bx-auth__col {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + var(--b-5)) var(--b-5) calc(env(safe-area-inset-bottom) + var(--b-5));
+}
+.bx-auth__brand { display: flex; align-items: center; gap: var(--b-3); }
+.bx-auth__app {
+  font: 600 var(--b-text-sm) / 1 var(--b-font-body);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--b-ink-3);
+}
+.bx-auth__form { margin-top: var(--b-7); }
+.bx-auth__title {
+  margin: 0;
+  font: 700 2.75rem / 0.95 var(--b-font-display);
+  letter-spacing: -0.01em;
+}
+.bx-auth__lead { margin: var(--b-2) 0 var(--b-6); color: var(--b-ink-3); max-width: 34ch; }
+.bx-auth__via { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: var(--b-5); }
+.bx-auth__link {
+  justify-self: start;
+  min-height: var(--b-tap);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--b-accent);
+  font: 600 var(--b-text-md) / 1 var(--b-font-body);
+  cursor: pointer;
+}
+.bx-auth__link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.bx-auth__switch {
+  display: flex;
+  align-items: center;
+  gap: var(--b-2);
+  margin-top: auto;
+  padding-top: var(--b-6);
+  border-top: 1px solid var(--b-line);
+  color: var(--b-ink-3);
+}
+.bx-auth__prefixed { display: flex; align-items: stretch; }
+.bx-auth__prefixed > span {
+  display: grid;
+  place-items: center;
+  padding: 0 var(--b-3);
+  border: 1px solid var(--b-line-strong);
+  border-right: 0;
+  border-radius: var(--b-radius) 0 0 var(--b-radius);
+  background: var(--b-surface-2);
+  font-weight: 600;
+}
+.bx-auth__prefixed .bx-input { border-radius: 0 var(--b-radius) var(--b-radius) 0; }
+
+.bx-auth__side { display: none; }
+
+@media (min-width: 960px) {
+  .bx-auth { grid-template-columns: minmax(440px, 1fr) minmax(0, 1.1fr); }
+  .bx-auth__col { justify-content: center; padding: var(--b-7) var(--b-7); }
+  .bx-auth__form { margin-top: var(--b-8); }
+  .bx-auth__switch { margin-top: var(--b-8); }
+  .bx-auth__side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: var(--b-5);
+    padding: var(--b-8);
+    background: #15130f;
+    color: #f3eee5;
+  }
+  .bx-auth__side p {
+    margin: 0;
+    max-width: 14ch;
+    font: 700 3.5rem / 0.95 var(--b-font-display);
+  }
+}
+
+/* Inside an app frame: the frame already carries the brand and the tabs. */
+.bx-auth--embedded { display: block; min-height: 0; }
+.bx-auth--embedded .bx-auth__col { padding: 0; }
+.bx-auth--embedded .bx-auth__form { margin-top: var(--b-5); }
+.bx-auth--embedded .bx-auth__switch { margin-top: var(--b-6); }
+@media (min-width: 960px) {
+  .bx-auth--embedded .bx-auth__col { padding: 0; margin: 0; }
+}

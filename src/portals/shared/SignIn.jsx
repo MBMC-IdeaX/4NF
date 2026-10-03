@@ -6,7 +6,24 @@ import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import Icon from './Icon';
 
-export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhone = false }) {
+// The sign-in state and calls, shared by this office screen and the app
+// sign-in (src/ui/AppSignIn.jsx), so there is one way to sign in.
+/*
+  Supabase Auth's own messages, in words a rider or an owner can act on. The
+  rate limit is the one people hit: the built-in mailer sends only a few
+  confirmation emails an hour until the project has its own SMTP.
+*/
+export function authMessage(message = '') {
+  if (/rate limit/i.test(message)) {
+    return 'Too many sign-up emails were sent in the last hour, so a new one cannot go out yet. Try again in an hour, or sign in if you already have an account.';
+  }
+  if (/already registered|already been registered/i.test(message)) return 'This email already has an account. Sign in instead.';
+  if (/invalid login credentials/i.test(message)) return 'That email and password do not match.';
+  if (/email not confirmed/i.test(message)) return 'Open the confirmation link we emailed you, then sign in.';
+  return message;
+}
+
+export function useSignIn(redirectPath) {
   const [via, setVia] = useState('email'); // 'email' | 'phone'
   const [mode, setMode] = useState('in'); // 'in' | 'up'
   const [email, setEmail] = useState('');
@@ -28,7 +45,7 @@ export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhon
       redirectTo: `${window.location.origin}${redirectPath}`,
     });
     setBusy(false);
-    if (problem) setError(problem.message);
+    if (problem) setError(authMessage(problem.message));
     else setNote(`If ${email} has an account, a reset link is on its way.`);
   }
 
@@ -45,7 +62,7 @@ export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhon
         options: { emailRedirectTo: `${window.location.origin}${redirectPath}` },
       });
     setBusy(false);
-    if (problem) { setError(problem.message); return; }
+    if (problem) { setError(authMessage(problem.message)); return; }
     if (mode === 'up' && !data.session) {
       setNote(`Account created. We sent a link to ${email} — open it, then sign in here.`);
       setMode('in');
@@ -68,7 +85,7 @@ export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhon
     if (problem) {
       setError(/provider|sms|phone/i.test(problem.message)
         ? 'Phone sign-in is not switched on yet. Use email for now.'
-        : problem.message);
+        : authMessage(problem.message));
       return;
     }
     setCodeSent(true);
@@ -81,8 +98,20 @@ export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhon
     setBusy(true);
     const { error: problem } = await supabase.auth.verifyOtp({ phone: e164, token: code.trim(), type: 'sms' });
     setBusy(false);
-    if (problem) setError(problem.message);
+    if (problem) setError(authMessage(problem.message));
   }
+
+  return {
+    via, setVia, mode, setMode, email, setEmail, password, setPassword, phone, setPhone,
+    code, setCode, codeSent, setCodeSent, busy, error, note, reset, forgot, submitEmail, sendCode, verifyCode, e164,
+  };
+}
+
+export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhone = false }) {
+  const {
+    via, setVia, mode, setMode, email, setEmail, password, setPassword, phone, setPhone,
+    code, setCode, codeSent, setCodeSent, busy, error, note, reset, forgot, submitEmail, sendCode, verifyCode, e164,
+  } = useSignIn(redirectPath);
 
   return (
     <div className="op-auth">
