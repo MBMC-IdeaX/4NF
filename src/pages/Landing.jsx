@@ -77,8 +77,8 @@ export default function Landing() {
         <nav className="site__nav">
           <button type="button" onClick={() => navigate('/demo')}>Live demo</button>
           <button type="button" onClick={() => navigate('/app')}>Try it</button>
-          <button type="button" onClick={() => navigate('/app/account')}>My account</button>
-          <button type="button" onClick={() => navigate('/operator')}>Owner sign in</button>
+          <button type="button" onClick={() => navigate('/app/wallet')}>My account</button>
+          <button type="button" onClick={() => navigate('/owner')}>Owner sign in</button>
         </nav>
       </header>
 
@@ -408,7 +408,7 @@ export default function Landing() {
               <span>They open a web page and add it to their home screen — or take a card at the door. No app store, no account, no phone number.</span>
             </li>
           </ul>
-          <button type="button" className="site__cta site__cta--quiet" onClick={() => navigate('/operator')}>
+          <button type="button" className="site__cta site__cta--quiet" onClick={() => navigate('/owner')}>
             Register your company
             <small>Add your buses and start seeing your routes</small>
           </button>

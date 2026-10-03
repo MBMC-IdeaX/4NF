@@ -1,0 +1,90 @@
+/* The intro slides: full screen on a phone, a centred card on a desktop. */
+
+.tr {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 460px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 20px);
+  background: var(--b-ground);
+  color: var(--b-ink);
+  font-family: var(--b-font-body);
+  touch-action: pan-y;
+  user-select: none;
+}
+@media (min-width: 600px) {
+  .tr { inset: 32px auto; left: 50%; transform: translateX(-50%); border-radius: 28px; box-shadow: 0 30px 80px -20px rgb(17 19 24 / 0.35); }
+  .tr-scrim { position: fixed; inset: 0; z-index: 79; background: rgb(17 19 24 / 0.45); }
+}
+
+.tr-top { display: flex; align-items: center; justify-content: space-between; }
+.tr-skip { min-height: 44px; padding: 0 8px; border: 0; background: none; color: var(--b-ink-3); font: 600 1rem/1 var(--b-font-body); cursor: pointer; }
+
+.tr-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: tr-in 260ms var(--b-ease);
+}
+@keyframes tr-in { from { opacity: 0; transform: translateX(24px); } }
+.tr-ne { margin: 28px 0 0; color: var(--b-accent); font-weight: 700; }
+.tr-stage h2 { margin: 4px 0 0; font: 800 2rem/1.1 var(--b-font-display); }
+.tr-text { max-width: 30ch; margin: 10px 0 0; color: var(--b-ink-3); font-size: 1.1rem; line-height: 1.45; }
+
+.tr-foot { display: grid; gap: 18px; }
+.tr-dots { display: flex; justify-content: center; gap: 8px; }
+.tr-dots button { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 999px; background: var(--b-line-strong); cursor: pointer; transition: width 200ms var(--b-ease), background 200ms; }
+.tr-dots button[aria-selected='true'] { width: 26px; background: var(--b-accent); }
+
+/* ---- pictures ---- */
+
+.tr-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: var(--b-accent-soft);
+}
+.tr-card { width: 170px; padding: 18px; border-radius: 18px; background: var(--b-accent); color: #fff; text-align: left; box-shadow: 0 16px 30px -12px rgb(200 16 46 / 0.6); }
+.tr-card small { opacity: 0.85; }
+.tr-card b { display: block; font: 800 2rem/1.1 var(--b-font-display); }
+.tr-chip {
+  position: absolute; bottom: 30px; right: 6px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 12px; border-radius: 999px; background: #fff; color: var(--b-in);
+  font-weight: 700; font-size: 0.9rem; box-shadow: 0 8px 20px -8px rgb(17 19 24 / 0.3);
+}
+.tr-chip svg { width: 16px; height: 16px; }
+.tr-phone {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  width: 120px; height: 190px; border: 8px solid #111318; border-radius: 24px; background: #fff; font-weight: 800;
+}
+.tr-phone svg { width: 64px; height: 64px; }
+.tr-check { position: absolute; top: 34px; right: 34px; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--b-in); color: #fff; }
+.tr-check svg { width: 30px; height: 30px; stroke-width: 3; }
+.tr-road { position: absolute; left: 24px; right: 24px; top: 150px; height: 6px; border-radius: 3px; background: repeating-linear-gradient(90deg, var(--b-ink-3) 0 14px, transparent 14px 26px); }
+.tr-bus { position: absolute; top: 96px; left: 30px; display: grid; place-items: center; width: 60px; height: 50px; border-radius: 12px; background: var(--b-accent); color: #fff; animation: tr-drive 2.4s ease-in-out infinite alternate; }
+.tr-bus svg { width: 32px; height: 32px; }
+.tr-km { position: absolute; bottom: 44px; font: 800 1.6rem/1 var(--b-font-display); }
+@keyframes tr-drive { to { transform: translateX(118px); } }
+.tr-receipt {
+  display: grid; gap: 6px; width: 180px; padding: 18px; border-radius: 16px; background: #fff; text-align: left;
+  box-shadow: 0 16px 30px -14px rgb(17 19 24 / 0.35); font-size: 0.9rem; color: var(--b-ink-3);
+}
+.tr-receipt b { margin-top: 6px; padding-top: 10px; border-top: 2px dashed var(--b-line-strong); font: 800 2rem/1 var(--b-font-display); color: var(--b-ink); }
+.tr-big { display: grid; place-items: center; width: 120px; height: 120px; border-radius: 50%; background: #fff; color: var(--b-ink-2); }
+.tr-big svg { width: 60px; height: 60px; }
+.tr-chip--ok { bottom: 36px; right: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tr-stage, .tr-bus { animation: none; }
+}
