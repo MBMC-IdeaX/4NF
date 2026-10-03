@@ -57,12 +57,13 @@ function restLedger(db: Db) {
   };
 
   return {
-    registerMeter: (m: { vehicleId: string; publicKey: string; capacity: number | null; firmware: string | null }) =>
+    registerMeter: (m: { vehicleId: string; publicKey: string; capacity: number | null; firmware: string | null; enrolCode: string | null }) =>
       rpc('register_meter', {
         p_vehicle_plate: m.vehicleId,
         p_public_key: m.publicKey,
         p_capacity: m.capacity,
         p_firmware: m.firmware,
+        p_enrol_code: m.enrolCode,
       }),
 
     registerDevice: (publicKey: string, signupCredit: number) =>

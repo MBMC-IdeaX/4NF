@@ -31,7 +31,8 @@ export async function openBackendWith({ PGlite, migrations, dataDir }) {
     alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
     alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
     create schema if not exists auth;
-    create table if not exists auth.users (id uuid primary key, email text);
+    create table if not exists auth.users (id uuid primary key, email text, phone text);
+    alter table auth.users add column if not exists phone text;
     -- Supabase reads the signed-in user from the request's JWT claims; a proof
     -- plays a user by setting the same claim.
     create or replace function auth.uid() returns uuid language sql stable as $$
@@ -94,8 +95,8 @@ function pgLedger(db, { autoRegisterVehicles }) {
       [tripId, plate],
     ),
 
-    registerMeter: ({ vehicleId, publicKey, capacity, firmware }) =>
-      rpc('register_meter', [vehicleId, publicKey, capacity, firmware]),
+    registerMeter: ({ vehicleId, publicKey, capacity, firmware, enrolCode }) =>
+      rpc('register_meter', [vehicleId, publicKey, capacity, firmware, enrolCode ?? null]),
 
     registerDevice: (publicKey, signupCredit) =>
       rpc('register_device', [publicKey, signupCredit]),

@@ -83,7 +83,7 @@ async function attempt(fn) {
 
   `ledger` is the runtime's own database, as methods:
 
-    registerMeter({ vehicleId, publicKey, capacity, firmware })
+    registerMeter({ vehicleId, publicKey, capacity, firmware, enrolCode })
     registerDevice(publicKey, signupCredit)
     vehicleKey(plate)                       -> base64url key on file, or null
     settledLeg(legId)                       -> the settled row, or null
@@ -130,14 +130,19 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
   // A meter announcing itself. The key is frozen on first sight by
   // register_meter(); a second key for the same plate comes back as a mismatch
   // rather than quietly replacing the one every existing receipt was signed with.
+  // A bus its owner registered binds only a phone that brings the one-time
+  // setup code from the Owner app (0034); the verdict goes back to the phone so
+  // it can say why it is not yet the bus.
+  let meterResult = null;
   if (hasMeter) {
     await ensureVehicle(body.meter.vehicleId);
-    await ledger.registerMeter({
+    meterResult = await attempt(() => ledger.registerMeter({
       vehicleId: body.meter.vehicleId,
       publicKey: body.meter.publicKey,
       capacity: body.meter.capacity ?? null,
       firmware: body.meter.firmware ?? null,
-    });
+      enrolCode: typeof body.meter.enrolCode === 'string' ? body.meter.enrolCode : null,
+    }));
   }
 
   // ------------------------------------------------------- day-key registrations
@@ -643,6 +648,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
     disputeResults,
     linkResults,
     accountResult,
+    meterResult,
     crewResults,
     tripResults,
     cashResults,
