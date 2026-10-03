@@ -26,40 +26,6 @@ export const SETTLEMENT_WINDOW_SECONDS = 24 * 60 * 60;
 */
 export const OVERDRAFT_NPR = 50;
 
-// Maximum corridor hold charged upon tap-in to disincentivize tap-in-and-escape evasion.
-// Upon tap-out, the difference between this hold and the actual distance fare is refunded.
-export const MAX_CORRIDOR_HOLD_NPR = 50;
-
-export function calculateExitReconciliation({ holdAmount = MAX_CORRIDOR_HOLD_NPR, actualFare }) {
-  const refundAmount = Math.max(0, holdAmount - actualFare);
-  return {
-    holdAmount,
-    actualFare,
-    refundAmount,
-    netCharged: actualFare,
-  };
-}
-
-export function isOverdraftAllowed({ isKycVerified = false, balance = 0, fare = 0 }) {
-  if (balance >= fare) return { allowed: true, requiresOverdraft: false };
-  if (!isKycVerified) {
-    return {
-      allowed: false,
-      reason: 'kyc_required',
-      message: 'Rs 50 emergency overdraft requires verified eSewa/Khalti KYC or NID. Please top up your wallet.',
-    };
-  }
-  const shortfall = fare - balance;
-  if (shortfall <= OVERDRAFT_NPR) {
-    return { allowed: true, requiresOverdraft: true, overdraftUsed: shortfall };
-  }
-  return {
-    allowed: false,
-    reason: 'overdraft_exceeded',
-    message: `Fare exceeds Rs ${OVERDRAFT_NPR} emergency overdraft limit.`,
-  };
-}
-
 export function offlineAllowance({ unsettledTotal, lastSettlementAt, now = Math.floor(Date.now() / 1000), cap = OFFLINE_SPEND_CAP, window = SETTLEMENT_WINDOW_SECONDS }) {
   const remaining = Math.max(0, cap - unsettledTotal);
   const secondsSinceSettlement = lastSettlementAt ? now - lastSettlementAt : Infinity;

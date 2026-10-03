@@ -21,7 +21,6 @@ import {
   initialOdometer, applyFix, odometerReading, priceDistance, resolveDistance, haversineMetres, TARIFF,
   CURRENT_TARIFF, stageNear, stageAlong,
 } from '../../protocol/meter.mjs';
-import { MAX_CORRIDOR_HOLD_NPR, calculateExitReconciliation } from '../../protocol/policy.mjs';
 import { fixFromPosition, holdScreenOn } from './positioning';
 import { readNfc, nfcSupported } from './nfc';
 import {
@@ -355,20 +354,6 @@ function createTerminal(doorId) {
     // pass without one would be issuing a ride nobody can be billed for.
     if (!tapQr) return { ok: false, reason: 'no_tap', message: 'Show the ride code on your phone.' };
 
-    // Anti-replay lock: a passenger key already on record onboard this bus cannot tap in a second time.
-    // Defeats screenshot forwarding ("one pass for two friends").
-    if (state.openLegs.has(key)) {
-      log(`Refused: Passenger ${key.slice(0, 6)}… already riding onboard. Replay blocked.`, 'warn');
-      state.last = {
-        ok: false,
-        reason: 'already_riding',
-        message: 'This pass is already active onboard this bus. Tapping in twice is not permitted.',
-        at: Date.now(),
-      };
-      publish();
-      return state.last;
-    }
-
     // Capacity is the meter's call, not the terminal's. When the meter is
     // reachable and says the bus is full, the terminal refuses to issue — the
     // door interlock and the fare system agreeing is the whole feature.
@@ -512,10 +497,6 @@ function createTerminal(doorId) {
     const price = staged
       ? priceDistance(measured.metres, { concession: pass.concession, tariff: CURRENT_TARIFF, boardStage, alightStage })
       : priceDistance(measured.metres, { concession: pass.concession });
-    const reconciliation = calculateExitReconciliation({
-      holdAmount: MAX_CORRIDOR_HOLD_NPR,
-      actualFare: price.amount,
-    });
 
     const closed = {
       legId: pass.legId,
@@ -542,7 +523,6 @@ function createTerminal(doorId) {
       boardStage,
       alightStage,
       price,
-      reconciliation,
       passQr,
       // The consent that opened this ride, if this terminal has seen it —
       // issued here, or mirrored from the other door over the vehicle bus. If
@@ -578,7 +558,7 @@ function createTerminal(doorId) {
     state.openLegs.delete(closed.passengerPublicKey);
     state.closed += 1;
     state.collected += closed.amount;
-    log(`OUT ${closed.passengerPublicKey.slice(0, 6)}… · ${(closed.distanceM / 1000).toFixed(2)} km (${closed.distanceSource}) · Rs ${closed.amount} (Refund Rs ${reconciliation.refundAmount}).`);
+    log(`OUT ${closed.passengerPublicKey.slice(0, 6)}… · ${(closed.distanceM / 1000).toFixed(2)} km (${closed.distanceSource}) · Rs ${closed.amount}.`);
     link?.send('alighted', {
       legId: closed.legId,
       passengerPublicKey: closed.passengerPublicKey,
@@ -589,12 +569,11 @@ function createTerminal(doorId) {
       distanceSource: closed.distanceSource,
       tripId: closed.tripId,
       receipt: closed.receipt,
-      reconciliation,
       tapQr: closed.tapQr,
       fix: state.fix,
     });
 
-    state.last = { ok: true, action: 'out', leg: closed, price, receipt: closed.receipt, reconciliation, at: Date.now() };
+    state.last = { ok: true, action: 'out', leg: closed, price, receipt: closed.receipt, at: Date.now() };
     publish();
     return state.last;
   }
