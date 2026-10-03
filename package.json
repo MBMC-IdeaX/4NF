@@ -35,6 +35,7 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
+    "@breezystack/lamejs": "^1.2.7",
     "@electric-sql/pglite": "^0.5.8",
     "@vitejs/plugin-basic-ssl": "^2.3.0",
     "@vitejs/plugin-react": "^5.0.4",
