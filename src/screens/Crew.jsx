@@ -17,6 +17,7 @@ import { buildSignOn, signSignOn, SIGNON_MAX_AGE_S } from '../../protocol/crew.m
 import { CLEAN_TRIP_BONUS_NPR } from '../../protocol/policy.mjs';
 import { currentVehicle } from '../device/fleet';
 import { navigate } from '../lib/router';
+import { meter } from '../device/meter';
 
 // Well inside the console's five-minute window, so what is on screen is always
 // something the meter will take.
@@ -59,14 +60,24 @@ export default function Crew() {
     return () => { clearInterval(timer); clearInterval(clock); };
   }, [draw]);
 
+  // On the Crew app this phone is the meter too, so signing on is one tap:
+  // the same signed CR1, handed to the meter here instead of to a camera.
+  const [here, setHere] = useState(null);
+  async function signOnHere() {
+    if (!code) return;
+    const unit = meter();
+    await unit.boot();
+    const verdict = await unit.signOnCrew(code.text);
+    setHere(verdict?.ok ? { ok: true } : { ok: false, text: verdict?.message ?? 'This bus could not take the sign-on.' });
+  }
+
   const ageS = code ? Math.floor((now - code.madeAt) / 1000) : 0;
   const leftS = Math.max(0, SIGNON_MAX_AGE_S - ageS);
 
   return (
     <div className="screen crew">
       <header className="crew__head">
-        <button type="button" className="quiet" onClick={() => navigate('/app')}>Back</button>
-        <h1>खलासी साइन-अन<span>Crew sign-on</span></h1>
+        <h1>सिफ्ट सुरु · Start your shift<span>Sign on so a clean trip pays you the bonus</span></h1>
       </header>
 
       <label className="crew__plate">
@@ -81,6 +92,11 @@ export default function Crew() {
 
       {code ? (
         <>
+          <button type="button" className="crew__here" onClick={signOnHere}>
+            {here?.ok ? '✓ साइन इन भयो · Signed on' : 'यो बसमा साइन इन · Sign on to this bus'}
+          </button>
+          {here && !here.ok ? <p className="crew__empty">{here.text}</p> : null}
+          <p className="crew__or">Another phone is the meter? Show it this code instead:</p>
           <img className="crew__qr" src={code.image} alt="Crew sign-on code" />
           <p className="crew__age tabular">Fresh for {leftS}s. Show this to the meter console.</p>
           <p className="crew__key">Signing on as {shortKey(identity?.publicKey)}</p>

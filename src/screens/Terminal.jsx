@@ -37,10 +37,15 @@ function doorFromUrl() {
   return value && DOORS[value.toUpperCase()] ? value.toUpperCase() : null;
 }
 
-export default function Terminal() {
-  const [doorId, setDoorId] = useState(doorFromUrl);
+// In the Crew app the conductor's phone is the front door: no question to
+// answer before the first passenger. A second phone can still pick B.
+//
+// `simple` is the conductor's view: one big scan button and one cash button.
+// Status flags, rider cards, the log and the manual tools fold under More.
+export default function Terminal({ defaultDoor = null, simple = false }) {
+  const [doorId, setDoorId] = useState(() => doorFromUrl() ?? defaultDoor);
   if (!doorId) return <DoorPicker onPick={setDoorId} />;
-  return <Door key={doorId} doorId={doorId} onSwitch={() => setDoorId(null)} />;
+  return <Door key={doorId} doorId={doorId} simple={simple} onSwitch={() => setDoorId(null)} />;
 }
 
 function DoorPicker({ onPick }) {
@@ -70,7 +75,7 @@ function DoorPicker({ onPick }) {
   );
 }
 
-function Door({ doorId, onSwitch }) {
+function Door({ doorId, simple, onSwitch }) {
   const unit = terminal(doorId);
   const [snap, setSnap] = useState(() => unit.snapshot());
   const [scanning, setScanning] = useState(false);
@@ -79,7 +84,8 @@ function Door({ doorId, onSwitch }) {
   const [passImage, setPassImage] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
   const [pasteOpen, setPasteOpen] = useState(false);
-  const [cashOpen, setCashOpen] = useState(false);
+  // ?cash opens straight on the cash sheet: the Crew trip screen's cash button.
+  const [cashOpen, setCashOpen] = useState(() => new URLSearchParams(window.location.search).has('cash'));
 
   useEffect(() => {
     unit.boot();
@@ -189,7 +195,7 @@ function Door({ doorId, onSwitch }) {
 
   return (
     <div className={`term term--${snap.door.role}${transit ? ' term--transit' : ''}`}>
-      <TermHead snap={snap} doorId={doorId} onSwitch={onSwitch} transit={transit} onTransit={() => setTransit((on) => !on)} scanner={wedgeSeen} />
+      {simple ? null : <TermHead snap={snap} doorId={doorId} onSwitch={onSwitch} transit={transit} onTransit={() => setTransit((on) => !on)} scanner={wedgeSeen} />}
 
       {busy ? (
         <Unpaired onScan={() => { setScanMode('pairing'); setScanning(true); }} onPaste={() => setPasteOpen(true)} />
@@ -202,26 +208,41 @@ function Door({ doorId, onSwitch }) {
         />
       ) : (
         <>
-          <BusState snap={snap} />
+          {simple ? <SimpleState snap={snap} /> : <BusState snap={snap} />}
           <button
             type="button"
             className="term__tap"
             onClick={() => { setScanMode('pass'); setScanning(true); }}
             disabled={snap.bus?.atCapacity && snap.role === 'boarding'}
           >
-            <b>ट्याप गर्नुहोस्</b>
-            <span>{snap.bus?.atCapacity && snap.role === 'boarding' ? 'Bus is full' : 'Scan the ride code on a phone, or a pass'}</span>
+            <b>{simple ? 'स्क्यान गर्नुहोस्' : 'ट्याप गर्नुहोस्'}</b>
+            <span>{snap.bus?.atCapacity && snap.role === 'boarding' ? 'बस भरियो · Bus is full' : simple ? 'Scan the passenger’s code — getting on or getting off' : 'Scan the ride code on a phone, or a pass'}</span>
           </button>
           <button type="button" className="term__cash" onClick={() => setCashOpen(true)}>
             <b>नगद</b>
-            <span>Cash rider — record the fare</span>
+            <span>{simple ? 'Passenger paying cash' : 'Cash rider — record the fare'}</span>
           </button>
-          <Cards snap={snap} unit={unit} onResult={settle} onEnrol={() => setEnrolling(true)} />
-          <Log snap={snap} />
-          <DoorUpload snap={snap} />
-          <button type="button" className="term__paste" onClick={() => setPasteOpen(true)}>
-            Type a pass instead
-          </button>
+          {simple ? (
+            <details className="term__more">
+              <summary>थप · More (cards, history, upload)</summary>
+              <BusState snap={snap} />
+              <Cards snap={snap} unit={unit} onResult={settle} onEnrol={() => setEnrolling(true)} />
+              <Log snap={snap} />
+              <DoorUpload snap={snap} />
+              <button type="button" className="term__paste" onClick={() => setPasteOpen(true)}>
+                Type a pass instead
+              </button>
+            </details>
+          ) : (
+            <>
+              <Cards snap={snap} unit={unit} onResult={settle} onEnrol={() => setEnrolling(true)} />
+              <Log snap={snap} />
+              <DoorUpload snap={snap} />
+              <button type="button" className="term__paste" onClick={() => setPasteOpen(true)}>
+                Type a pass instead
+              </button>
+            </>
+          )}
         </>
       )}
 
@@ -299,6 +320,18 @@ function TermHead({ snap, doorId, onSwitch, transit, onTransit, scanner }) {
         </button>
       </div>
     </header>
+  );
+}
+
+/* The conductor's one line: how many aboard, and whether there is room. */
+function SimpleState({ snap }) {
+  const bus = snap.bus;
+  if (!bus) return null;
+  return (
+    <p className={`term__simple${bus.atCapacity ? ' term__simple--full' : ''}`}>
+      <b className="tabular">{bus.onboard} / {bus.capacity}</b>
+      <span>{bus.atCapacity ? 'बस भरियो · Full' : 'यात्रु · aboard'}</span>
+    </p>
   );
 }
 
@@ -417,7 +450,7 @@ function Verdict({ verdict, passImage, tariff, onClear }) {
           <div><dt>Leg</dt><dd className="tabular">{verdict.legId}</dd></div>
           <div><dt>Boarding odometer</dt><dd className="tabular">{verdict.pass.boardOdoM} m</dd></div>
           <div><dt>Corridor Hold</dt><dd className="tabular">रु ५० (ओर्लंदा फिर्ता)</dd></div>
-          <div><dt>Rate after {tariff.includedKm} km</dt><dd className="tabular">{rupees(tariff.perStep)}/km</dd></div>
+          <div><dt>Fare</dt><dd>Stage fare, worked out when they get off</dd></div>
         </dl>
         <p>The passenger keeps this. It is what lets them off at the other door with no signal.</p>
         <button type="button" onClick={onClear}>Next passenger</button>

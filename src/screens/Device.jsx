@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { meter, VEHICLE, short } from '../device/meter';
 import { syncMeter, syncConfigured } from '../device/sync';
-import { priceDistance, FIX_QUALITY } from '../../protocol/meter.mjs';
+import { priceDistance, FIX_QUALITY, CURRENT_TARIFF, stageNear, stageName } from '../../protocol/meter.mjs';
 import { decodeFrame } from '../../protocol/frame.mjs';
 import { STOPS, ROUTE_LENGTH_M, rupees } from '../lib/nepali';
 import { navigate } from '../lib/router';
@@ -106,17 +106,21 @@ export default function Device() {
 
       <TripGlance snap={snap} unit={unit} />
 
-      <div className="panel__grid">
-        <Manifest snap={snap} />
-        <Doors
-          snap={snap}
-          unit={unit}
-          confirmOverride={confirmOverride}
-          setConfirmOverride={setConfirmOverride}
-        />
-        <Completed snap={snap} />
-        <Crew snap={snap} unit={unit} />
-      </div>
+      {/* Who is aboard, the doors, the crew: there when asked for, not in the way. */}
+      <details className="panel__eng">
+        <summary>थप विवरण · Passengers, doors and crew</summary>
+        <div className="panel__grid">
+          <Manifest snap={snap} />
+          <Doors
+            snap={snap}
+            unit={unit}
+            confirmOverride={confirmOverride}
+            setConfirmOverride={setConfirmOverride}
+          />
+          <Completed snap={snap} />
+          <Crew snap={snap} unit={unit} />
+        </div>
+      </details>
 
       {/* Everything an engineer or an inspector wants, one tap away from the crew. */}
       <details className="panel__eng">
@@ -199,10 +203,10 @@ function Chip({ label, value, tone }) {
   waiting to upload — and the one button that ends the trip.
 */
 const GPS_WORDS = {
-  [FIX_QUALITY.NONE]: ['GPS unavailable', 'Distance holds at the last good reading until a fix returns.', 'bad'],
-  [FIX_QUALITY.WARMUP]: ['GPS finding position', 'Distance starts once the fix settles.', 'warn'],
-  [FIX_QUALITY.POOR]: ['GPS weak', 'Poor fixes are not counted, so distance may run low here.', 'warn'],
-  [FIX_QUALITY.GOOD]: ['GPS active', 'Distance is being measured.', 'ok'],
+  [FIX_QUALITY.NONE]: ['GPS छैन', 'No GPS. Distance waits at the last good reading.', 'bad'],
+  [FIX_QUALITY.WARMUP]: ['GPS खोज्दै', 'Finding GPS. Distance starts in a moment.', 'warn'],
+  [FIX_QUALITY.POOR]: ['GPS कमजोर', 'Weak GPS. Distance may count a little low here.', 'warn'],
+  [FIX_QUALITY.GOOD]: ['GPS ठीक छ', 'GPS is good. Distance is being counted.', 'ok'],
 };
 
 function TripGlance({ snap, unit }) {
@@ -211,35 +215,42 @@ function TripGlance({ snap, unit }) {
   const fill = snap.capacity ? Math.min(1, onboard / snap.capacity) : 0;
   const tone = atCapacity ? 'bad' : nearCapacity ? 'warn' : 'ok';
   const [gpsTitle, gpsNote, gpsTone] = snap.simulating
-    ? ['Bench drive', 'Simulated GPS for a demo — not a real road.', 'warn']
+    ? ['डेमो यात्रा', 'Demo drive: simulated GPS, not a real road.', 'warn']
     : GPS_WORDS[snap.quality] ?? GPS_WORDS[FIX_QUALITY.NONE];
   const takings = snap.accrued + (snap.cash?.npr ?? 0);
+  // The stage the bus is at, from its GPS: what a conductor would call out.
+  const stage = stageName(CURRENT_TARIFF, stageNear(CURRENT_TARIFF, snap.fix));
   return (
     <section className="glance" aria-label="Current trip">
       <div className="glance__status">
         <span className={`glance__state glance__state--${snap.tripId ? 'on' : 'off'}`}>
-          <i aria-hidden="true" />{snap.tripId ? `Trip ${snap.tripId} · active` : 'No trip running'}
+          <i aria-hidden="true" />{snap.tripId ? 'यात्रा चलिरहेको · Trip running' : 'No trip running'}
         </span>
         {snap.simulating ? <span className="glance__demo">Simulated</span> : null}
       </div>
 
+      <p className="glance__stage">
+        <small>अहिले · Now at</small>
+        <b>{stage ? `${stage.ne} · ${stage.en}` : 'Stage not known yet'}</b>
+      </p>
+
       <div className="glance__figs">
         <div className="glance__fig">
-          <small>Distance this trip</small>
-          <b className="tabular">{(snap.odometerM / 1000).toFixed(1)}<span>km</span></b>
-        </div>
-        <div className="glance__fig">
-          <small>Fares this trip</small>
+          <small>भाडा · Fares</small>
           <b className="tabular glance__money">रु {takings}</b>
           <em>{snap.closed.length} ride{snap.closed.length === 1 ? '' : 's'} closed · रु {snap.cash?.npr ?? 0} cash</em>
+        </div>
+        <div className="glance__fig glance__fig--small">
+          <small>दूरी · Distance</small>
+          <b className="tabular">{(snap.odometerM / 1000).toFixed(1)}<span>km</span></b>
         </div>
       </div>
 
       <div className={`glance__load glance__load--${tone}`}>
         <div className="glance__loadhead">
-          <small>Passengers</small>
+          <small>यात्रु · Passengers</small>
           <b className="tabular">{onboard} / {snap.capacity}</b>
-          <span>{atCapacity ? 'FULL — boarding refused' : nearCapacity ? `${snap.occupancy.seatsLeft} places left` : `${snap.occupancy.seatsLeft} places left`}</span>
+          <span>{atCapacity ? 'बस भरियो · FULL' : `${snap.occupancy.seatsLeft} ठाउँ बाँकी · places left`}</span>
         </div>
         <div className="glance__bar" role="meter" aria-valuemin={0} aria-valuemax={snap.capacity} aria-valuenow={onboard} aria-label="Passengers aboard">
           <i style={{ width: `${fill * 100}%` }} />
@@ -249,29 +260,29 @@ function TripGlance({ snap, unit }) {
       <div className="glance__row">
         <span className={`glance__pill glance__pill--${gpsTone}`} title={gpsNote}><i aria-hidden="true" />{gpsTitle}</span>
         <span className={`glance__pill glance__pill--${snap.queued > 0 ? 'warn' : 'ok'}`}>
-          <i aria-hidden="true" />{snap.queued > 0 ? `${snap.queued} to upload — saved on this phone` : 'All uploaded'}
+          <i aria-hidden="true" />{snap.queued > 0 ? `${snap.queued} पठाउन बाँकी · saved on this phone` : 'सबै पठाइयो · all sent'}
         </span>
       </div>
       <p className="glance__note">{gpsNote}</p>
 
       <div className="glance__actions">
-        <button type="button" className="glance__btn" onClick={() => navigate('/crew/door')}>
-          चढाउने / ओराल्ने
-          <small>Board or exit a passenger</small>
+        <button type="button" className="glance__btn glance__btn--go" onClick={() => navigate('/crew/door')}>
+          स्क्यान गर्नुहोस्
+          <small>Passenger getting on or off — scan their code</small>
         </button>
-        <button type="button" className="glance__btn" onClick={() => navigate('/crew/trip')}>
-          नगद टिकट
-          <small>Cash or stage ticket</small>
+        <button type="button" className="glance__btn" onClick={() => navigate('/crew/door?cash')}>
+          नगद यात्रु
+          <small>Passenger paying cash</small>
         </button>
       </div>
       {confirmEnd ? (
         <div className="glance__confirm">
-          <p>End this trip? {onboard > 0 ? `${onboard} still aboard will be charged the ${rupees(snap.tariff.unclosedLegFare)} cap.` : 'Nobody is aboard.'}</p>
-          <button type="button" className="danger" onClick={() => { unit.endTrip(); setConfirmEnd(false); }}>Yes, end trip</button>
-          <button type="button" className="quiet" onClick={() => setConfirmEnd(false)}>Keep running</button>
+          <p>यात्रा सक्ने? End this trip? {onboard > 0 ? `${onboard} still aboard will be charged the full ${rupees(snap.tariff.unclosedLegFare)}.` : 'Nobody is aboard.'}</p>
+          <button type="button" className="danger" onClick={() => { unit.endTrip(); setConfirmEnd(false); }}>हो, सक्नुहोस् · Yes, end trip</button>
+          <button type="button" className="quiet" onClick={() => setConfirmEnd(false)}>होइन · Keep going</button>
         </div>
       ) : (
-        <button type="button" className="glance__end" onClick={() => setConfirmEnd(true)}>End trip<small>the next one starts at once</small></button>
+        <button type="button" className="glance__end" onClick={() => setConfirmEnd(true)}>यात्रा सकियो · End trip<small>the next trip starts at once</small></button>
       )}
     </section>
   );
@@ -605,16 +616,23 @@ function Manifest({ snap }) {
       // appears for a ten-minute ride — so it is priced at the door instead.
       const sameRuler = !leg.boardUnitId || leg.boardUnitId === `M${snap.vehicleId}`;
       const metres = sameRuler ? Math.max(0, snap.odometerM - (leg.boardOdoM ?? 0)) : null;
-      return { leg, running: metres === null ? null : priceDistance(metres, { concession: leg.concession }), metres };
+      // The stage fare from where they got on to where the bus is now: what
+      // they would pay stepping off here. Distance is shown, not charged.
+      const boardStage = stageNear(CURRENT_TARIFF, leg.boardFix ?? leg.fix);
+      const nowStage = stageNear(CURRENT_TARIFF, snap.fix);
+      const running = boardStage && nowStage
+        ? priceDistance(metres ?? 0, { concession: leg.concession, tariff: CURRENT_TARIFF, boardStage, alightStage: nowStage })
+        : null;
+      return { leg, running, metres, boardStage, nowStage };
     }),
-    [snap.onboard, snap.odometerM, snap.vehicleId],
+    [snap.onboard, snap.odometerM, snap.vehicleId, snap.fix],
   );
 
   return (
     <section className="card card--wide">
       <h2 className="card__title">
         Aboard now
-        <span>{snap.onboard.length} open leg(s) · fare accruing per kilometre</span>
+        <span>{snap.onboard.length} aboard · each owes the stage fare from where they got on</span>
       </h2>
       {rows.length === 0 ? (
         <p className="card__empty">Nobody aboard. The first tap at a door opens a leg.</p>
@@ -623,22 +641,22 @@ function Manifest({ snap }) {
           <thead>
             <tr>
               <th>Passenger</th>
-              <th>Door</th>
-              <th>Boarded at</th>
+              <th>Boarded</th>
+              <th>Now at</th>
               <th>Ridden</th>
               <th>Concession</th>
-              <th>Owes now</th>
+              <th>Fare if off here</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ leg, running, metres }) => (
+            {rows.map(({ leg, running, metres, boardStage, nowStage }) => (
               <tr key={leg.legId}>
                 <td>
                   <b>{leg.alias ?? short(leg.passengerPublicKey)}</b>
                   <small>{leg.legId}</small>
                 </td>
-                <td className="tabular">{leg.boardDoorId}</td>
-                <td className="tabular">{leg.boardOdoM} m</td>
+                <td>{stageName(CURRENT_TARIFF, boardStage)?.en ?? '—'}</td>
+                <td>{stageName(CURRENT_TARIFF, nowStage)?.en ?? '—'}</td>
                 <td className="tabular">{metres === null ? 'another odometer' : `${(metres / 1000).toFixed(2)} km`}</td>
                 <td>{leg.concession === 'none' ? '—' : leg.concession}</td>
                 <td className="tabular grid__fare">{running ? rupees(running.amount) : 'at the door'}</td>

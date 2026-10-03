@@ -50,7 +50,9 @@ const chooseDemo = () => { try { localStorage.setItem(DEMO_KEY, '1'); } catch { 
 
 export default function CrewApp({ page }) {
   const tab = crewTab(page);
-  const [meterOn, setMeterOn] = useState(tab === 'bus');
+  // The meter runs from the moment the app opens: the door asks it how full
+  // the bus is, and a phone that is the bus must not wait for a tab visit.
+  const [meterOn, setMeterOn] = useState(true);
   useEffect(() => { if (tab === 'bus') setMeterOn(true); }, [tab]);
   const sync = useSyncStatus({ name: 'crew', pending: pendingConductor, run: syncConductor });
   const go = (id) => navigate(id === 'bus' ? '/crew' : `/crew/${id}`);
@@ -58,7 +60,7 @@ export default function CrewApp({ page }) {
 
   if (setup) {
     return (
-      <AppFrame brand="खलासी" tone="night">
+      <AppFrame brand="खलासी">
         <Setup
           onDone={() => { setSetup(false); go('bus'); }}
           onDemo={() => { chooseDemo(); setSetup(false); }}
@@ -68,12 +70,12 @@ export default function CrewApp({ page }) {
   }
 
   return (
-    <AppFrame brand="खलासी" tone="night" tabs={TABS} tab={tab} onTab={go} sync={sync} railed glance={tab === 'trip'}>
+    <AppFrame brand="खलासी" tabs={TABS} tab={tab} onTab={go} sync={sync} railed glance={tab === 'trip'}>
       <UnitStatus onSetupAgain={() => setSetup(true)} />
       <Suspense fallback={<BusLoader />}>
         {meterOn ? <div hidden={tab !== 'bus'}><Device /></div> : null}
         {tab === 'trip' ? <Conductor onBack={() => go('shift')} debug={debug} /> : null}
-        {tab === 'door' ? <Terminal /> : null}
+        {tab === 'door' ? <Terminal defaultDoor="A" simple /> : null}
         {tab === 'shift' ? <Crew /> : null}
       </Suspense>
     </AppFrame>

@@ -28,9 +28,11 @@
   --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, monospace;
 }
 
-/* Inside the Crew app (night tone) the instrument takes the kit's night
-   palette, so the meter and the door read as part of the same app. The
-   readings keep their roles: green clear, amber caution, red halt. */
+/* Inside any app frame the instrument takes the kit's palette (light, or
+   night where a frame asks for it), so the meter and the door read as part
+   of the same app. The readings keep their roles: green clear, amber
+   caution, red halt. */
+.bx,
 [data-tone='night'] {
   --instrument: var(--b-ground);
   --instrument-2: var(--b-surface);
@@ -1703,3 +1705,46 @@
 @media (max-width: 640px) {
   .panel__chips .chip { display: none; }
 }
+
+/* ---- the conductor's door: aboard count, scan, cash, and More ---- */
+.term__simple {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0;
+  padding: 16px var(--gutter) 4px;
+}
+.term__simple b { font-family: var(--display); font-size: 44px; line-height: 1; }
+.term__simple span { font-size: 15px; font-weight: 700; color: var(--read-dim); }
+.term__simple--full b,
+.term__simple--full span { color: var(--halt); }
+.term__more { margin-top: 12px; border-top: 1px solid var(--etch); }
+.term__more > summary {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 var(--gutter);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--read-dim);
+  cursor: pointer;
+}
+
+/* The one button a conductor presses all day. */
+.glance__btn--go {
+  background: var(--b-accent, #c8102e);
+  border-color: var(--b-accent, #c8102e);
+  color: #fff;
+}
+.glance__btn--go small { color: rgb(255 255 255 / 0.85); }
+.glance__actions { grid-template-columns: 1fr; }
+@media (min-width: 520px) { .glance__actions { grid-template-columns: 2fr 1fr; } }
+.glance__money { color: var(--b-accent, #c8102e); }
+.bx .panel__away { display: none; }
+.bx .panel__ident small { display: none; }
+.bx .term__tap { background: var(--b-accent); color: #fff; }
+.bx .term__tap:disabled { background: var(--b-bad); }
+.glance__stage { margin: 14px 0 0; }
+.glance__stage small { display: block; font-size: 12px; color: var(--read-dim); letter-spacing: 0.04em; text-transform: uppercase; }
+.glance__stage b { font-family: var(--display); font-size: 26px; line-height: 1.15; }
+.glance__fig--small b { font-size: clamp(28px, 8vw, 40px); }
