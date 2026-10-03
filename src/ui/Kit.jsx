@@ -90,7 +90,7 @@ export default function Kit() {
       </main>
       <TabBar tabs={TABS} current={tab} onChange={setTab} brand="भाडा" />
       <Sheet open={sheet} onClose={() => setSheet(false)} label="Example">
-        <h2 className="bx-h2">Pay by the kilometre</h2>
+        <h2 className="bx-h2">The fare for your stages</h2>
         <p className="bx-muted">Show this code at the door when you get on and when you get off.</p>
         <Button block size="lg" onClick={() => setSheet(false)}>Done</Button>
       </Sheet>

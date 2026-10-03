@@ -29,7 +29,8 @@ export function TopBar({ eyebrow, title, mark, onBack, end }) {
     <header className="bx-top">
       {onBack ? <Button variant="ghost" icon="back" onClick={onBack} aria-label="Back" /> : null}
       {/* The mark sits beside the title, so every app's bar is one row. */}
-      {mark ? <span className="bx-top__mark">{mark}</span> : null}
+      {/* The mark is the way home from any app: Bhada's front page lists every app. */}
+      {mark ? <a className="bx-top__mark" href="/" aria-label="Bhada home — all apps">{mark}</a> : null}
       <div className="bx-top__title">
         {eyebrow ? <p className="bx-eyebrow">{eyebrow}</p> : null}
         {title ? <h1 className="bx-h2">{title}</h1> : null}
