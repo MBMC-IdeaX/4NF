@@ -359,9 +359,10 @@ function BusState({ snap }) {
 
 function Verdict({ verdict, passImage, tariff, onClear }) {
   if (!verdict.ok) {
+    const isReplay = verdict.reason === 'already_riding';
     return (
-      <button type="button" className="result result--no" onClick={onClear}>
-        <b>अस्वीकृत</b>
+      <button type="button" className={`result ${isReplay ? 'result--alarm' : 'result--no'}`} onClick={onClear}>
+        <b>{isReplay ? '🛡️ दोहोरो ट्याप रोक्का (Replay Blocked)' : 'अस्वीकृत'}</b>
         <span>{verdict.message ?? verdict.reason}</span>
         <small>Tap to clear</small>
       </button>
@@ -409,12 +410,13 @@ function Verdict({ verdict, passImage, tariff, onClear }) {
   if (verdict.action === 'in') {
     return (
       <div className="result result--in">
-        <b>चढ्नुभयो</b>
-        <span>Ride open — nothing charged yet</span>
+        <b>चढ्नुभयो (Boarded)</b>
+        <span>Ride open — करिडोर होल्ड रु ५०</span>
         {passImage ? <img src={passImage} alt="Boarding pass QR" /> : null}
         <dl>
           <div><dt>Leg</dt><dd className="tabular">{verdict.legId}</dd></div>
           <div><dt>Boarding odometer</dt><dd className="tabular">{verdict.pass.boardOdoM} m</dd></div>
+          <div><dt>Corridor Hold</dt><dd className="tabular">रु ५० (ओर्लंदा फिर्ता)</dd></div>
           <div><dt>Rate after {tariff.includedKm} km</dt><dd className="tabular">{rupees(tariff.perStep)}/km</dd></div>
         </dl>
         <p>The passenger keeps this. It is what lets them off at the other door with no signal.</p>
@@ -423,11 +425,24 @@ function Verdict({ verdict, passImage, tariff, onClear }) {
     );
   }
 
-  const { leg, price } = verdict;
+  const { leg, price, reconciliation = verdict.reconciliation } = verdict;
   return (
     <div className="result result--out">
       <b className="tabular">{rupees(leg.amount)}</b>
       <span>{(leg.distanceM / 1000).toFixed(2)} km, measured by {leg.distanceSource}</span>
+      {reconciliation ? (
+        <div style={{
+          margin: '8px 0',
+          padding: '6px 10px',
+          background: '#eef8f2',
+          borderRadius: '6px',
+          fontSize: '13px',
+          color: '#1b6b3e',
+          fontWeight: 500,
+        }}>
+          🛡️ रु {reconciliation.holdAmount} होल्डबाट रु {reconciliation.refundAmount} फिर्ता • खुद भाडा रु {reconciliation.netCharged}
+        </div>
+      ) : null}
       <ul>
         {price.breakdown.map((item) => (
           <li key={item.label}>
