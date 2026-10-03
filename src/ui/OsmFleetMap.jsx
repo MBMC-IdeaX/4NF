@@ -152,7 +152,13 @@ export default function OsmFleetMap({
 
     mapInstanceRef.current = map;
 
+    // Ensure map tiles properly calibrate and fill container upon mounting or tab switching
+    const resizeTimer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
     return () => {
+      clearTimeout(resizeTimer);
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -291,7 +297,7 @@ export default function OsmFleetMap({
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
         }}
       >
-        <span style="font-weight: 700; color: #f1f5f9;">लाइभ ट्र्याकिङ</span>
+        <span style={{ fontWeight: 700, color: '#f1f5f9' }}>लाइभ ट्र्याकिङ</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }}></span>
           साझा

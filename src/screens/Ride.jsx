@@ -402,6 +402,52 @@ export default function Ride({ onBack, onStageFare }) {
               ? `Boarding pass ${ride.legId}. Works at any door, signal or not.`
               : `${family > 0 ? `One code for ${family + 1} people. ` : 'Ride code, '}fresh for ${freshFor} s. Nothing is charged until you get off.`}
           </p>
+
+          {!showPass && code ? (
+            <div style={{ margin: '8px 0', width: '100%' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--bx-ink-2, #6b645b)', marginBottom: '4px' }}>
+                <span>🛡️ Ed25519 रोलिङ टोकन</span>
+                <span className="tabular" style={{ fontWeight: 'bold', color: freshFor <= 5 ? '#a8202f' : 'inherit' }}>{freshFor} s बाँकी</span>
+              </div>
+              <div style={{ height: '4px', background: 'var(--bx-outline, #e4e1d8)', borderRadius: '2px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${(freshFor / CODE_REFRESH_S) * 100}%`,
+                  background: freshFor <= 5 ? '#a8202f' : 'var(--bx-accent, #a8202f)',
+                  transition: 'width 1s linear',
+                }} />
+              </div>
+              <div style={{
+                fontSize: '11px',
+                color: 'var(--bx-ink-2, #6b645b)',
+                background: 'var(--bx-surface-2, #f6f4ee)',
+                padding: '6px 10px',
+                borderRadius: '6px',
+                marginTop: '8px',
+                textAlign: 'left',
+                lineHeight: 1.4,
+              }}>
+                🔒 <b>एन्टी-स्क्रिनसट सुरक्षा:</b> कोड स्वतः ३० सेकेन्डमा फेरिन्छ। एउटै पास वा स्क्रिनसटबाट दुई जना चढ्न खोजे बसको भ्यालिडेटरले तुरुन्त रोक्का गर्छ।
+              </div>
+            </div>
+          ) : null}
+
+          {showPass ? (
+            <div style={{
+              margin: '8px 0',
+              padding: '8px 12px',
+              background: '#eef8f2',
+              border: '1px solid #c3e6cb',
+              borderRadius: '8px',
+              fontSize: '12px',
+              color: '#1b6b3e',
+              textAlign: 'left',
+              lineHeight: 1.4,
+            }}>
+              🛡️ <b>करिडोर होल्ड: रु ५०</b> • ओर्लंदा भ्यालिडेटरमा ट्याप गर्दा तय भएको दूरीको खुद भाडा कट्टी भई बाँकी रकम तुरुन्त फिर्ता हुन्छ।
+            </div>
+          ) : null}
+
           {showPass ? null : (
             <div className="ride__family" role="group" aria-label="People on this code">
               <button type="button" onClick={() => changeFamily(family - 1)} disabled={family === 0} aria-label="One fewer">−</button>
