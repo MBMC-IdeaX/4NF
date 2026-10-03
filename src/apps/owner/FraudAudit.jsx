@@ -1,18 +1,17 @@
-// Owner portal — Fraud Prevention & Cryptographic Audit Telemetry.
+// Owner portal — fraud audit, as a DEMO on sample rows.
 //
-// Monitors physical door optical counts, hardware supercapacitor watchdog logs,
-// in-flight public key anti-replay locks, Doppler trajectory plausibility,
-// and escrow settlement deductions for all multi-vendor fleet operators.
+// Nothing here reads the database. It shows the shape of the audit an owner
+// would get; the page says so at the top, and Today links to it as a demo.
 
 import { useState } from 'react';
-import { Icon, Button, Plate } from '../../ui';
+import { Icon, Button, Plate, Note, DemoTag } from '../../ui';
 
 const SAMPLE_AUDIT_LOGS = [
   {
     id: 'AUD-9021',
     time: '12:45 PM',
     plate: 'बा २ ख ५६४५',
-    vendor: 'साझा यातायात (Sajha)',
+    vendor: 'मयुर यातायात (demo)',
     type: 'REPLAY_ATTEMPT_BLOCKED',
     actor: 'यात्रु (Passenger)',
     severity: 'high',
@@ -24,7 +23,7 @@ const SAMPLE_AUDIT_LOGS = [
     id: 'AUD-9020',
     time: '12:30 PM',
     plate: 'बा ३ ख ८२१९',
-    vendor: 'दिगो इलेक्ट्रिक (Digo)',
+    vendor: 'निलो यातायात (demo)',
     type: 'DOOR_RECONCILIATION_PASS',
     actor: 'खलासी (Conductor)',
     severity: 'clean',
@@ -36,7 +35,7 @@ const SAMPLE_AUDIT_LOGS = [
     id: 'AUD-9019',
     time: '11:15 AM',
     plate: 'बा ५ ख ९०१२',
-    vendor: 'नेपाल यातायात',
+    vendor: 'रातो यातायात (demo)',
     type: 'DOPPLER_SPEED_VERIFIED',
     actor: 'सञ्चालक (Operator)',
     severity: 'clean',
@@ -48,7 +47,7 @@ const SAMPLE_AUDIT_LOGS = [
     id: 'AUD-9018',
     time: '10:04 AM',
     plate: 'बा १ ख ३३४४',
-    vendor: 'महानगर यातायात',
+    vendor: 'पहेँलो यातायात (demo)',
     type: 'TAMPER_WATCHDOG_CLEAR',
     actor: 'खलासी (Conductor)',
     severity: 'clean',
@@ -60,29 +59,29 @@ const SAMPLE_AUDIT_LOGS = [
     id: 'AUD-9017',
     time: '09:30 AM',
     plate: 'बा २ ख ५६४५',
-    vendor: 'साझा यातायात (Sajha)',
-    type: 'ESCROW_DEDUCTION_SETTLED',
+    vendor: 'मयुर यातायात (demo)',
+    type: 'APP_FEE_DEDUCTED',
     actor: 'प्लेटफर्म (Platform)',
     severity: 'info',
-    title: 'डिजिटल संकलनबाट मासिक सासब (SaaS) कट्टा',
-    detail: 'डिजिटल वालेट भाडा संकलन रु १५,४२० बाट मासिक सफ्टवेयर शुल्क रु ३,००० स्वचालित कट्टा भई खुद रकम बैंक खातामा भुक्तानी भयो।',
+    title: 'मासिक एप शुल्क (Monthly app fee)',
+    detail: 'Monthly per-bus app fee taken from the owner’s payout under the signed payout mandate. The payment partner moved the money; Bhada recorded it.',
     status: 'फर्छ्यौट (Settled)',
   },
   {
     id: 'AUD-9016',
     time: '08:50 AM',
     plate: 'बा ४ ख ७१२३',
-    vendor: 'दिगो इलेक्ट्रिक (Digo)',
-    type: 'UNCLOSED_LEG_HOLD_REFUND',
+    vendor: 'निलो यातायात (demo)',
+    type: 'DEAD_PHONE_CLAIM',
     actor: 'यात्रु (Passenger)',
     severity: 'info',
-    title: 'करिडोर होल्डबाट फिर्ता (Exit Refund)',
-    detail: 'यात्रुले ओर्लंदा ट्याप-आउट गर्दा रु ५० होल्डबाट रु २६ फिर्ता भयो। खुद भाडा रु २४ असुल।',
+    title: 'Dead-phone claim (unclosed ride)',
+    detail: 'A ride never tapped out was charged the unclosed cap. The passenger’s phone signed its own distance reading; the difference over the ordinary fare was returned, once.',
     status: 'फर्छ्यौट (Settled)',
   },
 ];
 
-export default function FraudAudit() {
+export default function FraudAudit({ go }) {
   const [filter, setFilter] = useState('all');
   const [selectedLog, setSelectedLog] = useState(null);
 
@@ -97,11 +96,19 @@ export default function FraudAudit() {
           <Icon name="shield" /> धोखाधडी रोकथाम तथा टेलिमेट्री अडिट
         </p>
         <h1 className="bx-h1" style={{ margin: '4px 0 8px 0', fontSize: '26px' }}>
-          सुरक्षा, ठगी रोकथाम तथा अडिट लग
+          Fraud audit <DemoTag>Sample</DemoTag>
         </h1>
         <p style={{ margin: 0, color: 'var(--bx-ink-2, #6b645b)', fontSize: '14px', lineHeight: 1.5 }}>
-          प्रत्येक बसको भौतिक ढोका काउन्टर, सुपरक्यापेसिटर पावर वाचडग, इन-फ्लाइट पब्लिक कुञ्जी लक, र डपलर गति प्रमाणीकरणको लाइभ रिपोर्ट।
+          The checks Bhada is designed to run on every bus: replayed codes, power cuts while moving, door counts against records, impossible speeds.
         </p>
+        <div style={{ marginTop: 12 }}>
+          <Note tone="warn" icon="info">
+            <b><DemoTag>Sample data</DemoTag> Nothing on this page is a real event.</b> Every figure and log row is made up to show the
+            idea. Replay refusal, power-loss records and the speed gate are built and proven; the door optical counter and the
+            supercapacitor watchdog are not built yet.
+          </Note>
+        </div>
+        {go ? <p style={{ marginTop: 8 }}><Button variant="ghost" icon="back" onClick={() => go('')}>Back to Today</Button></p> : null}
       </header>
 
       {/* KPI Cards */}
@@ -191,7 +198,7 @@ export default function FraudAudit() {
           { id: 'threats', label: '⚠️ रोक्का गरिएका प्रयासहरू (Blocked)' },
           { id: 'DOOR_RECONCILIATION_PASS', label: '🚪 ढोका काउन्टर (Door Break-Beam)' },
           { id: 'TAMPER_WATCHDOG_CLEAR', label: '⚡ पावर वाचडग (Power)' },
-          { id: 'ESCROW_DEDUCTION_SETTLED', label: '💼 सासब कट्टा (SaaS Escrow)' },
+          { id: 'APP_FEE_DEDUCTED', label: '💼 App fee' },
         ].map((f) => (
           <button
             key={f.id}

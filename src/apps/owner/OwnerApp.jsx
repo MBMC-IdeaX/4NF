@@ -32,14 +32,15 @@ const Reports = lazy(() => import('./Reports'));
 const OwnerFleetMap = lazy(() => import('./OwnerFleetMap'));
 const FraudAudit = lazy(() => import('./FraudAudit'));
 
+// Five on the bar, so it fits a phone. The demo fleet map and the sample audit
+// are pages reached from Today: they hold no data of this company's, and a tab
+// would put them level with the money.
 const ALL_TABS = [
   { id: 'today', label: 'आज', icon: 'home' },
-  { id: 'map', label: 'लाइभ नक्सा', icon: 'route' },
   { id: 'buses', label: 'बसहरू', icon: 'bus' },
-  { id: 'audit', label: 'सुरक्षा अडिट', icon: 'shield' },
+  { id: 'money', label: 'पैसा', icon: 'wallet', owner: true },
   { id: 'people', label: 'मानिस', icon: 'users' },
   { id: 'papers', label: 'कागजात', icon: 'statement' },
-  { id: 'money', label: 'पैसा', icon: 'wallet', owner: true },
   { id: 'reports', label: 'रिपोर्ट', icon: 'chart' },
 ];
 
@@ -50,7 +51,7 @@ const BUS_OWNER_TABS = [
   { id: 'agreements', label: 'सम्झौता', icon: 'statement' },
 ];
 // Pages reached from a link rather than a tab.
-const PAGES = ['agreements'];
+const PAGES = ['agreements', 'map', 'audit'];
 
 export function ownerRoute(page) {
   const [tab = 'today', ...rest] = String(page ?? '').split('/').filter(Boolean);
@@ -139,7 +140,7 @@ export default function OwnerApp({ page = '' }) {
     <AppFrame
       brand="भाडा"
       tabs={tabs}
-      tab={tab}
+      tab={PAGES.includes(tab) ? 'today' : tab}
       onTab={(id) => go(id === 'today' ? '' : id)}
       railed
       wide

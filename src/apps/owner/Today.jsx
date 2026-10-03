@@ -3,7 +3,7 @@
 // agreements, company papers, buses, their papers, drivers, phones, live.
 // After that, the day's figures and every bus.
 
-import { Button, Icon, Plate, Stats, Stat, SkeletonList, Empty, Note, Stamp } from '../../ui';
+import { Button, Icon, Plate, Stats, Stat, SkeletonList, Empty, Note, Stamp, DemoTag } from '../../ui';
 import { call, rows, useLoad, plateOf, rs, dateOf, timeOf, PAPERS } from './data';
 
 async function loadToday(isOwner) {
@@ -162,13 +162,13 @@ export default function Today({ me, isOwner, go }) {
       ) : null}
 
       <Stats four>
-        <Stat label="Buses" value={fleet.length} sub={`${running} reported in the last 3 hours`} />
-        <Stat label="Collected today" value={rs(collected)} sub={`${rides} ride${rides === 1 ? '' : 's'}`} />
-        <Stat label="Papers being checked" value={plan.waiting} sub={plan.toFix ? `${plan.toFix} to fix` : 'none to fix'} />
+        <Stat label="Fares recorded today" value={rs(collected)} sub="signed receipts that reached Bhada" />
+        <Stat label="Rides today" value={rides} sub={`across ${fleet.length} bus${fleet.length === 1 ? '' : 'es'}`} />
+        <Stat label="Buses reporting" value={`${running} / ${fleet.length}`} sub="heard from in the last 3 hours" />
         {isOwner ? (
-          <Stat label="You can withdraw" value={rs(money?.payable?.available ?? 0)} sub={<button type="button" className="bx-auth__link" style={{ minHeight: 0 }} onClick={() => go('money')}>Open money →</button>} />
+          <Stat label="Ready to pay out" value={rs(money?.payable?.available ?? 0)} sub={<button type="button" className="bx-auth__link" style={{ minHeight: 0 }} onClick={() => go('money')}>Open money →</button>} />
         ) : (
-          <Stat label="Drivers" value={papers.drivers.length} />
+          <Stat label="Papers being checked" value={plan.waiting} sub={plan.toFix ? `${plan.toFix} to fix` : 'none to fix'} />
         )}
       </Stats>
 
@@ -212,6 +212,29 @@ export default function Today({ me, isOwner, go }) {
             })}
           </ul>
         )}
+      </section>
+      <section aria-label="Demo screens">
+        <p className="bx-eyebrow" style={{ marginBottom: 'var(--b-2)' }}>Demo screens · not your company’s data</p>
+        <ul className="ow-fleet">
+          <li>
+            <button type="button" className="ow-bus" onClick={() => go('map')}>
+              <Icon name="route" />
+              <span>
+                <span className="ow-bus__name">Fleet map <DemoTag>Simulated</DemoTag></span>
+                <span className="ow-bus__sub"><span>Valley routes with simulated bus positions — what a live map would look like.</span></span>
+              </span>
+            </button>
+          </li>
+          <li>
+            <button type="button" className="ow-bus" onClick={() => go('audit')}>
+              <Icon name="shield" />
+              <span>
+                <span className="ow-bus__name">Fraud audit <DemoTag>Sample data</DemoTag></span>
+                <span className="ow-bus__sub"><span>The checks Bhada is designed to run, shown on made-up events.</span></span>
+              </span>
+            </button>
+          </li>
+        </ul>
       </section>
       <p className="bx-small bx-muted">Signed in as {me.display_name ?? me.name} · company {me.operator_id}</p>
     </div>
