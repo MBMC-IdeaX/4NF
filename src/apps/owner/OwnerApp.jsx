@@ -30,11 +30,13 @@ import './owner.css';
 const Money = lazy(() => import('./Money'));
 const Reports = lazy(() => import('./Reports'));
 const OwnerFleetMap = lazy(() => import('./OwnerFleetMap'));
+const FraudAudit = lazy(() => import('./FraudAudit'));
 
 const ALL_TABS = [
   { id: 'today', label: 'आज', icon: 'home' },
   { id: 'map', label: 'लाइभ नक्सा', icon: 'route' },
   { id: 'buses', label: 'बसहरू', icon: 'bus' },
+  { id: 'audit', label: 'सुरक्षा अडिट', icon: 'shield' },
   { id: 'people', label: 'मानिस', icon: 'users' },
   { id: 'papers', label: 'कागजात', icon: 'statement' },
   { id: 'money', label: 'पैसा', icon: 'wallet', owner: true },
@@ -151,6 +153,7 @@ export default function OwnerApp({ page = '' }) {
         {tab === 'today' ? <Today {...ctx} /> : null}
         {tab === 'map' ? <OwnerFleetMap {...ctx} /> : null}
         {tab === 'buses' ? <Buses {...ctx} plate={rest[0]} /> : null}
+        {tab === 'audit' ? <FraudAudit {...ctx} /> : null}
         {tab === 'people' ? <People {...ctx} /> : null}
         {tab === 'papers' ? <Papers {...ctx} focus={rest[0]} /> : null}
         {tab === 'money' && isOwner ? <Money {...ctx} view={rest[0]} /> : null}
