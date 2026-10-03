@@ -1558,6 +1558,611 @@ console.log('\n26. A family on one phone, and what an inspector may read');
   check('...and nothing else about the vehicles', Object.keys(entry ?? {}).sort().join(',') === 'plate,publicKey' && leak === 'refused', leak);
 }
 
+// Owners, managers and conductors of one company (0033), shared by 27 and 28.
+const FLEET_OWNER = '27000000-0000-4000-8000-000000000001';
+const FLEET_MANAGER = '27000000-0000-4000-8000-000000000002';
+const FLEET_CONDUCTOR = '27000000-0000-4000-8000-000000000003';
+const RIVAL_OWNER = '27000000-0000-4000-8000-000000000004';
+await db.query(
+  "insert into auth.users (id, email) values ($1, 'fleet-owner@proof.np'), ($2, 'fleet-manager@proof.np'), ($3, 'fleet-conductor@proof.np'), ($4, 'rival@proof.np')",
+  [FLEET_OWNER, FLEET_MANAGER, FLEET_CONDUCTOR, RIVAL_OWNER],
+);
+// What an API role is allowed to do at all, as opposed to what a function decides.
+const asRole = async (uid, sql, args = []) => {
+  await as(uid);
+  await db.query('set role authenticated');
+  const out = await db.query(sql, args).then((q) => q.rows, (e) => e.message);
+  await db.query('reset role');
+  return out;
+};
+
+console.log('\n27. A company has an owner, managers and conductors, and each sees their part');
+{
+  // Bhada onboards the company and invites its first owner (0038).
+  await as(FLEET_OWNER);
+  check('nobody outside Bhada creates a company', (await call("admin_create_company('Fleet Yatayat', 'Gopal', '9801234567')")).reason === 'not_reviewer');
+  await as(ADMIN);
+  const company = await call("admin_create_company('Fleet Yatayat', 'Gopal', '9801234567')");
+  const ownerInvite = await call('admin_invite_owner($1)', [company.operator_id]);
+  await as(FLEET_OWNER);
+  const ownerJoined = await call('accept_invite($1)', [ownerInvite.code]);
+  check('Bhada creates the company and its owner joins with the code Bhada gave', company.ok === true && ownerJoined.ok === true
+    && (await call('my_operator()')).role === 'owner', JSON.stringify(ownerJoined));
+
+  const managerInvite = await call("owner_invite('manager', null, 'Day manager')");
+  const conductorInvite = await call("owner_invite('conductor')");
+  check('the owner invites a manager and a conductor', managerInvite.ok === true && conductorInvite.ok === true && managerInvite.code.length === 10);
+  check('nobody can invite another owner', (await call("owner_invite('owner')")).reason === 'bad_role');
+
+  await as(FLEET_MANAGER);
+  check('a wrong code joins nobody', (await call("accept_invite('NOTACODE00')")).reason === 'unknown_code');
+  const joined = await call('accept_invite($1, $2)', [managerInvite.code.toLowerCase(), 'Hari']);
+  check('the manager joins with the role the invite named, whatever case it is typed in', joined.ok === true && joined.role === 'manager', JSON.stringify(joined));
+  check('a used code joins nobody else', (await call('accept_invite($1)', [managerInvite.code])).reason === 'used');
+  check('a manager cannot make another manager', (await call("owner_invite('manager')")).reason === 'owner_only');
+  const second = await call("owner_invite('conductor')");
+  check('but brings conductors on', second.ok === true);
+  check('and belongs to one company only', (await call('accept_invite($1)', [second.code])).reason === 'already_member');
+
+  await as(FLEET_CONDUCTOR);
+  await db.query("update operator_invites set expires_at = now() - interval '1 minute' where code_hash = invite_hash($1)", [second.code]);
+  check('an expired code joins nobody', (await call('accept_invite($1)', [second.code])).reason === 'expired');
+  const conductor = await call('accept_invite($1, $2)', [conductorInvite.code, 'Ram']);
+  check('the conductor joins as a conductor', conductor.ok === true && conductor.role === 'conductor');
+  check('a conductor is a member but not an operator: none of the company figures', (await call('current_operator_id()')) === null
+    && (await call('current_member()'))?.role === 'conductor');
+  check('...and cannot list the people', (await call('owner_members()')).reason === 'not_operator');
+
+  await as(FLEET_OWNER);
+  const people = await call('owner_members()');
+  check('the owner sees every member, owner first', people.ok === true && people.members.map((m) => m.role).join(',') === 'owner,manager,conductor', JSON.stringify(people.members?.map((m) => m.role)));
+  check('the last owner cannot step down', (await call("owner_set_member($1, 'manager')", [FLEET_OWNER])).reason === 'last_owner');
+  check('or leave', (await call('owner_set_member($1, null, null, true)', [FLEET_OWNER])).reason === 'last_owner');
+
+  await as(FLEET_MANAGER);
+  check('a manager cannot remove anyone', (await call('owner_set_member($1, null, null, true)', [FLEET_CONDUCTOR])).reason === 'owner_only');
+  check('or change a role', (await call("owner_set_member($1, 'manager')", [FLEET_CONDUCTOR])).reason === 'owner_only');
+
+  check('the anon key cannot call any of it',
+    /permission denied/.test(await (async () => {
+      await as(null);
+      await db.query('set role anon');
+      const r = await db.query("select owner_invite('conductor')").then(() => 'ran', (e) => e.message);
+      await db.query('reset role');
+      return r;
+    })()));
+  await as(null);
+}
+
+console.log('\n28. Buses are registered, changed and set up only through the owner, and every change is written down');
+{
+  const FLEET_PLATE = 'BA4KHA2001';
+  await as(FLEET_OWNER);
+  const fleetOp = await call('current_operator_id()');
+  const register = (op, plate, route, seated, standing = 10, label = null) =>
+    call('admin_register_vehicle($1, $2, $3, $4, $5, $6)', [op, plate, route, seated, standing, label]);
+  check('an owner does not register a bus: Bhada enters it from the bluebook', (await register(fleetOp, FLEET_PLATE, 'R11', 30)).reason === 'not_reviewer');
+  await as(FLEET_CONDUCTOR);
+  check('nor does a conductor', (await register(fleetOp, FLEET_PLATE, 'R11', 30)).reason === 'not_reviewer');
+  await as(ADMIN);
+  check('a plate that is not a plate is refused', (await register(fleetOp, 'HELLO', 'R11', 30)).reason === 'bad_plate');
+  check('a bus with no seats is refused', (await register(fleetOp, FLEET_PLATE, 'R11', 0)).reason === 'bad_capacity');
+  check('a route nobody runs is refused', (await register(fleetOp, FLEET_PLATE, 'R999', 30)).reason === 'unknown_route');
+  check('a company that does not exist is refused', (await register('NOBODY-00000', FLEET_PLATE, 'R11', 30)).reason === 'unknown_operator');
+  const added = await register(fleetOp, 'ba 4 kha 2001', 'R11', 30, 10, 'Fleet 1');
+  check('a bus is registered from the plate as painted', added.ok === true && added.plate === FLEET_PLATE, JSON.stringify(added));
+  // A company that applied from the app still exists, waiting for Bhada.
+  await as(RIVAL_OWNER);
+  await call("register_operator('Rival Yatayat')");
+  const rivalOp = await call('current_operator_id()');
+  check('a company that applies from the app waits for Bhada', (await call('my_onboarding()')).status === 'onboarding');
+  await as(ADMIN);
+  check('another company cannot have the same plate', (await register(rivalOp, FLEET_PLATE, 'R11', 30)).reason === 'taken');
+  check('or see it', (await asRole(RIVAL_OWNER, 'select plate from owner_fleet where plate = $1', [FLEET_PLATE])).length === 0);
+
+  const direct = await asRole(FLEET_OWNER, 'update vehicles set capacity = 99 where plate = $1', [FLEET_PLATE]);
+  check('an owner can no longer write the vehicles table directly', typeof direct === 'string' && /permission denied/.test(direct), String(direct));
+  const insert = await asRole(FLEET_OWNER, "insert into vehicles (plate, operator_id) values ('BA9KHA9999', current_operator_id())");
+  check('...or insert into it', typeof insert === 'string' && /permission denied/.test(insert), String(insert));
+
+  // The bus phone.
+  const unit = createKeypair();
+  const announce = async (key, enrolCode, capacity = 99) =>
+    (await sync({ meter: { vehicleId: FLEET_PLATE, publicKey: key.publicKey, capacity, firmware: 'crew-proof', ...(enrolCode ? { enrolCode } : {}) } })).meterResult;
+  const keyOf = async () => (await db.query('select public_key, capacity from vehicles where plate = $1', [FLEET_PLATE])).rows[0];
+
+  check('a phone that only knows the plate cannot become the bus', (await announce(unit)).reason === 'setup_required' && (await keyOf()).public_key === null);
+  await as(FLEET_OWNER);
+  const setup = await call('owner_bus_setup($1)', [FLEET_PLATE]);
+  check('the owner issues a setup code that carries the bus', setup.ok === true && setup.capacity === 40 && setup.route_id === 'R11' && setup.code.length === 12, JSON.stringify(setup));
+  check('a wrong code does not bind', (await announce(unit, 'WRONGCODE000')).reason === 'setup_required');
+  const bound = await announce(unit, setup.code);
+  check('the right code binds the phone', bound?.ok === true && bound.reason === 'registered' && (await keyOf()).public_key === unit.publicKey, JSON.stringify(bound));
+  check("and the phone's own capacity does not overwrite the owner's", (await keyOf()).capacity === 40);
+  check('the code is spent', (await announce(createKeypair(), setup.code)).reason === 'key_mismatch'
+    && (await db.query('select count(*)::int as n from vehicle_enrolments where vehicle_plate = $1', [FLEET_PLATE])).rows[0].n === 0);
+  check('the bound phone is seen again as itself', (await announce(unit, null, 12)).reason === 'seen' && (await keyOf()).capacity === 40);
+
+  await as(FLEET_OWNER);
+  check('a bus with a working phone is not set up again by accident', (await call('owner_bus_setup($1)', [FLEET_PLATE])).reason === 'unit_active');
+  const replace = await call('owner_bus_setup($1, true)', [FLEET_PLATE]);
+  check('replacing the phone clears the old key at once', replace.ok === true && (await keyOf()).public_key === null);
+  check('so the lost phone is no longer the bus', (await announce(unit)).reason === 'setup_required');
+  await db.query("update vehicle_enrolments set expires_at = now() - interval '1 minute' where vehicle_plate = $1", [FLEET_PLATE]);
+  const spare = createKeypair();
+  check('an expired setup code binds nothing', (await announce(spare, replace.code)).reason === 'setup_expired');
+  await as(FLEET_MANAGER);
+  const fresh = await call('owner_bus_setup($1)', [FLEET_PLATE]);
+  check('a manager can set up the replacement', fresh.ok === true && (await announce(spare, fresh.code)).ok === true);
+
+  await as(FLEET_MANAGER);
+  check('a name and a door counter can be changed', (await call("owner_update_vehicle($1, null, 'Fleet One', null, null, true)", [FLEET_PLATE])).ok === true);
+  check('but not the route or the seats: those are read off the papers by Bhada', (await call("owner_update_vehicle($1, 'R11')", [FLEET_PLATE])).reason === 'from_papers'
+    && (await call('owner_update_vehicle($1, null, null, 32, 10)', [FLEET_PLATE])).reason === 'from_papers');
+  check('a manager cannot use the staff path either', (await call('admin_update_vehicle($1, null, null, 32, 10)', [FLEET_PLATE])).reason === 'not_reviewer');
+  await as(ADMIN);
+  check('Bhada changes the seats within reason', (await call('admin_update_vehicle($1, null, null, 32, 10)', [FLEET_PLATE])).ok === true
+    && (await keyOf()).capacity === 42
+    && (await call('admin_update_vehicle($1, null, null, 150, 100)', [FLEET_PLATE])).reason === 'bad_capacity');
+  check('and a route change to nowhere is refused', (await call("admin_update_vehicle($1, 'R999')", [FLEET_PLATE])).reason === 'unknown_route');
+
+  const fleet = await asRole(FLEET_MANAGER, 'select plate, label, unit_bound, capacity from owner_fleet');
+  check('the fleet view shows the bus, its phone and its seats to the company', Array.isArray(fleet) && fleet.length === 1
+    && fleet[0].label === 'Fleet One' && fleet[0].unit_bound === true && fleet[0].capacity === 42, JSON.stringify(fleet));
+  check('and nothing to its conductor', (await asRole(FLEET_CONDUCTOR, 'select plate from owner_fleet')).length === 0);
+
+  await as(FLEET_OWNER);
+  check('a retired bus is retired, not deleted', (await call('owner_retire_vehicle($1)', [FLEET_PLATE])).ok === true
+    && (await call('owner_bus_setup($1, true)', [FLEET_PLATE])).reason === 'retired');
+  check('and its phone stops being a bus', (await announce(spare)).reason === 'retired');
+  check('and it can come back', (await call('owner_retire_vehicle($1, false)', [FLEET_PLATE])).ok === true && (await announce(spare)).reason === 'seen');
+
+  const log = (await asRole(FLEET_OWNER, 'select change from vehicle_changes where vehicle_plate = $1 order by id', [FLEET_PLATE])).map((r) => r.change);
+  check('every change is on the log the owner reads', ['registered', 'setup_issued', 'unit_bound', 'unit_replaced', 'label', 'capacity', 'door_counter', 'retired', 'restored'].every((c) => log.includes(c)), log.join(','));
+  check('and another company reads none of it', (await asRole(RIVAL_OWNER, 'select change from vehicle_changes where vehicle_plate = $1', [FLEET_PLATE])).length === 0);
+  await as(null);
+}
+
+console.log('\n29. Bhada charges for software, never takes a fare, and pays an owner only what is theirs');
+{
+  const FLEET_PLATE = 'BA4KHA2001';
+  // Kathmandu months: the one that just ended, and this one.
+  const ktm = new Date(Date.now() + 345 * 60 * 1000);
+  const thisMonth = ktm.toISOString().slice(0, 7);
+  const lastStart = new Date(Date.UTC(ktm.getUTCFullYear(), ktm.getUTCMonth() - 1, 10, 6));
+  const lastMonth = lastStart.toISOString().slice(0, 7);
+  const available = async () => (await call('owner_money()')).payable.available;
+
+  await as(FLEET_MANAGER);
+  check('a manager does not see the money', (await call('owner_money()')).reason === 'owner_only');
+  check('or move it', (await call("request_payout(100, 'esewa', 'Hari', '9812345678')")).reason === 'owner_only');
+  await as(FLEET_CONDUCTOR);
+  check('a conductor neither', (await call('owner_money()')).reason === 'owner_only');
+  await as(FLEET_OWNER);
+  check('a company with no fares has nothing to withdraw', (await available()) === 0);
+
+  // Fares its bus carried: Rs 3,000 last month and Rs 500 this month.
+  for (const [nonce, amount, at, seq] of [['FLEETLAST', 3000, lastStart, 9001], ['FLEETNOW', 500, new Date(), 9002]]) {
+    await db.query(
+      `insert into transactions (nonce, passenger_public_key, vehicle_plate, amount, boarding_stop, alighting_stop, sequence_number, issued_at, collected_at, settled_at, settled_by)
+       values ($1, $2, $3, $4, 'RATNAPARK', 'KOTESHWOR', $6, $5, $5, $5, 'proof')`,
+      [nonce, passenger.publicKey, FLEET_PLATE, amount, at, seq],
+    );
+  }
+  check('every fare its buses carried is payable, with no commission taken', (await available()) === 3500);
+
+  check('but nothing is paid out until Bhada has the company live', (await call("request_payout(1000, 'esewa', 'Fleet Yatayat', '9812345678')")).reason === 'not_live');
+  // Section 31 takes a company live the proper way; this one is set live here.
+  await db.query("update operators set onboarding_status = 'live' where id = current_operator_id()");
+
+  check('a wrong eSewa id is refused', (await call("request_payout(1000, 'esewa', 'Fleet Yatayat', '12345')")).reason === 'bad_esewa_id');
+  check('a bank payout needs a bank', (await call("request_payout(1000, 'bank', 'Fleet Yatayat', '0012345678')")).reason === 'bad_bank_account');
+  check('more than is there is refused', (await call("request_payout(3600, 'esewa', 'Fleet Yatayat', '9812345678')")).reason === 'insufficient');
+  const first = await call("request_payout(1000, 'esewa', 'Fleet Yatayat', '981-234-5678')");
+  check('an owner asks for a payout to their eSewa', first.ok === true && first.fee === 0, JSON.stringify(first));
+  check('and the money is held at once', (await available()) === 2500);
+  check('one open request at a time', (await call("request_payout(100, 'esewa', 'Fleet Yatayat', '9812345678')")).reason === 'request_open');
+  check('a request can be withdrawn', (await call('cancel_payout($1)', [first.id])).ok === true && (await available()) === 3500);
+
+  await as(FLEET_OWNER);
+  check('only the platform sets a rate', (await call("admin_set_fee('payout_flat', 25)")).reason === 'not_admin');
+  await as(ADMIN);
+  check('a rate cannot be backdated', (await call("admin_set_fee('payout_flat', 25, now() - interval '1 day')")).reason === 'backdated');
+  check('the platform sets a payout fee', (await call("admin_set_fee('payout_flat', 25, now(), 'Covers the eSewa transfer')")).ok === true);
+
+  await as(FLEET_OWNER);
+  const second = await call("request_payout(1000, 'esewa', 'Fleet Yatayat', '9812345678')");
+  check('a payout carries the fee in force when it was asked for', second.ok === true && second.fee === 25 && (await available()) === 2475);
+  await as(ADMIN);
+  const queue = await call("admin_payouts('requested')");
+  check('the platform sees the request beside what the company holds', queue.length === 1 && Number(queue[0].available) === 2475, JSON.stringify(queue.map((q) => q.available)));
+  check('paid needs the partner reference', (await call("admin_decide_payout($1, 'paid')", [second.id])).reason === 'reference_required');
+  check('paid with it', (await call("admin_decide_payout($1, 'paid', 'ESW-PAYOUT-1')", [second.id])).ok === true);
+  check('and paid once', (await call("admin_decide_payout($1, 'rejected', null, 'x')", [second.id])).reason === 'already_decided');
+  await as(FLEET_OWNER);
+  const money = await call('owner_money()');
+  check('the owner sees the payout and its fee', money.payable.paid_out === 1000 && money.payable.charges === 25 && money.payable.available === 2475
+    && money.payouts[0].status === 'paid' && money.charges[0].kind === 'payout_fee', JSON.stringify(money.payable));
+
+  // The monthly app fee, for a rate the platform set before last month began.
+  await db.query("insert into platform_fees (kind, amount_npr, effective_from, note) values ('app_monthly_per_bus', 500, $1, 'proof: set earlier')",
+    [new Date(Date.UTC(ktm.getUTCFullYear(), ktm.getUTCMonth() - 2, 1))]);
+  await as(ADMIN);
+  check('a month still running is not billed', (await call('admin_bill_month($1)', [thisMonth])).reason === 'month_not_over');
+  const billed = await call('admin_bill_month($1)', [lastMonth]);
+  check('last month bills each bus that ran, at the rate in force on the first', billed.ok === true && billed.rate === 500 && billed.total >= 500, JSON.stringify(billed));
+  check('billing the month again bills nobody twice', (await call('admin_bill_month($1)', [lastMonth])).companies === 0);
+  await as(FLEET_OWNER);
+  const charged = await call('owner_money()');
+  const fee = charged.charges.find((c) => c.kind === 'app_fee');
+  check("the owner's statement shows the month, the buses and the rate", fee?.amount === 500 && fee.period === lastMonth
+    && fee.detail.buses.join(',') === FLEET_PLATE && charged.payable.available === 1975, JSON.stringify(fee));
+  const statement = await call('owner_statement($1::date, current_date)', [lastStart.toISOString().slice(0, 10)]);
+  const total = (key) => statement.days.reduce((sum, d) => sum + Number(d[key]), 0);
+  check('the daily statement adds up to the same money', statement.ok === true && total('stage') === 3500 && total('payouts') === 1000
+    && total('charges') === 525 && total('net') === 3500 - 525, JSON.stringify(statement.days));
+  check('a statement is at most three months at a time', (await call("owner_statement(current_date - 200, current_date)")).reason === 'bad_range');
+  await as(FLEET_MANAGER);
+  check('and a manager does not read it', (await call('owner_statement(current_date - 7, current_date)')).reason === 'owner_only');
+  await as(RIVAL_OWNER);
+  check('a company whose buses never ran pays nothing', (await call('owner_money()')).charges.length === 0);
+
+  // RLS on and no policy: refused or empty, never rows. The owner reads them
+  // only through owner_money().
+  const closed = (rows) => typeof rows === 'string' ? /permission denied/.test(rows) : rows.length === 0;
+  check('the payout and charge tables are closed to the API roles',
+    closed(await asRole(FLEET_OWNER, 'select * from operator_payouts')) && closed(await asRole(FLEET_OWNER, 'select * from operator_charges'))
+    && closed(await asRole(FLEET_OWNER, 'select * from vehicle_enrolments')) && closed(await asRole(FLEET_OWNER, 'select * from operator_invites')));
+
+  // The rider's top-up fee rides on eSewa's own service-charge field.
+  await as(ADMIN);
+  await call("admin_set_fee('topup_flat', 5)");
+  await db.query("update topup_requests set status = 'failed' where user_id = $1 and status = 'initiated'", [RIDER]);
+  const opened = await call('gateway_open_topup($1, $2, $3)', [RIDER, 'esewa', 200]);
+  check('a top-up opens with its fee and the total eSewa will charge', opened.ok === true && opened.fee === 5 && opened.total === 205, JSON.stringify(opened));
+  const form = await esewaForm({ amount: 200, serviceCharge: 5, transactionUuid: opened.reference, productCode: 'EPAYTEST', secretKey: 'k', successUrl: 's', failureUrl: 'f', hmac: async () => 'sig' });
+  check('the eSewa form asks for the fee as a service charge', form.product_service_charge === '5' && form.total_amount === '205' && form.amount === '200');
+  const walletBalance = async (reference) => (await db.query(
+    'select p.balance from passengers p join topup_requests t on t.wallet_public_key = p.public_key where t.reference = $1', [reference])).rows[0].balance;
+  check('eSewa reporting only the top-up is a mismatch, held for a person', (await call('gateway_complete_topup($1, $2, $3, $4)', [opened.reference, 'esewa', 200, 'X'])).reason === 'amount_mismatch');
+  const reopened = await call('gateway_open_topup($1, $2, $3)', [RIDER, 'esewa', 200]);
+  const before = await walletBalance(reopened.reference);
+  const loaded = await call('gateway_complete_topup($1, $2, $3, $4)', [reopened.reference, 'esewa', 205, 'ESW-FEE']);
+  const after = await walletBalance(reopened.reference);
+  check('the total paid loads the top-up, and the fee is not credited', loaded.ok === true && after - before === 200, `${before} -> ${after}`);
+  check('the platform sees its fee', (await call('admin_fees()')).revenue.topup_fees === 5);
+  await call("admin_set_fee('topup_flat', 0)");
+  await as(null);
+}
+
+console.log('\n30. Every bus and driver files its papers, and a reviewer checks each one');
+{
+  const FLEET_PLATE = 'BA4KHA2001';
+  const REVIEWER = '30000000-0000-4000-8000-000000000001';
+  await db.query("insert into auth.users (id, email) values ($1, 'reviewer@proof.np')", [REVIEWER]);
+  const folder = (await (async () => { await as(FLEET_OWNER); return call('current_operator_id()'); })());
+
+  await as(FLEET_CONDUCTOR);
+  check('a conductor cannot add a driver', (await call("owner_save_driver(null, 'Shyam', '01-06-12345678')")).reason === 'not_operator');
+  await as(FLEET_MANAGER);
+  const driver = await call("owner_save_driver(null, 'Shyam Thapa', '01-06-12345678', '9800000002', $1)", [FLEET_PLATE]);
+  check('a manager adds a driver with a licence number and a bus', driver.ok === true);
+  check('the same licence twice is refused', (await call("owner_save_driver(null, 'Shyam T', '01-06-12345678')")).reason === 'license_on_file');
+
+  const file = (type, plate, driverId, extra = {}) => call(
+    'owner_submit_document($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    [type, plate, driverId, extra.path ?? `${folder}/${type}-${Date.now()}.pdf`, `${type}.pdf`, extra.mime ?? 'application/pdf', 120000, extra.number ?? null, extra.expires ?? null],
+  );
+  check('a paper outside the company folder is refused', (await file('bluebook', FLEET_PLATE, null, { path: 'OTHER-123/bluebook.pdf' })).reason === 'bad_path');
+  check('a file that is not a PDF or a photo is refused', (await file('bluebook', FLEET_PLATE, null, { mime: 'application/zip' })).reason === 'bad_file');
+  await as(RIVAL_OWNER);
+  check("another company cannot file against this company's bus", (await call(
+    'owner_submit_document($1, $2, null, $3)', ['insurance', FLEET_PLATE, `${await call('current_operator_id()')}/x.pdf`])).reason === 'unknown_vehicle');
+
+  await as(FLEET_MANAGER);
+  const papers = {};
+  for (const type of ['bluebook', 'pollution', 'tax_clearance', 'insurance', 'route_permit']) papers[type] = (await file(type, FLEET_PLATE, null)).id;
+  for (const type of ['driving_license', 'driver_agreement']) papers[type] = (await file(type, null, driver.id)).id;
+  check('five papers for the bus and two for the driver are filed', Object.values(papers).every(Boolean) && Object.keys(papers).length === 7);
+  const waiting = await call('owner_compliance()');
+  const bus = waiting.buses.find((b) => b.plate === FLEET_PLATE);
+  check('while they wait, the bus is not verified', bus.verified === false && bus.papers.insurance.status === 'pending');
+
+  await as(FLEET_OWNER);
+  check('an owner cannot review their own papers', (await call("review_document($1, 'approved')", [papers.bluebook])).reason === 'not_reviewer');
+  await as(REVIEWER);
+  check('a login that is not a reviewer cannot either', (await call("review_queue()")).reason === 'not_reviewer');
+  await as(ADMIN);
+  check('the admin makes a reviewer', (await call("admin_set_reviewer('reviewer@proof.np')")).ok === true);
+  await as(REVIEWER);
+  const queue = await call('review_queue()');
+  check('the reviewer sees the queue with the company and the subject', queue.ok === true
+    && queue.documents.some((d) => d.id === papers.driving_license && d.driver_name === 'Shyam Thapa' && d.operator_name === 'Fleet Yatayat'));
+  check('but is not an admin', (await call('admin_overview()')).reason === 'not_admin');
+  check('a paper that expires needs its date to be approved', (await call("review_document($1, 'approved')", [papers.insurance])).reason === 'expiry_required');
+  check('a paper already out of date is not approved', (await call("review_document($1, 'approved', null, current_date - 1)", [papers.insurance])).reason === 'already_expired');
+  check('a rejection needs a reason', (await call("review_document($1, 'rejected')", [papers.pollution])).reason === 'note_required');
+  check('rejected with one', (await call("review_document($1, 'rejected', 'Photo is blurred; the test date cannot be read')", [papers.pollution])).ok === true);
+  for (const type of ['bluebook', 'driver_agreement']) await call("review_document($1, 'approved')", [papers[type]]);
+  for (const type of ['tax_clearance', 'insurance', 'route_permit', 'driving_license']) await call("review_document($1, 'approved', null, current_date + 200)", [papers[type]]);
+  check('a decided paper is decided once', (await call("review_document($1, 'rejected', 'changed my mind')", [papers.bluebook])).reason === 'already_decided');
+
+  await as(FLEET_OWNER);
+  let state = await call('owner_compliance()');
+  let fleetBus = state.buses.find((b) => b.plate === FLEET_PLATE);
+  check('the owner reads why a paper was refused', fleetBus.papers.pollution.status === 'rejected' && /blurred/.test(fleetBus.papers.pollution.note));
+  check('and the driver is verified', state.drivers[0].verified === true);
+  const again = (await file('pollution', FLEET_PLATE, null)).id;
+  await as(REVIEWER);
+  await call("review_document($1, 'approved', null, current_date + 30)", [again]);
+  await as(FLEET_OWNER);
+  state = await call('owner_compliance()');
+  fleetBus = state.buses.find((b) => b.plate === FLEET_PLATE);
+  check('a fresh pollution paper, approved, verifies the bus', fleetBus.verified === true, JSON.stringify(fleetBus.papers.pollution));
+
+  await db.query("update compliance_documents set expires_on = current_date - 1 where id = $1", [papers.insurance]);
+  fleetBus = (await call('owner_compliance()')).buses.find((b) => b.plate === FLEET_PLATE);
+  check('when the insurance runs out the bus stops being verified, by itself', fleetBus.verified === false && fleetBus.papers.insurance.status === 'expired');
+  await as(RIVAL_OWNER);
+  check("another company sees none of it", (await call('owner_compliance()')).buses.length === 0);
+  const closed = (rows) => typeof rows === 'string' ? /permission denied/.test(rows) : rows.length === 0;
+  check('the document and driver tables are closed to the API roles',
+    closed(await asRole(FLEET_OWNER, 'select * from compliance_documents')) && closed(await asRole(FLEET_OWNER, 'select * from operator_drivers')));
+  await as(null);
+}
+
+// A second company, onboarded the whole way, shared by 31 to 33.
+const VALLEY_OWNER = '31000000-0000-4000-8000-000000000001';
+const VALLEY_BUS_OWNER = '31000000-0000-4000-8000-000000000002';
+const STAFF = '30000000-0000-4000-8000-000000000001'; // the reviewer from section 30
+await db.query(
+  "insert into auth.users (id, email) values ($1, 'valley-owner@proof.np'), ($2, 'valley-bus-owner@proof.np')",
+  [VALLEY_OWNER, VALLEY_BUS_OWNER],
+);
+let VALLEY = null;
+const AGREEMENT = (kind) => `The ${kind} agreement between Bhada and the company, in full, as the company reads it before it signs.`;
+
+console.log('\n31. A company is onboarded by Bhada: agreements first, papers checked, then live');
+{
+  await as(STAFF);
+  check('a company needs a contact phone that is a phone', (await call("admin_create_company('Valley Yatayat', 'Sita', '12345')")).reason === 'bad_phone');
+  const made = await call("admin_create_company('Valley Yatayat', 'Sita Sharma', '980-111-1111', '601234567', 'Kalanki')");
+  VALLEY = made.operator_id;
+  check('a reviewer creates the company, waiting to go live', made.ok === true && (await call('admin_company($1)', [VALLEY])).status === 'onboarding');
+  check('a reviewer cannot take it live', (await call('admin_set_company_live($1)', [VALLEY])).reason === 'not_admin');
+  check('or publish the words a company signs', (await call("admin_publish_agreement('service', 'Service agreement', $1)", [AGREEMENT('service')])).reason === 'not_admin');
+
+  await as(ADMIN);
+  const nothing = await call('admin_set_company_live($1)', [VALLEY]);
+  check('with nothing signed and nothing filed it cannot go live, and Bhada is told what is missing', nothing.reason === 'not_ready'
+    && ['service', 'payout_mandate', 'data_consent', 'company_papers'].every((k) => nothing.missing.includes(k)), JSON.stringify(nothing));
+  check('an agreement is a real text', (await call("admin_publish_agreement('service', 'Service', 'too short')")).reason === 'text_required');
+  for (const kind of ['service', 'payout_mandate', 'data_consent', 'membership']) {
+    await call('admin_publish_agreement($1, $2, $3)', [kind, `The ${kind} agreement`, AGREEMENT(kind)]);
+  }
+  const texts = (await db.query('select kind, version, body_hash from agreement_texts order by kind')).rows;
+  check('every agreement is published at version 1 with the hash of its words', texts.length === 4 && texts.every((t) => t.version === 1 && t.body_hash.length === 64));
+
+  await as(STAFF);
+  check('a paper copy needs its scan in the company folder', (await call("admin_record_agreement($1, 'service', 1, 'Sita Sharma', '9801111111', 'elsewhere/x.pdf')", [VALLEY])).reason === 'scan_required');
+  check('and a signer', (await call("admin_record_agreement($1, 'service', 1, '', null, $2)", [VALLEY, `${VALLEY}/service.pdf`])).reason === 'signer_required');
+  check('the signed service agreement is recorded from paper', (await call("admin_record_agreement($1, 'service', 1, 'Sita Sharma', '9801111111', $2)", [VALLEY, `${VALLEY}/service.pdf`])).ok === true);
+  const invite = await call("admin_invite_owner($1, 'Sita')", [VALLEY]);
+
+  await as(VALLEY_OWNER);
+  check('before joining, the owner has no company to accept for', (await call("accept_agreement('payout_mandate', 1)")).reason === 'not_operator');
+  check('the owner joins with the code Bhada gave', (await call('accept_invite($1, $2)', [invite.code, 'Sita'])).role === 'owner');
+  check('the owner reads where the company stands', (await call('my_onboarding()')).agreements.service?.method === 'paper');
+  check('an agreement that does not exist cannot be accepted', (await call("accept_agreement('payout_mandate', 7)")).reason === 'unknown_agreement');
+  check('a membership agreement is a bus owner’s, not the company’s', (await call("accept_agreement('membership', 1)")).reason === 'bus_owner_only');
+  check('the owner accepts the payout mandate in the app', (await call("accept_agreement('payout_mandate', 1)")).ok === true);
+  check('and the data notice', (await call("accept_agreement('data_consent', 1)")).ok === true);
+
+  // The data notice changes: what was accepted is no longer what is current.
+  await as(ADMIN);
+  await call("admin_publish_agreement('data_consent', 'The data notice, revised', $1)", [AGREEMENT('data_consent') + ' Revised.']);
+  const papersMissing = await call('admin_set_company_live($1)', [VALLEY]);
+  check('a changed text has to be accepted again', papersMissing.missing.includes('data_consent') && !papersMissing.missing.includes('service'), JSON.stringify(papersMissing.missing));
+  await as(VALLEY_OWNER);
+  check('the old version cannot be accepted any more', (await call("accept_agreement('data_consent', 1)")).reason === 'not_current');
+  await call("accept_agreement('data_consent', 2)");
+  const kept = (await db.query('select method, body_hash from operator_agreements where operator_id = $1 order by at', [VALLEY])).rows;
+  check('every acceptance keeps the hash of the words accepted, paper and app alike', kept.length === 4 && kept.some((a) => a.method === 'paper')
+    && new Set(kept.map((a) => a.body_hash)).size === 4);
+
+  // The company's own five papers, filed by Bhada's officer from the originals.
+  const companyPapers = ['company_registration', 'pan_vat', 'company_tax_clearance', 'director_citizenship', 'dotm_registration'];
+  await as(STAFF);
+  const filed = {};
+  for (const type of companyPapers) {
+    filed[type] = (await call('admin_submit_document($1, $2, null, null, $3, $4, $5)',
+      [VALLEY, type, `${VALLEY}/${type}.pdf`, `${type}.pdf`, 'application/pdf'])).id;
+  }
+  check('Bhada files the company’s five papers', Object.values(filed).every(Boolean));
+  await as(ADMIN);
+  check('papers waiting for review keep the company from going live', JSON.stringify((await call('admin_set_company_live($1)', [VALLEY])).missing) === '["company_papers"]');
+  await as(STAFF);
+  for (const type of companyPapers) {
+    await call('review_document($1, $2, null, $3)', [filed[type], 'approved', type === 'company_tax_clearance' ? '2027-07-16' : null]);
+  }
+  await as(ADMIN);
+  check('with everything signed and checked, the platform admin takes the company live', (await call('admin_set_company_live($1)', [VALLEY])).ok === true);
+  await as(VALLEY_OWNER);
+  const state = await call('my_onboarding()');
+  check('and the owner sees it live', state.status === 'live' && state.company_papers.verified === true
+    && ['service', 'payout_mandate', 'data_consent'].every((k) => state.agreements[k].current === true), JSON.stringify(state.agreements));
+  await db.query("update operator_users set role = 'manager' where user_id = $1", [VALLEY_OWNER]);
+  const renewal = await call("owner_submit_document('pan_vat', null, null, $1)", [`${VALLEY}/pan2.pdf`]);
+  await db.query("update operator_users set role = 'owner' where user_id = $1", [VALLEY_OWNER]);
+  check('renewing a company paper is the owner’s job, not a manager’s', renewal.reason === 'owner_only');
+  await as(null);
+}
+
+console.log('\n32. A bus owner is paid for their own bus, less the company’s levy, and only for while it was theirs');
+{
+  const OWN_BUS = 'BA5KHA3001';
+  const MEMBER_BUS = 'BA5KHA3002';
+  await as(STAFF);
+  await call("admin_register_vehicle($1, $2, 'R11', 30, 10)", [VALLEY, OWN_BUS]);
+  await call("admin_register_vehicle($1, $2, 'R11', 30, 10)", [VALLEY, MEMBER_BUS]);
+  check('a bus can only be given to a member who is a bus owner', (await call('set_bus_owner($1, $2)', [MEMBER_BUS, VALLEY_OWNER])).reason === 'unknown_member');
+  check('the levy cannot start in the past', (await call('admin_set_levy($1, 100, current_date - 1)', [VALLEY])).reason === 'backdated');
+  check('Bhada sets the company’s levy from the service agreement: Rs 100 a day a member bus runs', (await call('admin_set_levy($1, 100)', [VALLEY])).ok === true);
+
+  await as(VALLEY_OWNER);
+  const invite = await call("owner_invite('bus_owner', $1, 'Bikash')", [MEMBER_BUS]);
+  await as(VALLEY_BUS_OWNER);
+  const joined = await call('accept_invite($1, $2)', [invite.code, 'Bikash']);
+  check('a bus owner joins with their bus', joined.ok === true && joined.role === 'bus_owner' && joined.assigned_plate === MEMBER_BUS);
+  const mine = await call('my_buses()');
+  check('and sees that bus and only that bus', mine.length === 1 && mine[0].plate === MEMBER_BUS, JSON.stringify(mine));
+  check('none of the company’s fleet', (await asRole(VALLEY_BUS_OWNER, 'select plate from owner_fleet')).length === 0);
+  check('cannot invite anyone', (await call("owner_invite('conductor')")).reason === 'not_operator');
+  check('or give the bus away', (await call('set_bus_owner($1, null)', [MEMBER_BUS])).reason === 'owner_only');
+  check('and signs their membership agreement in the app', (await call("accept_agreement('membership', 1)")).ok === true);
+
+  // A day's fares on both buses, after the bus became the member's.
+  let seq = 9101;
+  const fare = (nonce, plate, amount) => db.query(
+    `insert into transactions (nonce, passenger_public_key, vehicle_plate, amount, boarding_stop, alighting_stop, sequence_number, issued_at, collected_at, settled_at, settled_by)
+     values ($1, $2, $3, $4, 'RATNAPARK', 'KOTESHWOR', $5, now(), now(), now(), 'proof')`,
+    [nonce, passenger.publicKey, plate, amount, seq++]);
+  await fare('VALLEYOWN1', OWN_BUS, 400);
+  await fare('VALLEYMEM1', MEMBER_BUS, 1000);
+
+  const memberMoney = await call('owner_money()');
+  check('the bus owner is paid their bus’s fares, less one day’s levy', memberMoney.party === 'bus_owner' && memberMoney.payable.stage === 1000
+    && memberMoney.payable.levy === -100 && memberMoney.payable.available === 900, JSON.stringify(memberMoney.payable));
+  await as(VALLEY_OWNER);
+  const companyMoney = await call('owner_money()');
+  check('the company is paid its own bus’s fares and the levy, and not the member’s fares', companyMoney.party === 'company'
+    && companyMoney.payable.stage === 400 && companyMoney.payable.levy === 100 && companyMoney.payable.available === 500, JSON.stringify(companyMoney.payable));
+  check('the company sees what each member’s bus paid it', companyMoney.members.length === 1 && companyMoney.members[0].levy === 100
+    && companyMoney.members[0].buses.join() === MEMBER_BUS);
+
+  // Each party asks for its own money, side by side.
+  await as(VALLEY_BUS_OWNER);
+  const memberPayout = await call("request_payout(500, 'esewa', 'Bikash', '9822222222')");
+  check('the bus owner asks for a payout to their own eSewa, with the payout fee', memberPayout.ok === true && memberPayout.fee === 25
+    && (await call('owner_money()')).payable.available === 375);
+  await as(VALLEY_OWNER);
+  check('and the company asks for its own at the same time', (await call("request_payout(300, 'esewa', 'Valley Yatayat', '9801111111')")).ok === true
+    && (await call('owner_money()')).payable.available === 175);
+  check('neither can spend the other’s money', (await call("request_payout(200, 'esewa', 'Valley Yatayat', '9801111111')")).reason === 'request_open');
+  await as(ADMIN);
+  const queue = (await call("admin_payouts('requested')")).filter((p) => p.operator_id === VALLEY);
+  check('the platform sees whose each request is', queue.length === 2 && queue.some((p) => p.member_name === 'Bikash' && Number(p.available) === 375)
+    && queue.some((p) => p.member_name === null && Number(p.available) === 175), JSON.stringify(queue.map((p) => [p.member_name, p.available])));
+  await call("admin_decide_payout($1, 'paid', 'ESW-MEMBER-1')", [memberPayout.id]);
+
+  await as(VALLEY_BUS_OWNER);
+  const statement = await call('owner_statement(current_date - 1, current_date)');
+  const today = statement.days[0];
+  check('the bus owner’s statement: fares, levy, fee, payout', today.stage === 1000 && today.levy === -100 && today.charges === 25
+    && today.payouts === 500 && today.net === 875, JSON.stringify(today));
+
+  // The bus goes back to the company. Its past stays where it was earned.
+  await as(VALLEY_OWNER);
+  check('the owner takes the bus back for the company', (await call('set_bus_owner($1, null)', [MEMBER_BUS])).ok === true);
+  await fare('VALLEYMEM2', MEMBER_BUS, 200);
+  const companyAfter = (await call('owner_money()')).payable;
+  await as(VALLEY_BUS_OWNER);
+  const memberAfter = (await call('owner_money()')).payable;
+  check('a bus changing hands does not take its past with it: the member keeps what was earned and paid', memberAfter.stage === 1000 && memberAfter.available === 375, JSON.stringify(memberAfter));
+  check('and the company gets only the fares after the change', companyAfter.stage === 600 && companyAfter.available === 375, JSON.stringify(companyAfter));
+  check('the bus owner no longer sees the bus', (await call('my_buses()')).length === 0);
+  const owners = (await db.query('select member_id from vehicle_owners where vehicle_plate = $1 order by id', [MEMBER_BUS])).rows.map((r) => r.member_id);
+  check('every change of owner is dated on file', owners.length === 2 && owners[0] === VALLEY_BUS_OWNER && owners[1] === null);
+  const total = Number(companyAfter.earned) + Number(memberAfter.earned);
+  check('and the two balances still add up to every rupee the buses carried', total === 400 + 1000 + 200, String(total));
+  await as(null);
+}
+
+console.log('\n33. An owner asks for a bus or a route, with the papers; Bhada enters it from them');
+{
+  const NEW_BUS = 'BA5KHA3003';
+  const doc = (name) => ({ path: `${VALLEY}/${name}.pdf`, name: `${name}.pdf`, mime: 'application/pdf' });
+  const files = (...names) => JSON.stringify(names.map(doc));
+  await as(VALLEY_BUS_OWNER);
+  check('a bus owner does not ask on the company’s behalf', (await call("owner_request('new_bus', $1)", [NEW_BUS])).reason === 'not_operator');
+  await as(VALLEY_OWNER);
+  check('a new bus needs its bluebook and route permit', (await call("owner_request('new_bus', $1, '{}', $2)", [NEW_BUS, files('bluebook')])).reason === 'papers_required');
+  check('from the company’s own folder', (await call("owner_request('new_bus', $1, '{}', $2)", [NEW_BUS, JSON.stringify([doc('a'), { path: 'OTHER/x.pdf' }])])).reason === 'bad_path');
+  check('a plate already on Bhada cannot be asked for', (await call("owner_request('new_bus', 'BA5KHA3001', '{}', $1)", [files('a', 'b')])).reason === 'taken');
+  const asked = await call("owner_request('new_bus', 'ba 5 kha 3003', $1, $2)", [JSON.stringify({ seated: 30, standing: 10 }), files('bluebook', 'route_permit')]);
+  check('the owner asks for a bus with both papers', asked.ok === true);
+  check('once', (await call("owner_request('new_bus', $1, '{}', $2)", [NEW_BUS, files('a', 'b')])).reason === 'request_open');
+
+  await as(STAFF);
+  const queue = await call('review_requests()');
+  check('the reviewer sees the request with the company', queue.requests.some((r) => r.id === asked.id && r.operator_name === 'Valley Yatayat' && r.files.length === 2));
+  check('a bus is approved only once it is entered', (await call("review_request($1, 'approved')", [asked.id])).reason === 'register_first');
+  await call("admin_register_vehicle($1, $2, 'R11', 30, 10)", [VALLEY, NEW_BUS]);
+  check('entered, the request is approved with its plate', (await call("review_request($1, 'approved')", [asked.id])).result === NEW_BUS);
+
+  // The bus runs a route Bhada has not built yet.
+  await as(VALLEY_OWNER);
+  const routeAsk = (name) => call("owner_request('route', $1, $2)", [NEW_BUS, JSON.stringify({ permit_name: name })]);
+  check('a route request needs the route named as on the permit', (await routeAsk('')).reason === 'route_name_required');
+  check('and the permit on file', (await routeAsk('Kalanki–Budhanilkantha')).reason === 'permit_required');
+  await call("owner_submit_document('route_permit', $1, null, $2)", [NEW_BUS, `${VALLEY}/permit-3003.pdf`]);
+  const routeRequest = await routeAsk('Kalanki–Budhanilkantha');
+  check('with it, the request goes to Bhada', routeRequest.ok === true);
+
+  await as(STAFF);
+  const pending = (await call('review_requests()')).requests.find((r) => r.id === routeRequest.id);
+  check('the reviewer builds it from the permit the bus filed', pending?.permit?.file_path === `${VALLEY}/permit-3003.pdf`);
+  const build = (stops) => call("admin_build_route('कलङ्की–बुढानीलकण्ठ', 'Kalanki–Budhanilkantha', $1)", [JSON.stringify(stops)]);
+  const newStop = { name_en: 'Budhanilkantha', name_ne: 'बुढानीलकण्ठ', lat: 27.7781, lon: 85.3624 };
+  check('a route has at least two stops', (await build([{ code: 'RATNAPARK' }])).reason === 'too_few_stops');
+  check('a stop code must exist', (await build([{ code: 'NOWHERE' }, newStop])).reason === 'unknown_stop');
+  check('a stop cannot be on it twice', (await build([{ code: 'RATNAPARK' }, { code: 'RATNAPARK' }])).reason === 'stop_twice');
+  check('a new stop must be somewhere in Nepal', (await build([{ code: 'RATNAPARK' }, { ...newStop, lat: 51.5 }])).reason === 'stop_position_required');
+  const before = (await db.query('select count(*)::int as n from stops')).rows[0].n;
+  const built = await build([{ code: 'RATNAPARK' }, newStop]);
+  const stops = (await db.query('select stop_code from route_stops where route_id = $1 order by ordinal', [built.route_id])).rows.map((r) => r.stop_code);
+  check('the route is built in running order, with the new stop placed', built.ok === true && stops.length === 2 && stops[0] === 'RATNAPARK'
+    && (await db.query('select count(*)::int as n from stops')).rows[0].n === before + 1, stops.join(','));
+  check('a request is approved onto a route that exists', (await call("review_request($1, 'approved', 'R999')", [routeRequest.id])).reason === 'unknown_route');
+  check('approved, it puts the bus on the route', (await call("review_request($1, 'approved', $2)", [routeRequest.id, built.route_id])).ok === true
+    && (await db.query('select route_id from vehicles where plate = $1', [NEW_BUS])).rows[0].route_id === built.route_id);
+  check('and the change is on the bus’s log', (await db.query("select count(*)::int as n from vehicle_changes where vehicle_plate = $1 and change = 'route'", [NEW_BUS])).rows[0].n === 1);
+
+  await as(VALLEY_OWNER);
+  const again = await routeAsk('Kalanki–Budhanilkantha');
+  await as(STAFF);
+  check('a refusal needs a reason the owner will read', (await call("review_request($1, 'rejected')", [again.id])).reason === 'note_required');
+  check('refused with one', (await call("review_request($1, 'rejected', null, 'Already on this route')", [again.id])).ok === true);
+  check('a decided request is decided once', (await call("review_request($1, 'rejected', null, 'changed my mind')", [asked.id])).reason === 'already_decided');
+  await as(VALLEY_OWNER);
+  const third = await routeAsk('Kalanki–Budhanilkantha');
+  check('an owner can withdraw a request still waiting', (await call('owner_withdraw_request($1)', [third.id])).ok === true);
+  const mineNow = (await call('owner_requests()')).requests.map((r) => r.status).sort().join(',');
+  check('and reads every request with its outcome', mineNow === 'approved,approved,rejected,withdrawn', mineNow);
+  await as(null);
+}
+
+console.log('\n34. Every staff function, found in the catalogue, refuses everyone else');
+{
+  // Section 18 names the first admin functions by hand; this finds every one
+  // the migrations define, so a new one cannot be added without its check.
+  const staff = (await db.query(`
+    select p.proname as name, p.pronargs as args
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and (p.proname like 'admin\\_%' or p.proname like 'review\\_%')
+     order by p.proname`)).rows;
+  const refusals = [];
+  for (const uid of [VALLEY_OWNER, RIDER, null]) {
+    await as(uid);
+    for (const fn of staff) {
+      const r = await call(`${fn.name}(${Array(fn.args).fill('null').join(', ')})`).catch((e) => ({ reason: e.message }));
+      if (!['not_admin', 'not_reviewer'].includes(r?.reason)) refusals.push(`${fn.name} as ${uid ?? 'nobody'}: ${JSON.stringify(r).slice(0, 80)}`);
+    }
+  }
+  check(`all ${staff.length} admin_ and review_ functions refuse an owner, a rider and nobody`, staff.length > 30 && refusals.length === 0, refusals.join(' | '));
+  await as(null);
+}
+
 console.log('\nLedger');
 const legs = await db.query('select count(*)::int as n, coalesce(sum(amount), 0)::int as rs from legs');
 const taps = await db.query('select count(*)::int as n from leg_taps');
