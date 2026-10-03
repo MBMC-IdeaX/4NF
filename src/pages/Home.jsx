@@ -32,8 +32,9 @@ export default function Home() {
 
       <main className="hm-hero">
         <div className="hm-hero__copy">
-          <h1>बसको भाडा, <span>सजिलै।</span></h1>
-          <p>Pay your bus fare from your phone. Works with no signal.</p>
+          <p className="bx-eyebrow">भाडा · Bhada</p>
+          <h1>Bus fares by distance. <span>Even without a signal.</span></h1>
+          <p>Measure the ride, record it offline with a signed receipt, and settle the fare when a connection comes back.</p>
           <div className="hm-hero__cta">
             <a className="bx-btn bx-btn--primary bx-btn--lg" href="/app" onClick={go('/app')}>
               <Icon name="ticket" /> Start riding
@@ -43,29 +44,29 @@ export default function Home() {
             </button>
           </div>
           <ul className="hm-hero__ticks">
-            <li><Icon name="offline" /> No signal needed</li>
-            <li><Icon name="wallet" /> eSewa top-up</li>
-            <li><Icon name="shield" /> Fare by the km</li>
+            <li><Icon name="gauge" /> Fare by the km</li>
+            <li><Icon name="offline" /> Rides recorded offline</li>
+            <li><Icon name="receipt" /> A signed receipt every ride</li>
           </ul>
         </div>
 
         <div className="hm-phone" aria-hidden="true">
           <div className="hm-phone__screen">
-            <div className="hm-phone__bar"><span className="bx-top__mark">भाडा</span><span className="hm-phone__pill">● भर्खरै</span></div>
+            <div className="hm-phone__bar"><span className="bx-top__mark">भाडा</span><span className="hm-phone__pill">● Offline</span></div>
             <div className="hm-phone__card">
-              <small>Balance</small>
-              <b>रु 1,250</b>
+              <small>● यात्रामा · On ride · 18 min</small>
+              <b>4.2 km</b>
               <div className="hm-phone__actions">
-                <span><Icon name="topup" />Top up</span>
-                <span><Icon name="statement" />Statement</span>
+                <span>Fare so far</span>
+                <span><b className="hm-phone__fare">रु 21</b></span>
               </div>
             </div>
             <div className="hm-phone__board">
-              <span className="hm-phone__verb">चढ्नुहोस्</span>
+              <span className="hm-phone__verb">ओर्लनुहोस्</span>
               <span className="hm-phone__qr"><Icon name="qr" /></span>
             </div>
-            <div className="hm-phone__row"><span>रत्नपार्क → कोटेश्वर</span><b>− रु 30</b></div>
-            <div className="hm-phone__row"><span>eSewa top-up</span><b className="in">+ रु 500</b></div>
+            <div className="hm-phone__row"><span>Ride saved on this phone</span><b className="in">✓</b></div>
+            <div className="hm-phone__row"><span>Last ride · 3.1 km</span><b>− रु 18</b></div>
           </div>
         </div>
       </main>

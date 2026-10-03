@@ -39,11 +39,14 @@
 }
 .hm-hero__copy h1 {
   margin: 0;
-  font: 700 clamp(2.75rem, 9vw, 5.25rem) / 0.95 var(--b-font-display);
+  font: 700 clamp(2.4rem, 7vw, 4.25rem) / 1 var(--b-font-display);
+  max-width: 16ch;
   letter-spacing: -0.015em;
 }
-.hm-hero__copy h1 span { color: var(--b-accent); }
-.hm-hero__copy > p {
+.hm-hero__copy h1 span { display: block; color: var(--b-accent); }
+.hm-hero__copy > .bx-eyebrow { margin: 0 0 var(--b-3); }
+.hm-hero__copy > p:not(.bx-eyebrow) {
+  max-width: 46ch;
   margin: var(--b-4) 0 0;
   font-size: 1.2rem;
   color: var(--b-ink-2);
@@ -89,9 +92,11 @@
 .hm-phone__card {
   padding: 14px;
   border-radius: 16px;
-  background: var(--b-plate);
+  background: #15130f;
   color: #fff;
 }
+.hm-phone__card small { color: #45c98a; font-weight: 700; }
+.hm-phone__card .hm-phone__fare { display: inline; font-size: 1rem; color: var(--b-led); }
 .hm-phone__card small { opacity: 0.85; }
 .hm-phone__card b { display: block; font: 700 1.9rem / 1.1 var(--b-font-display); }
 .hm-phone__actions { display: flex; gap: 8px; margin-top: 10px; }
@@ -102,7 +107,7 @@
 .hm-phone__actions svg { width: 14px; height: 14px; }
 .hm-phone__board {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px; border-radius: 16px; background: #15130f; color: #fbf8f2;
+  padding: 14px; border-radius: 16px; background: var(--b-plate); color: #fbf8f2;
 }
 .hm-phone__verb { font: 700 1.6rem / 1 var(--b-font-display); }
 .hm-phone__qr svg { width: 34px; height: 34px; }

@@ -12,7 +12,7 @@ const SLIDES = [
     art: 'wallet',
     ne: 'एक पटक टप-अप',
     title: 'Top up once',
-    text: 'Add money with eSewa. Your balance stays on your phone.',
+    text: 'Add money through eSewa. Your ride balance is ready even when you are offline.',
   },
   {
     art: 'code',
@@ -36,7 +36,7 @@ const SLIDES = [
     art: 'offline',
     ne: 'सिग्नल चाहिँदैन',
     title: 'No signal? No problem',
-    text: 'Everything works offline and syncs when you’re back online.',
+    text: 'Your ride and its signed receipt are saved offline. The fare settles when the bus is back online.',
   },
 ];
 
