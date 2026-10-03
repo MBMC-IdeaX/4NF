@@ -12,7 +12,7 @@ export default function RiderRoutes({ go, onBack }) {
   const [selectedBusId, setSelectedBusId] = useState(null);
   const [viewMode, setViewMode] = useState('split'); // 'split' | 'map' | 'list'
 
-  // Subscribe to live simulated fleet motion
+  // Subscribe to the simulated demo fleet
   useEffect(() => {
     return fleetEngine.subscribe(setSnapshot);
   }, []);
@@ -58,10 +58,10 @@ export default function RiderRoutes({ go, onBack }) {
             ← Back to Home / फर्कनुहोस्
           </button>
           <h1 style={{ fontSize: '26px', fontWeight: '800', margin: 0, color: '#16130f' }}>
-            मार्ग र लाइभ बस ट्र्याकिङ
+            मार्ग र बसहरू · Routes
           </h1>
           <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13.5px' }}>
-            Explore Kathmandu Valley routes, live bus positions & seat availability
+            Valley routes, stops and fares. Bus positions and seats on this screen are a simulated demo fleet, not live buses.
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export default function RiderRoutes({ go, onBack }) {
                           {route.number}
                         </span>
                         <span style={{ fontSize: '11.5px', color: '#16a34a', fontWeight: '700' }}>
-                          {route.buses.length} buses live
+                          {route.buses.length} demo buses
                         </span>
                       </div>
                       <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>

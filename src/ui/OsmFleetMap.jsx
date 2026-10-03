@@ -297,22 +297,22 @@ export default function OsmFleetMap({
           boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
         }}
       >
-        <span style={{ fontWeight: 700, color: '#f1f5f9' }}>लाइभ ट्र्याकिङ</span>
+        <span style={{ fontWeight: 700, color: '#ffb21a', letterSpacing: '0.06em' }}>SIMULATED</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }}></span>
-          साझा
+          मयुर
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0284c7' }}></span>
-          दिगो
+          निलो
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a8202f' }}></span>
-          नेपाल यातायात
+          रातो
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c' }}></span>
-          महानगर
+          पहेँलो
         </span>
       </div>
 

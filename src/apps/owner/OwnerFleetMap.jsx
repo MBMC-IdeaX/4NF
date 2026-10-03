@@ -10,7 +10,7 @@ export default function OwnerFleetMap({ go }) {
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedBusId, setSelectedBusId] = useState(null);
 
-  // Subscribe to live simulated fleet motion
+  // Subscribe to the simulated demo fleet
   useEffect(() => {
     return fleetEngine.subscribe(setSnapshot);
   }, []);
@@ -41,13 +41,13 @@ export default function OwnerFleetMap({ go }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <p className="bx-eyebrow" style={{ color: 'var(--color-brand, #a8202f)', margin: 0, fontWeight: '700' }}>
-            लाइभ ट्र्याकिङ · Live OpenStreetMap Fleet Telemetry
+            Fleet map · Simulated demo fleet
           </p>
           <h1 style={{ fontSize: '28px', fontWeight: '800', margin: '4px 0 0', color: '#16130f' }}>
-            {snapshot.totalBuses} सक्रिय बसहरू (Active Fleet)
+            {snapshot.totalBuses} demo buses
           </h1>
           <p style={{ margin: '4px 0 0', color: '#64748b', fontSize: '13.5px' }}>
-            Real-time GNSS simulation across Kathmandu Valley transit corridors
+            Positions are generated in this browser to show what a live map would look like. They are not your buses.
           </p>
         </div>
 

@@ -1,11 +1,13 @@
-// Kathmandu Valley Multi-Vendor Route Network & Fleets
-// Covers Sajha Yatayat, Digo Electric, Nepal Yatayat, Mahanagar, etc.
+// Kathmandu Valley routes with a DEMO fleet. The operators below are made-up
+// demo names, not real companies, and every bus position is simulated
+// (src/lib/fleet-simulator.js). Keep it that way: a real operator's name on
+// a fake bus would claim a customer Bhada does not have.
 
 export const VENDORS = {
   sajha: {
     id: 'sajha',
-    name: 'साझा यातायात',
-    en: 'Sajha Yatayat',
+    name: 'मयुर यातायात (डेमो)',
+    en: 'Mayur Yatayat (demo)',
     plateSeries: 'ख',
     color: '#16a34a',
     badgeBg: '#dcfce7',
@@ -14,8 +16,8 @@ export const VENDORS = {
   },
   digo: {
     id: 'digo',
-    name: 'दिगो सार्वजनिक',
-    en: 'Digo Electric',
+    name: 'निलो यातायात (डेमो)',
+    en: 'Nilo Yatayat (demo)',
     plateSeries: 'ख',
     color: '#0284c7',
     badgeBg: '#e0f2fe',
@@ -24,8 +26,8 @@ export const VENDORS = {
   },
   nepal: {
     id: 'nepal',
-    name: 'नेपाल यातायात',
-    en: 'Nepal Yatayat',
+    name: 'रातो यातायात (डेमो)',
+    en: 'Rato Yatayat (demo)',
     plateSeries: 'ख',
     color: '#a8202f',
     badgeBg: '#fee2e2',
@@ -34,8 +36,8 @@ export const VENDORS = {
   },
   mahanagar: {
     id: 'mahanagar',
-    name: 'महानगर यातायात',
-    en: 'Mahanagar AC',
+    name: 'पहेँलो यातायात (डेमो)',
+    en: 'Pahelo Yatayat (demo)',
     plateSeries: 'ख',
     color: '#ea580c',
     badgeBg: '#ffedd5',
