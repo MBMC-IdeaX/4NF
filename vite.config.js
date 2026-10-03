@@ -175,8 +175,16 @@ if (!app) throw new Error(`BHADA_APP must be one of ${Object.keys(APPS).join(', 
 
 // In development the site server stands in front of the three app servers, so
 // one address shows the whole product the way the deployed domain does.
+// It also passes /sync and /local/* to the local backend (npm run sync:local),
+// so a phone on the Wi-Fi reaches everything through this one HTTPS address:
+// an HTTPS page may not call the backend's plain-HTTP port directly.
+const LOCAL_BACKEND = process.env.BHADA_LOCAL_BACKEND || 'http://localhost:8787';
 const proxy = APP === 'site'
-  ? Object.fromEntries(['rider', 'crew', 'owner', 'staff'].map((name) => [`^${APPS[name].base.slice(0, -1)}(/|$)`, { target: `http${HTTPS ? 's' : ''}://localhost:${APPS[name].port}`, ws: true, secure: false, rewrite: (path) => (path === APPS[name].base.slice(0, -1) ? APPS[name].base : path) }]))
+  ? {
+    ...Object.fromEntries(['rider', 'crew', 'owner', 'staff'].map((name) => [`^${APPS[name].base.slice(0, -1)}(/|$)`, { target: `http${HTTPS ? 's' : ''}://localhost:${APPS[name].port}`, ws: true, secure: false, rewrite: (path) => (path === APPS[name].base.slice(0, -1) ? APPS[name].base : path) }])),
+    '^/sync$': { target: LOCAL_BACKEND, changeOrigin: true },
+    '^/local/': { target: LOCAL_BACKEND, changeOrigin: true },
+  }
   : undefined;
 
 export default defineConfig({
