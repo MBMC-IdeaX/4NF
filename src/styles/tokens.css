@@ -1,0 +1,181 @@
+/*
+  Bhada design tokens — one system for the site and the Rider, Crew and Owner
+  apps.
+
+  Familiar first. People in Nepal already know how a payments app looks — a
+  white screen, rounded cards, one strong colour for the thing to press — and
+  a bus fare should feel like that the first time it is opened. Bhada's own
+  mark is the red of a Nepali number plate, and the plate itself is the only
+  place the condensed plate lettering (Khand) appears.
+
+  One accent: Bhada red, for the primary action and the active tab. Money in is
+  green and always signed; money out is ink and always signed.
+
+  Every name is prefixed --b- so these tokens can live beside the old
+  stylesheets until they are deleted.
+
+  Grounds: light (white), dark (re-decided, not inverted), and glance on top of
+  either for screens read on a moving bus.
+*/
+
+@import '/fonts/fonts.css';
+
+:root {
+  color-scheme: light;
+
+  /* ground and surfaces */
+  --b-ground: #ffffff;
+  --b-surface: #ffffff;
+  --b-surface-2: #f3f4f6;
+  --b-surface-3: #e5e7eb;
+  --b-line: #e8e8ec;
+  --b-line-strong: #d1d5db;
+
+  /* ink */
+  --b-ink: #111318;
+  --b-ink-2: #3d4250;   /* 8.9:1 on ground */
+  --b-ink-3: #5f6573;   /* 5.4:1 on ground */
+  --b-ink-inverse: #ffffff;
+
+  /* the one accent: plate red */
+  --b-accent: #c8102e;         /* 7.0:1 on surface */
+  --b-accent-hover: #a90d26;
+  --b-accent-press: #8f0b20;
+  --b-accent-soft: #fdecee;
+  --b-on-accent: #ffffff;
+
+  /* meaning */
+  --b-in: #0b7a43;             /* money in, accepted */
+  --b-in-soft: #e7f6ee;
+  --b-warn: #8a5300;
+  --b-warn-soft: #fff4dc;
+  --b-bad: #b42318;
+  --b-bad-soft: #fdecea;
+
+  /* type */
+  --b-font-display: 'Mukta', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --b-font-body: 'Mukta', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --b-text-xs: 0.75rem;     /* 12 */
+  --b-text-sm: 0.875rem;    /* 14 */
+  --b-text-md: 1rem;        /* 16 */
+  --b-text-lg: 1.125rem;    /* 18 */
+  --b-text-xl: 1.5rem;      /* 24 */
+  --b-text-2xl: 2rem;       /* 32 */
+  --b-text-3xl: 2.75rem;    /* 44 */
+  --b-text-hero: 3.5rem;    /* 56 */
+
+  /* space — 4px base, used in steps that encode grouping */
+  --b-1: 4px;
+  --b-2: 8px;
+  --b-3: 12px;
+  --b-4: 16px;
+  --b-5: 24px;
+  --b-6: 32px;
+  --b-7: 48px;
+  --b-8: 64px;
+  --b-9: 96px;
+
+  /* Cut paper, not pebbles: a ticket has a clipped corner, not a bubble. */
+  --b-radius-sm: 8px;
+  --b-radius: 12px;
+  --b-radius-lg: 20px;
+  --b-radius-pill: 999px;
+
+  /* the bus itself: plate red with a white inset rule, the amber of an LED
+     destination board, the ink of a rubber stamp */
+  --b-plate: #c8102e;
+  --b-plate-ink: #fffaf2;
+  --b-led: #ffb21a;
+  --b-led-off: #3a2a10;
+  --b-stamp: #a8202f;
+
+  /* paper grain, drawn once as SVG noise; sits under everything at 5% */
+  --b-grain: none;
+
+  /* one shadow ramp, for things that float */
+  --b-shadow-1: 0 1px 2px rgb(21 19 15 / 0.06), 0 1px 1px rgb(21 19 15 / 0.04);
+  --b-shadow-2: 0 6px 16px -4px rgb(21 19 15 / 0.12), 0 2px 4px rgb(21 19 15 / 0.05);
+  --b-shadow-3: 0 24px 48px -12px rgb(21 19 15 / 0.28);
+
+  --b-tap: 48px;
+  --b-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --b-fast: 140ms;
+  --b-med: 220ms;
+
+  --b-focus: 0 0 0 3px var(--b-ground), 0 0 0 5px var(--b-accent);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --b-ground: #0f1115;
+    --b-surface: #171a20;
+    --b-surface-2: #1f232b;
+    --b-surface-3: #2a2f39;
+    --b-line: #2a2f39;
+    --b-line-strong: #3b414d;
+    --b-ink: #f3f4f6;
+    --b-ink-2: #cdd1d9;
+    --b-ink-3: #9aa1ad;
+    --b-ink-inverse: #111318;
+    --b-accent: #ff5a6e;
+    --b-accent-hover: #ff7385;
+    --b-accent-press: #e94a5e;
+    --b-accent-soft: #331219;
+    --b-on-accent: #1a0207;
+    --b-in: #45c98a;
+    --b-in-soft: #0f2a1d;
+    --b-warn: #e5a63a;
+    --b-warn-soft: #2e2311;
+    --b-bad: #f0715f;
+    --b-bad-soft: #351914;
+    --b-shadow-1: none;
+    --b-shadow-2: 0 8px 24px -6px rgb(0 0 0 / 0.6);
+    --b-shadow-3: 0 24px 64px -12px rgb(0 0 0 / 0.75);
+  }
+}
+
+:root[data-theme='dark'],
+[data-tone='night'] {
+  color-scheme: dark;
+  --b-ground: #0f1115;
+  --b-surface: #171a20;
+  --b-surface-2: #1f232b;
+  --b-surface-3: #2a2f39;
+  --b-line: #2a2f39;
+  --b-line-strong: #3b414d;
+  --b-ink: #f3f4f6;
+  --b-ink-2: #cdd1d9;
+  --b-ink-3: #9aa1ad;
+  --b-ink-inverse: #111318;
+  --b-accent: #ff5a6e;
+  --b-accent-hover: #ff7385;
+  --b-accent-press: #e94a5e;
+  --b-accent-soft: #331219;
+  --b-on-accent: #1a0207;
+  --b-in: #45c98a;
+  --b-in-soft: #0f2a1d;
+  --b-warn: #e5a63a;
+  --b-warn-soft: #2e2311;
+  --b-bad: #f0715f;
+  --b-bad-soft: #351914;
+  --b-shadow-1: none;
+  --b-shadow-2: 0 8px 24px -6px rgb(0 0 0 / 0.6);
+  --b-shadow-3: 0 24px 64px -12px rgb(0 0 0 / 0.75);
+}
+
+/* Glance: the in-ride screens. Harder ink, bigger figures, nothing moves. */
+[data-glance] {
+  --b-ink-2: var(--b-ink);
+  --b-ink-3: var(--b-ink-2);
+  --b-text-hero: 4.5rem;
+  --b-text-3xl: 3.25rem;
+  --b-tap: 56px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --b-fast: 0ms;
+    --b-med: 0ms;
+  }
+}
