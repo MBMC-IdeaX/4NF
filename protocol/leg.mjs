@@ -20,6 +20,11 @@ import { assertCode, assertWholeNumber, newNonce, FIELD_SEPARATOR as SEP } from 
 
 export const TAP_VERSION = 'BT1';
 export const LEG_VERSION = 'BM1';
+// BM2 is a BM1 that also names the boarding and exit stages, for a ride priced
+// by a stage tariff. A ride with no stages is still written as BM1, so every
+// receipt already issued keeps verifying.
+export const LEG_VERSION_STAGED = 'BM2';
+const LEG_FIELDS_STAGED = 19;
 
 const TAP_FIELDS = 7;
 const LEG_FIELDS = 17;
@@ -187,8 +192,9 @@ export function splitGroup(text) {
 // ------------------------------------------------------------ BM1: leg receipt
 
 function legBody(leg) {
+  const staged = Boolean(leg.boardStage && leg.alightStage);
   return [
-    LEG_VERSION,
+    staged ? LEG_VERSION_STAGED : LEG_VERSION,
     leg.vehicleId,
     leg.tripId,
     leg.legId,
@@ -204,6 +210,7 @@ function legBody(leg) {
     leg.concession,
     String(leg.amount),
     leg.tariffCode,
+    ...(staged ? [leg.boardStage, leg.alightStage] : []),
   ].join(SEP);
 }
 
@@ -223,6 +230,8 @@ export function buildLeg({
   concession,
   amount,
   tariffCode,
+  boardStage = null,
+  alightStage = null,
 }) {
   assertCode(vehicleId, 'vehicleId');
   assertCode(tripId, 'tripId', 32);
@@ -233,6 +242,11 @@ export function buildLeg({
   assertCode(distanceSource, 'distanceSource', 12);
   assertCode(concession, 'concession', 12);
   assertCode(tariffCode, 'tariffCode', 24);
+  if (Boolean(boardStage) !== Boolean(alightStage)) throw new Error('a leg names both stages or neither');
+  if (boardStage) {
+    assertCode(boardStage, 'boardStage', 24);
+    assertCode(alightStage, 'alightStage', 24);
+  }
   assertWholeNumber(boardOdoM, 'boardOdoM');
   assertWholeNumber(alightOdoM, 'alightOdoM');
   assertWholeNumber(distanceM, 'distanceM');
@@ -256,6 +270,7 @@ export function buildLeg({
     concession,
     amount,
     tariffCode,
+    ...(boardStage ? { boardStage, alightStage } : {}),
   };
 }
 
@@ -267,14 +282,17 @@ export function signLeg(leg, vehicleSecretKeyBase64url) {
 
 export function decodeLeg(text) {
   const parts = String(text ?? '').trim().split(SEP);
-  if (parts[0] !== LEG_VERSION) throw new Error('not a Bhada leg receipt');
-  if (parts.length !== LEG_FIELDS) throw new Error('leg receipt is damaged or incomplete');
+  const staged = parts[0] === LEG_VERSION_STAGED;
+  if (parts[0] !== LEG_VERSION && !staged) throw new Error('not a Bhada leg receipt');
+  if (parts.length !== (staged ? LEG_FIELDS_STAGED : LEG_FIELDS)) throw new Error('leg receipt is damaged or incomplete');
   const [
     ,
     vehicleId, tripId, legId, passengerPublicKey, boardDoorId, alightDoorId,
     boardOdoM, alightOdoM, distanceM, distanceSource, boardAt, alightAt,
-    concession, amount, tariffCode, signature,
+    concession, amount, tariffCode,
   ] = parts;
+  const signature = parts[parts.length - 1];
+  const [boardStage, alightStage] = staged ? parts.slice(16, 18) : [];
   const leg = {
     vehicleId,
     tripId,
@@ -291,6 +309,7 @@ export function decodeLeg(text) {
     concession,
     amount: Number(amount),
     tariffCode,
+    ...(staged ? { boardStage, alightStage } : {}),
   };
   for (const field of ['boardOdoM', 'alightOdoM', 'distanceM', 'boardAt', 'alightAt', 'amount']) {
     assertInteger(leg[field], field);
@@ -337,6 +356,8 @@ export function verifyLeg(text, { vehiclePublicKey, priceFn, seenLegIds } = {}) 
       concession: leg.concession,
       tariffCode: leg.tariffCode,
       unclosed: leg.distanceSource === 'unclosed',
+      boardStage: leg.boardStage,
+      alightStage: leg.alightStage,
     });
     if (repriced.amount !== leg.amount) {
       return {

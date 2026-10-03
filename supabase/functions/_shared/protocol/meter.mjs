@@ -12,6 +12,8 @@
 
 // ---------------------------------------------------------------- geometry
 
+import { ROUTE_STAGES } from './stages.mjs';
+
 const EARTH_RADIUS_M = 6371008.8; // IUGG mean radius
 const DEG = Math.PI / 180;
 
@@ -396,10 +398,138 @@ export const TARIFF = {
 // Every tariff ever published, by code. A receipt names the tariff it was
 // priced under and is re-priced with that one, so a tariff change never turns
 // last month's honest receipts into mismatches.
+/*
+  The stage tariff: how Kathmandu buses are actually priced.
+
+  A fare is set by the regulator as a table of stage-to-stage amounts; Bhada
+  does not invent one. GPS finds the stage a passenger boarded at and the
+  stage they got off at, and this table gives the fare between them. The
+  distance travelled is still measured and printed, as the record of the
+  journey, but it does not set the price.
+
+  THIS IS A DEMO FARE TABLE. The amounts follow the same rule as the seeded
+  `fares` table (0002_seed.sql) and src/lib/fares.js — Rs 15 for the next
+  stage, Rs 5 for each stage after, never more than Rs 25 — and are not a
+  published government table. When the real table is loaded it is published
+  as a new tariff code; tariffs are added, never edited, so every receipt is
+  re-priced with the table it names.
+*/
+function stageFareTable(stages, { first, perStage, cap }) {
+  const table = {};
+  for (let a = 0; a < stages.length; a += 1) {
+    for (let b = 0; b < stages.length; b += 1) {
+      const gap = Math.abs(b - a);
+      table[`${stages[a].code}|${stages[b].code}`] = gap === 0 ? first : Math.min(cap, first + (gap - 1) * perStage);
+    }
+  }
+  return table;
+}
+
+export const STAGE_TARIFF = {
+  code: 'R11-STAGE-DEMO-1',
+  kind: 'stage',
+  demo: true,
+  routeId: 'R11',
+  stages: ROUTE_STAGES.R11,
+  fares: stageFareTable(ROUTE_STAGES.R11, { first: 15, perStage: 5, cap: 25 }),
+  // Kept so the fields every tariff carries still mean something: the lowest
+  // fare, the highest, and what a ride nobody closed is charged.
+  boardingCharge: 15,
+  includedKm: 0,
+  stepKm: 1,
+  perStep: 0,
+  cap: 25,
+  unclosedLegFare: 25,
+  currency: 'NPR',
+};
+
+// The tariff new rides are priced under. Distance tariffs stay published so
+// older receipts still re-price.
+export const CURRENT_TARIFF = STAGE_TARIFF;
+
 export const TARIFFS = {
   'NPR-KTM-2026': { ...TARIFF, code: 'NPR-KTM-2026', includedKm: 2 },
   [TARIFF.code]: TARIFF,
+  [STAGE_TARIFF.code]: STAGE_TARIFF,
 };
+
+/*
+  The stage a point is nearest, on a stage tariff's route. A bus at a stop is
+  at that stage; a bus between two is nearer one of them, which is the stage a
+  conductor would name too.
+*/
+export function stageNear(tariff, point, { maxM = 1500 } = {}) {
+  const stages = tariff?.stages;
+  if (!stages?.length || !point || !Number.isFinite(point.lat) || !Number.isFinite(point.lon)) return null;
+  if (point.lat === 0 && point.lon === 0) return null;
+  let best = null;
+  for (const stage of stages) {
+    const d = haversineMetres(point, stage);
+    if (!best || d < best.d) best = { d, stage };
+  }
+  // Off the route altogether: no stage, and the ride is priced by distance.
+  return best.d <= maxM ? best.stage.code : null;
+}
+
+/*
+  The exit stage when the door has no fix at the moment of getting off: the
+  stage that sits the measured distance along the route from the boarding
+  stage. If both directions fit inside the route the answer is ambiguous and
+  this returns null, and the ride is priced by the distance tariff instead.
+*/
+export function stageAlong(tariff, fromCode, metres) {
+  const stages = tariff?.stages;
+  const from = stages?.find((s) => s.code === fromCode);
+  if (!from || !Number.isFinite(metres)) return null;
+  const last = stages[stages.length - 1].chainM;
+  const nearestTo = (chain) => stages.reduce((best, s) => (Math.abs(s.chainM - chain) < Math.abs(best.chainM - chain) ? s : best)).code;
+  const ahead = from.chainM + metres;
+  const behind = from.chainM - metres;
+  const aheadFits = ahead <= last + 300;
+  const behindFits = behind >= -300;
+  if (aheadFits && behindFits && metres > 300) return null;
+  if (aheadFits) return nearestTo(Math.min(ahead, last));
+  if (behindFits) return nearestTo(Math.max(behind, 0));
+  return null;
+}
+
+export function stageName(tariff, code) {
+  return tariff?.stages?.find((s) => s.code === code) ?? null;
+}
+
+function priceStages(metres, { concession, tariff, boardStage, alightStage }) {
+  const base = tariff.fares[`${boardStage}|${alightStage}`];
+  if (!Number.isFinite(base)) {
+    return { amount: NaN, tariffCode: tariff.code, unknownStage: true, breakdown: [] };
+  }
+  const rate = CONCESSION_RATE[concession] ?? 1;
+  const amount = Math.ceil(base * rate);
+  const order = (code) => tariff.stages.findIndex((s) => s.code === code) + 1;
+  const from = stageName(tariff, boardStage);
+  const to = stageName(tariff, alightStage);
+  const safeMetres = Math.max(0, Number(metres) || 0);
+  return {
+    basis: 'stage',
+    metres: Math.round(safeMetres),
+    km: Number((safeMetres / 1000).toFixed(3)),
+    boardStage,
+    alightStage,
+    fareRule: `Stage ${order(boardStage)} → Stage ${order(alightStage)}`,
+    base,
+    capped: false,
+    concession,
+    rate,
+    discounted: rate < 1,
+    amount,
+    currency: tariff.currency,
+    tariffCode: tariff.code,
+    demo: Boolean(tariff.demo),
+    breakdown: [
+      { label: `${from?.en ?? boardStage} → ${to?.en ?? alightStage} (stage ${order(boardStage)} → ${order(alightStage)})`, value: base },
+      ...(rate < 1 ? [{ label: `${concession} concession ×${rate}`, value: amount - base }] : []),
+    ],
+  };
+}
 
 export const CONCESSION_RATE = { none: 1, student: 0.5, senior: 0.5, staff: 0 };
 
@@ -410,7 +540,7 @@ export const CONCESSION_RATE = { none: 1, student: 0.5, senior: 0.5, staff: 0 };
   lines verbatim and so does the passenger receipt, which means a dispute is
   settled by reading rather than by trusting.
 */
-export function priceDistance(metres, { concession = 'none', tariff: given, tariffCode, unclosed = false } = {}) {
+export function priceDistance(metres, { concession = 'none', tariff: given, tariffCode, unclosed = false, boardStage, alightStage } = {}) {
   const tariff = given ?? (tariffCode ? TARIFFS[tariffCode] : TARIFF);
   if (!tariff) {
     // A code nobody published. Priced as nothing, so no receipt under it can
@@ -418,6 +548,13 @@ export function priceDistance(metres, { concession = 'none', tariff: given, tari
     return { amount: NaN, tariffCode, unknownTariff: true, breakdown: [] };
   }
   if (unclosed) return priceUnclosed(metres, { concession, tariff });
+  // A stage tariff prices the two stages, never the kilometres. Without both
+  // stages there is nothing to price, and a receipt that names a stage tariff
+  // but carries no stages cannot reproduce.
+  if (tariff.kind === 'stage') {
+    if (!boardStage || !alightStage) return { amount: NaN, tariffCode: tariff.code, missingStages: true, breakdown: [] };
+    return priceStages(metres, { concession, tariff, boardStage, alightStage });
+  }
   const safeMetres = Math.max(0, Number(metres) || 0);
   const km = safeMetres / 1000;
   const chargeableKm = Math.max(0, km - tariff.includedKm);

@@ -19,6 +19,7 @@ import { installRandomSource } from './identity';
 import { openLink, LINK } from './link';
 import {
   initialOdometer, applyFix, odometerReading, priceDistance, resolveDistance, haversineMetres, TARIFF,
+  CURRENT_TARIFF, stageNear, stageAlong,
 } from '../../protocol/meter.mjs';
 import { MAX_CORRIDOR_HOLD_NPR, calculateExitReconciliation } from '../../protocol/policy.mjs';
 import { fixFromPosition, holdScreenOn } from './positioning';
@@ -500,7 +501,17 @@ function createTerminal(doorId) {
       // than across it — the difference under a flyover is the whole fare.
       route: STOPS,
     });
-    const price = priceDistance(measured.metres, { concession: pass.concession });
+    // The fare is the stage fare between where the passenger got on and where
+    // they got off. GPS finds both stages: the boarding fix is signed into the
+    // pass, the exit stage is the one this door is nearest now — or, with no
+    // fix, the stage the measured distance reaches from the boarding stage.
+    // Without a boarding stage the ride falls back to the distance tariff.
+    const boardStage = stageNear(CURRENT_TARIFF, boardFix);
+    const alightStage = boardStage ? (stageNear(CURRENT_TARIFF, state.fix) ?? stageAlong(CURRENT_TARIFF, boardStage, measured.metres)) : null;
+    const staged = Boolean(boardStage && alightStage);
+    const price = staged
+      ? priceDistance(measured.metres, { concession: pass.concession, tariff: CURRENT_TARIFF, boardStage, alightStage })
+      : priceDistance(measured.metres, { concession: pass.concession });
     const reconciliation = calculateExitReconciliation({
       holdAmount: MAX_CORRIDOR_HOLD_NPR,
       actualFare: price.amount,
@@ -528,6 +539,8 @@ function createTerminal(doorId) {
       estimated: measured.estimated,
       distanceNote: measured.note ?? (sameUnit ? null : 'boarded against another odometer — priced from endpoints'),
       amount: price.amount,
+      boardStage,
+      alightStage,
       price,
       reconciliation,
       passQr,
@@ -556,6 +569,7 @@ function createTerminal(doorId) {
         concession: closed.concession,
         amount: closed.amount,
         tariffCode: price.tariffCode,
+        ...(staged ? { boardStage, alightStage } : {}),
       }),
       state.vehicleKeys.secretKey,
     );

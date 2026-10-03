@@ -1,6 +1,8 @@
 // Devanagari numerals and the Ratna Park corridor stop names.
 // The conductor surface is Devanagari-first; English sits underneath it.
 
+import { ROUTE_STAGES } from '../../protocol/stages.mjs';
+
 const DIGITS = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
 
 export function toDevanagari(value) {
@@ -30,15 +32,9 @@ export function rupees(amount) {
   These are landmarks, not surveyed stops. A real deployment loads the
   regulator's route geometry; nothing in the code assumes seven of anything.
 */
-export const STOPS = [
-  { code: 'RATNAPARK', ne: 'रत्नपार्क', en: 'Ratna Park', lat: 27.7045, lon: 85.3145, chainM: 0 },
-  { code: 'SINGHADURBAR', ne: 'सिंहदरबार', en: 'Singha Durbar', lat: 27.6975, lon: 85.3230, chainM: 1500 },
-  { code: 'MAITIGHAR', ne: 'माइतीघर', en: 'Maitighar', lat: 27.6928, lon: 85.3222, chainM: 2200 },
-  { code: 'THAPATHALI', ne: 'थापाथली', en: 'Thapathali', lat: 27.6905, lon: 85.3175, chainM: 2900 },
-  { code: 'NEWBANESHWOR', ne: 'नयाँ बानेश्वर', en: 'New Baneshwor', lat: 27.6893, lon: 85.3400, chainM: 5300 },
-  { code: 'TINKUNE', ne: 'तिनकुने', en: 'Tinkune', lat: 27.6835, lon: 85.3490, chainM: 6600 },
-  { code: 'KOTESHWOR', ne: 'कोटेश्वर', en: 'Koteshwor', lat: 27.6785, lon: 85.3495, chainM: 7500 },
-];
+// The same list the protocol prices stage fares with (protocol/stages.mjs),
+// so the stops on screen and the stops in the fare table cannot drift apart.
+export const STOPS = ROUTE_STAGES.R11;
 
 export const ROUTE_LENGTH_M = STOPS[STOPS.length - 1].chainM;
 

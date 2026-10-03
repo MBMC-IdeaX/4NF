@@ -6,7 +6,7 @@
 // the scanner is broken.
 
 import { TOKEN_VERSION, FIELD_SEPARATOR } from '../../protocol/token.mjs';
-import { TAP_VERSION, LEG_VERSION, GROUP_VERSION, PASS_VERSION } from '../../protocol/leg.mjs';
+import { TAP_VERSION, LEG_VERSION, LEG_VERSION_STAGED, GROUP_VERSION, PASS_VERSION } from '../../protocol/leg.mjs';
 import { CREW_VERSION } from '../../protocol/crew.mjs';
 import { CASH_VERSION } from '../../protocol/cash.mjs';
 import { ROSTER_VERSION } from '../../protocol/inspect.mjs';
@@ -15,6 +15,7 @@ const BY_TAG = {
   [TOKEN_VERSION]: 'stage-ticket',
   [TAP_VERSION]: 'ride-code',
   [LEG_VERSION]: 'receipt',
+  [LEG_VERSION_STAGED]: 'receipt',
   [PASS_VERSION]: 'pass',
   [CREW_VERSION]: 'crew-signon',
   [CASH_VERSION]: 'cash-ticket',
