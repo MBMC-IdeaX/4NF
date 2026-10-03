@@ -16,7 +16,7 @@ import { openBackend, handleSync } from './lib/pg-backend.mjs';
 import { createKeypair, buildToken, signToken } from '../protocol/token.mjs';
 import { buildAccountLink, signAccountLink } from '../protocol/account.mjs';
 import { ESEWA, esewaForm, esewaMessage, readEsewaReturn, esewaSettled, khaltiSettled, khaltiInitiateBody } from '../protocol/gateway.mjs';
-import { priceDistance, TARIFF } from '../protocol/meter.mjs';
+import { priceDistance, TARIFF, STAGE_TARIFF } from '../protocol/meter.mjs';
 import { buildLeg, signLeg, verifyLeg, buildTap, signTap } from '../protocol/leg.mjs';
 import { buildDispute, signDispute } from '../protocol/dispute.mjs';
 import { buildAttestation, signAttestation } from '../protocol/attest.mjs';
@@ -2163,13 +2163,40 @@ console.log('\n34. Every staff function, found in the catalogue, refuses everyon
   await as(null);
 }
 
+console.log('\n37. A stage-priced ride settles under its stage tariff (0039)');
+let stageLegs = 0;
+{
+  const rider = createKeypair();
+  await db.query('insert into passengers (public_key, balance) values ($1, 200) on conflict do nothing', [rider.publicKey]);
+  const row = await db.query('select kind, stage_fares from tariffs where code = $1', [STAGE_TARIFF.code]);
+  check('the stage tariff is a published row, kind stage', row.rows[0]?.kind === 'stage');
+  const sqlTable = row.rows[0]?.stage_fares ?? {};
+  check('its table in SQL is the table the devices price with',
+    Object.keys(STAGE_TARIFF.fares).every((k) => Number(sqlTable[k]) === STAGE_TARIFF.fares[k])
+      && Object.keys(sqlTable).length === Object.keys(STAGE_TARIFF.fares).length);
+  const fare = priceDistance(4400, { tariff: STAGE_TARIFF, boardStage: 'SINGHADURBAR', alightStage: 'TINKUNE' });
+  const stageLeg = (legId, at, amount) => signLeg(buildLeg({
+    vehicleId: PLATE, tripId: 'TSTAGE', legId, passengerPublicKey: rider.publicKey,
+    boardDoorId: 'A', alightDoorId: 'A', boardOdoM: 2000, alightOdoM: 6400, distanceM: 4400, distanceSource: 'odometer',
+    boardAt: at, alightAt: at + 900, concession: 'none', amount, tariffCode: STAGE_TARIFF.code,
+    boardStage: 'SINGHADURBAR', alightStage: 'TINKUNE',
+  }), vehicle.secretKey);
+  const settled = await upload(stageLeg('LSTAGEPROOF1', boardAt, fare.amount), tapBy(rider));
+  check('a BM2 receipt with the rider\'s tap settles', settled.ok === true, JSON.stringify(settled));
+  const after = (await db.query('select balance from passengers where public_key = $1', [rider.publicKey])).rows[0].balance;
+  check(`the rider paid the stage fare, Rs ${fare.amount}`, after === 200 - fare.amount, `Rs ${after}`);
+  const refused = await upload(stageLeg('LSTAGEPROOF2', boardAt + 1000, fare.amount + 5), tapBy(rider, rider, boardAt + 1000));
+  check('a stage receipt charging more than the table is refused', refused.reason === 'price_mismatch', refused.reason);
+  if (settled.ok) stageLegs += 1;
+}
+
 console.log('\nLedger');
 const legs = await db.query('select count(*)::int as n, coalesce(sum(amount), 0)::int as rs from legs');
 const taps = await db.query('select count(*)::int as n from leg_taps');
 line('legs settled', legs.rows[0].n);
 line('value moved', `Rs ${legs.rows[0].rs}`);
 line('taps on file', taps.rows[0].n);
-check('only the honest rides moved money', legs.rows[0].n === 15 + overdraftLegs + accountLegs + crewLegs + countLegs + familyLegs);
+check('only the honest rides moved money', legs.rows[0].n === 15 + overdraftLegs + accountLegs + crewLegs + countLegs + familyLegs + stageLegs);
 
 // The owner's view of the same rides (0011). Run here as the database owner,
 // so RLS does not narrow it; the point is that the view computes.
@@ -2181,9 +2208,9 @@ const economics = await db.query(`
     from operator_distance where vehicle_plate = $1`, [PLATE]);
 const day = economics.rows[0]?.rides == null ? null : economics.rows[0];
 line('owner sees, per km', day ? `${day.rides} rides, ${day.passenger_km} passenger-km, Rs ${day.npr_per_km}/km, ${day.measured} measured, ${day.unclosed} unclosed` : 'nothing');
-check('the owner dashboard view reports the metered rides', day?.rides === 15 + overdraftLegs + crewLegs && day?.unclosed === 2);
+check('the owner dashboard view reports the metered rides', day?.rides === 15 + overdraftLegs + crewLegs + stageLegs && day?.unclosed === 2);
 const health = await db.query('select * from operator_vehicles where plate = $1', [PLATE]);
-check('a bus running only the meter does not look silent', health.rows[0]?.last_sync !== null && health.rows[0]?.lifetime_rides_metered === 15 + overdraftLegs + crewLegs);
+check('a bus running only the meter does not look silent', health.rows[0]?.last_sync !== null && health.rows[0]?.lifetime_rides_metered === 15 + overdraftLegs + crewLegs + stageLegs);
 
 console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) FAILED.`}\n`);
 await db.close();

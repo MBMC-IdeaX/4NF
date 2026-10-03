@@ -34,6 +34,8 @@ import { buildGroup, splitGroup, buildTap as buildRideTap, signTap as signRideTa
 import { createMasterSeed, deriveDailyKeypair, deriveCompanionKeypair, MAX_COMPANIONS } from '../protocol/pseudonym.mjs';
 import { buildCashTicket, signCashTicket, verifyCashTicket } from '../protocol/cash.mjs';
 import { buildRoad, expandProfile, simulateDrive, seeded } from '../src/lib/gnss-sim.js';
+import { STAGE_TARIFF, CURRENT_TARIFF, TARIFFS as ALL_TARIFFS, stageNear, stageAlong, priceDistance as priceRide } from '../protocol/meter.mjs';
+import { buildLeg as buildReceipt, signLeg as signReceipt, verifyLeg as verifyReceipt, decodeLeg as decodeReceipt } from '../protocol/leg.mjs';
 
 useRandomSource((length) => new Uint8Array(nodeRandomBytes(length)));
 
@@ -877,6 +879,59 @@ heading('14. Riders who do not tap: the door count, cash, inspection, families')
   check('the same person twice in a group is refused', splitGroup(`BG1~${family[0]}~${family[0]}`) === null);
   check(`more than ${GROUP_MAX} is refused`, splitGroup(['BG1', ...Array.from({ length: GROUP_MAX + 1 }, () => code(createKeypair()))].join('~')) === null);
   check('a group of anything but ride codes is refused', splitGroup(`BG1~${roster}`) === null);
+}
+
+heading('Stage fares: GPS finds the stages, the table sets the fare');
+{
+  const stages = STAGE_TARIFF.stages;
+  check('new rides are priced by the stage tariff', CURRENT_TARIFF === STAGE_TARIFF && STAGE_TARIFF.kind === 'stage');
+  check('the stage tariff is published beside the distance tariffs', ALL_TARIFFS[STAGE_TARIFF.code] === STAGE_TARIFF);
+  let everyPair = true;
+  let symmetric = true;
+  for (const a of stages) {
+    for (const b of stages) {
+      const fare = priceRide(0, { tariff: STAGE_TARIFF, boardStage: a.code, alightStage: b.code });
+      if (!Number.isInteger(fare.amount) || fare.amount < STAGE_TARIFF.boardingCharge || fare.amount > STAGE_TARIFF.cap) everyPair = false;
+      if (fare.amount !== STAGE_TARIFF.fares[`${b.code}|${a.code}`]) symmetric = false;
+    }
+  }
+  check(`every one of the ${stages.length * stages.length} stage pairs has a fare between Rs ${STAGE_TARIFF.boardingCharge} and Rs ${STAGE_TARIFF.cap}`, everyPair);
+  check('a stage fare is the same in both directions', symmetric);
+  const short = priceRide(400, { tariff: STAGE_TARIFF, boardStage: 'RATNAPARK', alightStage: 'KOTESHWOR' });
+  const long = priceRide(9000, { tariff: STAGE_TARIFF, boardStage: 'RATNAPARK', alightStage: 'KOTESHWOR' });
+  check('the kilometres measured do not change a stage fare', short.amount === long.amount && short.fareRule === 'Stage 1 → Stage 7', `${short.amount} vs ${long.amount}`);
+  check('a student pays half the stage fare, rounded up', priceRide(0, { tariff: STAGE_TARIFF, boardStage: 'MAITIGHAR', alightStage: 'THAPATHALI', concession: 'student' }).amount === 8);
+  check('a stage tariff with no stages prices nothing', Number.isNaN(priceRide(3000, { tariff: STAGE_TARIFF }).amount));
+  check('a ride nobody closed is still charged the cap', priceRide(3000, { tariff: STAGE_TARIFF, unclosed: true }).amount === STAGE_TARIFF.unclosedLegFare);
+
+  check('each stage is found from its own position', stages.every((s) => stageNear(STAGE_TARIFF, s) === s.code));
+  check('a point 150 m off a stage still finds it', stageNear(STAGE_TARIFF, { lat: 27.6905 + 0.0012, lon: 85.3175 }) === 'THAPATHALI');
+  check('a point far off the route finds no stage', stageNear(STAGE_TARIFF, { lat: 27.60, lon: 85.20 }) === null);
+  check('no fix, no stage', stageNear(STAGE_TARIFF, null) === null && stageNear(STAGE_TARIFF, { lat: 0, lon: 0 }) === null);
+  check('with no exit fix, the distance from a terminus reaches the right stage', stageAlong(STAGE_TARIFF, 'RATNAPARK', 5300) === 'NEWBANESHWOR' && stageAlong(STAGE_TARIFF, 'KOTESHWOR', 4600) === 'THAPATHALI');
+  check('with no exit fix, a distance that fits both directions is not guessed', stageAlong(STAGE_TARIFF, 'THAPATHALI', 1500) === null);
+
+  const bus = createKeypair();
+  const fields = {
+    vehicleId: 'BA2KHA4412', tripId: 'TSTAGE', legId: 'LSTAGE1', passengerPublicKey: createKeypair().publicKey,
+    boardDoorId: 'A', alightDoorId: 'A', boardOdoM: 100, alightOdoM: 5400, distanceM: 5300, distanceSource: 'odometer',
+    boardAt: 1000, alightAt: 2000, concession: 'none', tariffCode: STAGE_TARIFF.code,
+    boardStage: 'RATNAPARK', alightStage: 'NEWBANESHWOR',
+  };
+  const fare = priceRide(fields.distanceM, { tariff: STAGE_TARIFF, boardStage: fields.boardStage, alightStage: fields.alightStage });
+  const receipt = signReceipt(buildReceipt({ ...fields, amount: fare.amount }), bus.secretKey);
+  const verdict = verifyReceipt(receipt, { vehiclePublicKey: bus.publicKey, priceFn: priceRide });
+  check('a stage receipt is a BM2 naming both stages', receipt.startsWith('BM2|') && decodeReceipt(receipt).leg.alightStage === 'NEWBANESHWOR');
+  check('...it verifies and re-prices from its stages', verdict.ok === true, verdict.reason);
+  const moved = receipt.replace('|NEWBANESHWOR|', '|KOTESHWOR|');
+  check('...a stage changed after signing is refused', verifyReceipt(moved, { vehiclePublicKey: bus.publicKey, priceFn: priceRide }).ok === false);
+  const wrong = signReceipt(buildReceipt({ ...fields, amount: fare.amount - 5 }), bus.secretKey);
+  check('...a fare that is not the table fare is refused', verifyReceipt(wrong, { vehiclePublicKey: bus.publicKey, priceFn: priceRide }).reason === 'price_mismatch');
+  const old = signReceipt(buildReceipt({ ...fields, boardStage: null, alightStage: null, tariffCode: 'NPR-KTM-2026B', amount: priceRide(5300, { tariffCode: 'NPR-KTM-2026B' }).amount }), bus.secretKey);
+  check('a BM1 distance receipt issued before stages still verifies', old.startsWith('BM1|') && verifyReceipt(old, { vehiclePublicKey: bus.publicKey, priceFn: priceRide }).ok === true);
+  let half = false;
+  try { buildReceipt({ ...fields, alightStage: null, amount: fare.amount }); } catch { half = true; }
+  check('a receipt cannot name one stage without the other', half);
 }
 
 heading('Summary');
