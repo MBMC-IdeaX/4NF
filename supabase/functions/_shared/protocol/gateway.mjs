@@ -46,13 +46,16 @@ export function esewaMessage(fields, names) {
   Amounts are whole rupees here; tax and charges are zero because a wallet
   top-up has none.
 */
-export async function esewaForm({ amount, transactionUuid, productCode, secretKey, successUrl, failureUrl, hmac }) {
+// `serviceCharge` is Bhada's flat top-up fee (platform_fees, 0035). eSewa
+// charges amount + serviceCharge; the wallet is credited `amount`.
+export async function esewaForm({ amount, serviceCharge = 0, transactionUuid, productCode, secretKey, successUrl, failureUrl, hmac }) {
+  const fee = Math.max(0, Math.round(Number(serviceCharge) || 0));
   const fields = {
     amount: String(amount),
     tax_amount: '0',
-    product_service_charge: '0',
+    product_service_charge: String(fee),
     product_delivery_charge: '0',
-    total_amount: String(amount),
+    total_amount: String(amount + fee),
     transaction_uuid: transactionUuid,
     product_code: productCode,
     success_url: successUrl,

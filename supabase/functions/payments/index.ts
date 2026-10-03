@@ -100,6 +100,7 @@ Deno.serve(async (request) => {
       if (method === 'esewa') {
         const fields = await esewaForm({
           amount,
+          serviceCharge: opened.fee ?? 0,
           transactionUuid: opened.reference,
           productCode: esewa.productCode,
           secretKey: esewa.secretKey,
@@ -108,7 +109,7 @@ Deno.serve(async (request) => {
           failureUrl: `${back}/esewa-failed`,
           hmac,
         });
-        return json({ ok: true, method, reference: opened.reference, formUrl: esewa.formUrl, fields });
+        return json({ ok: true, method, reference: opened.reference, fee: opened.fee ?? 0, total: opened.total ?? amount, formUrl: esewa.formUrl, fields });
       }
 
       return json({ ok: false, reason: 'bad_method' });
@@ -121,12 +122,14 @@ Deno.serve(async (request) => {
       if (!mine?.id) return json({ ok: false, reason: 'not_found' });
 
       const url = `${esewa.statusUrl}?product_code=${encodeURIComponent(esewa.productCode)}`
-        + `&total_amount=${mine.amount}&transaction_uuid=${encodeURIComponent(mine.reference)}`;
+        + `&total_amount=${mine.total ?? mine.amount}&transaction_uuid=${encodeURIComponent(mine.reference)}`;
       const status = await (await fetch(url)).json().catch(() => null);
-      const settled = esewaSettled(status, { transactionUuid: mine.reference, amount: mine.amount });
+      // eSewa collected the top-up and Bhada's fee together; that total is what
+      // it reports and what gateway_complete_topup() checks.
+      const settled = esewaSettled(status, { transactionUuid: mine.reference, amount: mine.total ?? mine.amount });
       if (!settled.ok) return json(settled);
       return json(await rpc('gateway_complete_topup', {
-        p_reference: mine.reference, p_method: 'esewa', p_amount: mine.amount,
+        p_reference: mine.reference, p_method: 'esewa', p_amount: mine.total ?? mine.amount,
         p_provider_ref: read.providerRef || settled.providerRef,
       }));
     }

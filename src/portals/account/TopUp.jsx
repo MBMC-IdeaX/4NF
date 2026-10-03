@@ -26,6 +26,9 @@ export default function TopUp({ session, onDone }) {
   const [reference, setReference] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState(null);
+  // Bhada's flat top-up fee (0035), charged by eSewa as a service charge and
+  // not credited. Shown before the rider pays it.
+  const [fee, setFee] = useState(0);
 
   const loadRequests = () => call('my_topup_requests').then((r) => setRequests(Array.isArray(r) ? r : []));
 
@@ -35,6 +38,7 @@ export default function TopUp({ session, onDone }) {
       setSettings(Object.fromEntries((data ?? []).map((row) => [row.key, row.value])));
     });
     loadRequests();
+    call('fee_at', { p_kind: 'topup_flat' }).then((n) => setFee(Number.isInteger(n) ? n : 0));
   }, []);
 
   const instant = Boolean(config?.[method]);
@@ -126,14 +130,17 @@ export default function TopUp({ session, onDone }) {
                 {config?.[`${method}Env`] === 'test' ? (
                   <p className="op-routecard">
                     <b>Test mode.</b>{' '}
-                    Pay with eSewa ID 9711111111, password Nepal@123, token 123456. No real money moves.
+                    Pay with eSewa ID 9711111111, password Test@123, token 123456. No real money moves.
                   </p>
                 ) : null}
                 {message ? <p className={message.tone === 'ok' ? 'op-success' : 'op-error'} role="status">{message.text}</p> : null}
                 <button type="button" className="op-btn op-btn--block" disabled={busy || !valid} onClick={payInstantly}>
-                  {busy ? 'Opening payment…' : `Pay ${rupees(amount)} with ${METHOD_NAMES[method]}`}
+                  {busy ? 'Opening payment…' : `Pay ${rupees(amount + (fee || 0))} with ${METHOD_NAMES[method]}`}
                 </button>
-                <small className="op-field__help">You will be taken to {METHOD_NAMES[method]} and brought back here.</small>
+                <small className="op-field__help">
+                  {fee ? `${rupees(amount)} goes to your wallet; ${rupees(fee)} is Bhada’s top-up fee, shown by ${METHOD_NAMES[method]} as a service charge. ` : ''}
+                  You will be taken to {METHOD_NAMES[method]} and brought back here.
+                </small>
               </>
             ) : (
               <>
