@@ -16,7 +16,7 @@
   align-items: baseline;
   gap: 6px;
   margin: var(--b-2) 0 0;
-  font-size: 3.5rem;
+  font-size: 2.5rem;
   font-weight: 700;
   line-height: 0.95;
   letter-spacing: -0.01em;
@@ -111,6 +111,97 @@
 .rh-board--riding { background: var(--b-ink); color: var(--b-ink-inverse); }
 .rh-board--riding .rh-board__verb { color: #ffb21a; }
 
+/* ---- greeting ---- */
+
+.rh-hello { padding-top: var(--b-3); }
+.rh-hello__q {
+  margin: var(--b-1) 0 0;
+  font: 700 var(--b-text-xl)/1.15 var(--b-font-display);
+}
+.rh-hello + .rh-board { margin-top: var(--b-3); }
+
+/* ---- the journey card: the whole screen while riding ---- */
+
+.rh-journey {
+  margin-top: var(--b-3);
+  padding: var(--b-5);
+  border-radius: var(--b-radius-lg);
+  background: var(--b-ink);
+  color: var(--b-ink-inverse);
+  --b-in: #45c98a;
+  --b-in-soft: rgb(69 201 138 / 0.22);
+}
+.rh-journey__top { display: flex; align-items: center; justify-content: space-between; gap: var(--b-3); }
+.rh-journey__since { margin: var(--b-2) 0 0; font-size: var(--b-text-sm); opacity: 0.75; }
+.rh-journey__figs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: var(--b-5);
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+}
+.rh-journey__figs > div { padding-top: var(--b-3); }
+.rh-journey__figs > div + div { padding-left: var(--b-4); border-left: 1px solid rgb(255 255 255 / 0.16); }
+.rh-journey__figs small {
+  display: block;
+  font-size: var(--b-text-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.rh-journey__figs b {
+  display: block;
+  margin-top: var(--b-1);
+  font: 700 2.75rem/1 var(--b-font-display);
+}
+.rh-journey__figs > div + div b { color: var(--b-led); }
+.rh-journey__figs b span { margin-left: 4px; font-size: 1.1rem; opacity: 0.7; }
+.rh-journey__note { margin: var(--b-3) 0 var(--b-4); font-size: var(--b-text-xs); opacity: 0.7; }
+.rh-journey__net {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: var(--b-3) 0 0;
+  font-size: var(--b-text-sm);
+  opacity: 0.8;
+}
+.rh-journey__net svg { width: 16px; height: 16px; }
+
+/* ---- a quiet row link, one hairline ---- */
+
+.rh-link {
+  display: flex;
+  align-items: center;
+  gap: var(--b-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--b-3) 0;
+  border: 0;
+  border-top: 1px solid var(--b-line);
+  border-bottom: 1px solid var(--b-line);
+  background: none;
+  color: var(--b-ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.rh-link:hover b { color: var(--b-accent); }
+.rh-link__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--b-radius);
+  background: var(--b-accent-soft);
+  color: var(--b-accent);
+}
+.rh-link__icon svg { width: 22px; height: 22px; }
+.rh-link__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rh-link__body b { display: flex; align-items: center; gap: var(--b-2); flex-wrap: wrap; font: 700 1.05rem/1.2 var(--b-font-display); }
+.rh-link__body small { font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.rh-link > svg { flex: none; width: 20px; height: 20px; color: var(--b-ink-3); }
+
 /* ---- other ways to pay: one hairline strip, not three cards ---- */
 
 .rh-more {
@@ -199,3 +290,4 @@
   color: var(--b-ink-3);
 }
 .rh-empty__ticket svg { width: 28px; height: 28px; }
+.rh-balance .bx-btn { flex: none; white-space: nowrap; }

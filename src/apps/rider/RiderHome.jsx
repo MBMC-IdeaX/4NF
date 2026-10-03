@@ -1,19 +1,34 @@
-// Rider home. The one thing a rider opens this app for on a bus is the code
-// at the door, so boarding is the loudest thing on the screen; the balance
-// sits above it and the rides below. Everything here is read from this phone,
-// so it opens the same with no signal.
+// Rider home. One question decides the whole screen: is this person on a bus?
+//
+// On a bus, the ride is the screen — the plate, how long, how far, the fare so
+// far, and the way to get off. Not on a bus, boarding is the loudest thing,
+// with the balance and the last rides under it. Everything here is read from
+// this phone, so it opens the same with no signal.
 
 import { useEffect, useState } from 'react';
-import { Button, Icon, Money, Plate, Stamp, SkeletonList, Empty } from '../../ui';
+import { Button, Icon, Money, Plate, Status, DemoTag, SkeletonList, Empty } from '../../ui';
 import { loadIdentity } from '../../device/identity';
 import { plateFromId } from '../../device/fleet';
 import { db } from '../../storage/db';
 import { stop } from '../../lib/nepali';
+import { priceDistance } from '../../../protocol/meter.mjs';
 import { OVERDRAFT_NPR } from '../../../protocol/policy.mjs';
 import './rider.css';
 
 const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 const clock = (ms) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+function greeting(now = new Date()) {
+  const h = now.getHours();
+  if (h < 12) return 'शुभ प्रभात · Good morning';
+  if (h < 17) return 'नमस्ते · Good afternoon';
+  return 'शुभ साँझ · Good evening';
+}
+
+function elapsed(fromMs, nowMs) {
+  const min = Math.max(0, Math.floor((nowMs - fromMs) / 60000));
+  return min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${min % 60} min`;
+}
 
 async function loadHome() {
   const identity = await loadIdentity();
@@ -25,7 +40,11 @@ async function loadHome() {
     plate: plateFromId(entry.leg.vehicleId),
     title: `${(entry.leg.distanceM / 1000).toFixed(1)} km`,
     amount: entry.leg.amount,
-    flag: entry.arithmeticOk ? null : 'Fare does not match the distance',
+    kind: 'metered',
+    // Checked again here against the tariff the receipt names: receipts saved
+    // before that fix were judged against the current tariff.
+    flag: priceDistance(entry.leg.distanceM, { concession: entry.leg.concession, tariffCode: entry.leg.tariffCode }).amount === entry.leg.amount
+      ? null : 'Fare does not match the distance',
   }));
   const staged = (await database.getAll('payments')).map((row) => ({
     id: `stage:${row.sequenceNumber}`,
@@ -33,6 +52,7 @@ async function loadHome() {
     plate: plateFromId(row.conductorId),
     title: `${stop(row.boardingStop)?.ne ?? row.boardingStop} → ${stop(row.alightingStop)?.ne ?? row.alightingStop}`,
     amount: row.amount,
+    kind: 'stage',
     waiting: !row.settled,
   }));
   const trips = [...metered, ...staged].sort((a, b) => b.at - a.at).slice(0, 8);
@@ -42,28 +62,56 @@ async function loadHome() {
 export default function RiderHome({ go }) {
   const [state, setState] = useState(null);
   const [failed, setFailed] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
     let live = true;
-    loadHome().then((next) => { if (live) setState(next); }).catch(() => { if (live) setFailed(true); });
-    return () => { live = false; };
+    const read = () => loadHome().then((next) => { if (live) setState(next); }).catch(() => { if (live) setFailed(true); });
+    read();
+    // The ride screen saves the phone's distance as it goes; read it again so
+    // the journey card here keeps up.
+    const timer = setInterval(() => { setNow(Date.now()); read(); }, 15_000);
+    return () => { live = false; clearInterval(timer); };
   }, []);
 
   const identity = state?.identity;
-  const riding = state?.ride?.phase === 'riding';
+  const ride = state?.ride;
+  const riding = ride?.phase === 'riding';
   const balance = identity?.balance ?? null;
   const checkedAt = identity?.serverBalanceAt ? identity.serverBalanceAt * 1000 : null;
 
   return (
     <div className="rh">
-      <section className="rh-balance" aria-label="Balance">
+      {riding ? (
+        <Journey ride={ride} now={now} onOpen={() => go('ride')} />
+      ) : (
+        <>
+          <header className="rh-hello">
+            <p className="bx-eyebrow">{greeting()}</p>
+            <h1 className="rh-hello__q">Getting on a bus?</h1>
+          </header>
+          <button type="button" className="rh-board bx-ticket" onClick={() => go('ride')}>
+            <span className="rh-board__main">
+              <span className="rh-board__kicker">मिटर बस · Metered bus</span>
+              <span className="rh-board__verb">चढ्नुहोस्</span>
+              <span className="rh-board__sub">Show your ride code at the door. Works without internet.</span>
+            </span>
+            <span className="rh-board__stub">
+              <Icon name="qr" />
+              <span>कोड</span>
+            </span>
+          </button>
+        </>
+      )}
+
+      <section className="rh-balance" aria-label="Ride balance">
         <div>
-          <p className="bx-eyebrow">खातामा · Balance</p>
+          <p className="bx-eyebrow">Ride balance</p>
           <p className="rh-amount bx-num">
-            {balance === null ? <span className="bx-skel" style={{ width: 150, height: 52 }} /> : <><span className="rh-amount__cur">रु</span>{balance < 0 ? '−' : ''}{Math.abs(balance).toLocaleString('en-IN')}</>}
+            {balance === null ? <span className="bx-skel" style={{ width: 120, height: 40 }} /> : <><span className="rh-amount__cur">रु</span>{balance < 0 ? '−' : ''}{Math.abs(balance).toLocaleString('en-IN')}</>}
           </p>
           <p className="rh-asof">
-            {checkedAt ? `Checked ${clock(checkedAt)} · works offline` : 'Kept on this phone · works offline'}
+            {checkedAt ? `Checked ${clock(checkedAt)} · topped up through eSewa` : 'Topped up through eSewa · read from this phone'}
           </p>
         </div>
         <Button variant="secondary" icon="topup" onClick={() => go('wallet')}>Top up</Button>
@@ -71,75 +119,17 @@ export default function RiderHome({ go }) {
 
       {balance !== null && balance < 0 ? (
         <p className="rh-over">
-          You are <b>रु {Math.abs(balance)}</b> into the <b>रु {OVERDRAFT_NPR}</b> a bus lets you ride on. Top up before your next ride.
+          <b>रु {Math.abs(balance)} short.</b> A bus still lets you ride while you are less than रु {OVERDRAFT_NPR} short. Top up before your next ride.
         </p>
       ) : null}
 
-      <button type="button" className={`rh-board bx-ticket${riding ? ' rh-board--riding' : ''}`} onClick={() => go('ride')}>
-        <span className="rh-board__main">
-          <span className="rh-board__kicker">{riding ? 'यात्रामा · On the bus' : 'मिटर बस · Metered bus'}</span>
-          <span className="rh-board__verb">{riding ? 'ओर्लनुहोस्' : 'चढ्नुहोस्'}</span>
-          <span className="rh-board__sub">
-            {riding
-              ? `Since ${clock(state.ride.startedAt ?? Date.now())}. Show your code at the door to get off.`
-              : 'Show your code at the door. No signal needed.'}
-          </span>
+      <button type="button" className="rh-link" onClick={() => go('routes')}>
+        <span className="rh-link__icon" aria-hidden="true"><Icon name="route" /></span>
+        <span className="rh-link__body">
+          <b>Routes and buses <DemoTag title="Bus positions on this screen are simulated">Demo fleet</DemoTag></b>
+          <small>Valley routes, stops and fares. Bus positions are simulated.</small>
         </span>
-        <span className="rh-board__stub">
-          <Icon name="qr" />
-          <span>कोड</span>
-        </span>
-      </button>
-
-      {/* Live Route Explorer Card (Sajha Plus & Multi-Vendor Tracking) */}
-      <button
-        type="button"
-        onClick={() => go('routes')}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          background: 'linear-gradient(135deg, #16130f 0%, #2a241d 100%)',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.12)',
-          borderRadius: '16px',
-          padding: '16px 20px',
-          marginTop: '14px',
-          marginBottom: '20px',
-          cursor: 'pointer',
-          textAlign: 'left',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'var(--color-brand, #a8202f)',
-              display: 'grid',
-              placeItems: 'center',
-              color: '#fff',
-              fontSize: '20px',
-            }}
-          >
-            🗺️
-          </div>
-          <div>
-            <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              लाइभ नक्सा · Live Fleet Tracking
-            </div>
-            <div style={{ fontSize: '16px', fontWeight: '800', color: '#fff', marginTop: '2px' }}>
-              मार्ग र बसहरू खोज्नुहोस् · Explore Routes
-            </div>
-            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px' }}>
-              Live positions, available seats, next stops & arrival ETA
-            </div>
-          </div>
-        </div>
-        <div style={{ fontSize: '20px', color: '#f8fafc', paddingLeft: '8px' }}>→</div>
+        <Icon name="chevron" />
       </button>
 
       <section className="rh-trips" aria-label="Recent rides">
@@ -147,13 +137,13 @@ export default function RiderHome({ go }) {
           <p className="bx-eyebrow">हालका यात्रा · Recent rides</p>
         </div>
         {failed ? (
-          <Empty error title="Could not read this phone's rides">Nothing is lost. Close the app and open it again.</Empty>
+          <Empty error title="Could not read this phone's rides">Nothing is lost — the rides are still stored. Close the app and open it again.</Empty>
         ) : !state ? (
           <SkeletonList rows={3} />
         ) : state.trips.length === 0 ? (
           <div className="rh-empty">
             <span className="rh-empty__ticket" aria-hidden="true"><Icon name="ticket" /></span>
-            <p><b>No rides yet.</b> Your first receipt lands here the moment you get off — even with no signal.</p>
+            <p><b>No rides yet.</b> When you get off, the bus's signed receipt is saved here — even with no signal.</p>
           </div>
         ) : (
           <ol className="rh-list">
@@ -176,7 +166,11 @@ export default function RiderHome({ go }) {
                   </span>
                   <span className="rh-trip__end">
                     <Money value={-trip.amount} signed />
-                    {trip.waiting ? <Stamp small>पठाउन बाँकी</Stamp> : null}
+                    {trip.kind === 'metered'
+                      ? <Status tone={trip.flag ? 'bad' : 'ok'}>{trip.flag ? 'Check' : 'Verified'}</Status>
+                      : trip.waiting
+                        ? <Status tone="wait">To send</Status>
+                        : <Status tone="ok">Sent</Status>}
                   </span>
                 </li>
               );
@@ -185,5 +179,42 @@ export default function RiderHome({ go }) {
         )}
       </section>
     </div>
+  );
+}
+
+/*
+  The journey card. Distance and fare are what this phone last measured — the
+  ride screen keeps measuring — and the bus's own figure is the one charged,
+  which the receipt shows at the door.
+*/
+function Journey({ ride, now, onOpen }) {
+  const metres = Number.isFinite(ride.witnessM) ? ride.witnessM : 0;
+  const fare = priceDistance(metres).amount;
+  const plate = ride.vehicleId ? plateFromId(ride.vehicleId) : null;
+  const online = typeof navigator === 'undefined' || navigator.onLine;
+  return (
+    <section className="rh-journey" aria-label="Your ride">
+      <div className="rh-journey__top">
+        <Status tone="live">यात्रामा · On ride</Status>
+        {plate ? <Plate plate={plate} size={16} /> : null}
+      </div>
+      <p className="rh-journey__since">Since {clock(ride.startedAt ?? now)} · {elapsed(ride.startedAt ?? now, now)}</p>
+      <div className="rh-journey__figs">
+        <div>
+          <small>Distance</small>
+          <b className="bx-num">{(metres / 1000).toFixed(1)}<span>km</span></b>
+        </div>
+        <div>
+          <small>Fare so far</small>
+          <b className="bx-num">रु {fare}</b>
+        </div>
+      </div>
+      <p className="rh-journey__note">Measured by your phone · the bus's meter sets the final fare</p>
+      <Button block onClick={onOpen} icon="qr">Get off — show code</Button>
+      <p className="rh-journey__net">
+        <Icon name={online ? 'check' : 'offline'} />
+        {online ? 'Saved on this phone' : 'Offline · the ride continues normally'}
+      </p>
+    </section>
   );
 }
