@@ -49,6 +49,26 @@ const PATHS = {
   back: <path d="m15 5-7 7 7 7" />,
   search: <><circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" /></>,
   inbox: <><path d="M4 13h4l1.5 3h5L16 13h4" /><path d="M5.6 5h12.8a1 1 0 0 1 .95.68L21 13v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-5l1.65-7.32A1 1 0 0 1 5.6 5Z" /></>,
+
+  // the three apps
+  home: <><path d="M4 11.5 12 5l8 6.5" /><path d="M6 10v9h12v-9" /><path d="M10 19v-5h4v5" /></>,
+  ticket: <><path d="M4 7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3a2 2 0 0 0 0 4v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a2 2 0 0 0 0-4Z" /><path d="M14 6v12" strokeDasharray="1.6 2.2" /></>,
+  user: <><circle cx="12" cy="8.5" r="3.6" /><path d="M5 20a7 7 0 0 1 14 0" /></>,
+  family: <><circle cx="8" cy="8" r="2.8" /><circle cx="16.5" cy="9.5" r="2.2" /><path d="M3 19.5a5 5 0 0 1 10 0" /><path d="M13.5 19.5a3.6 3.6 0 0 1 7 0" /></>,
+  camera: <><path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5Z" /><circle cx="12" cy="13" r="3.4" /></>,
+  scan: <><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2" /><path d="M4 12h16" /></>,
+  nfc: <><path d="M8.5 8.5a5 5 0 0 1 0 7" /><path d="M12 6a8.5 8.5 0 0 1 0 12" /><path d="M15.5 3.5a12 12 0 0 1 0 17" /><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
+  cash: <><rect x="3" y="6.5" width="18" height="11" rx="1.5" /><circle cx="12" cy="12" r="2.6" /><path d="M6 9.5v5M18 9.5v5" /></>,
+  chart: <><path d="M4 20V4" /><path d="M4 20h16" /><path d="M8 16v-4M12 16V8M16 16v-6" /></>,
+  sync: <><path d="M20 11a8 8 0 0 0-14.3-4.3L4 8.5" /><path d="M4 4v4.5h4.5" /><path d="M4 13a8 8 0 0 0 14.3 4.3l1.7-1.8" /><path d="M20 20v-4.5h-4.5" /></>,
+  offline: <><path d="M3 3l18 18" /><path d="M8.5 16.5a5 5 0 0 1 7 0" /><path d="M5 12.6a10 10 0 0 1 4-2.4M19 12.6a10 10 0 0 0-2.7-1.9" /><path d="M2 9a15 15 0 0 1 4.2-2.6M22 9a15 15 0 0 0-9.6-3.9" /><circle cx="12" cy="20" r="0.9" fill="currentColor" stroke="none" /></>,
+  close: <><path d="M6 6l12 12" /><path d="M18 6 6 18" /></>,
+  info: <><circle cx="12" cy="12" r="8.5" /><path d="M12 11v5" /><circle cx="12" cy="8" r="0.9" fill="currentColor" stroke="none" /></>,
+  cube: <><path d="M12 3 4 7.5v9L12 21l8-4.5v-9Z" /><path d="M4 7.5 12 12l8-4.5" /><path d="M12 12v9" /></>,
+  pin: <><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11Z" /><circle cx="12" cy="10" r="2.3" /></>,
+  gauge: <><path d="M4.5 17a8.5 8.5 0 1 1 15 0" /><path d="m12 13 3.5-4" /><circle cx="12" cy="13" r="1.2" fill="currentColor" stroke="none" /></>,
+  star: <path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4l-4.8 2.5.9-5.4-3.9-3.8 5.4-.8Z" />,
+  logout: <><path d="M15 4h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-3" /><path d="M10 16.5 5.5 12 10 7.5" /><path d="M5.5 12H15" /></>,
 };
 
 export default function Icon({ name, size = 20, className, title }) {

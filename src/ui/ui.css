@@ -1,0 +1,606 @@
+/*
+  The Bhada UI kit. Every class is bx- so it never meets the old meter-console
+  classes (.panel, .card, .chip), which still load globally.
+
+  Rules this file keeps:
+  - a surface gets a hairline OR a shadow, never both; shadow means it floats
+  - one accent, on the primary action and the active tab only
+  - numbers are tabular, money is signed
+  - every control is at least --b-tap tall and has a visible focus ring
+*/
+
+.bx {
+  min-height: 100dvh;
+  background: var(--b-ground);
+  color: var(--b-ink);
+  font-family: var(--b-font-body);
+  font-size: var(--b-text-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  background-image: var(--b-grain);
+  background-size: 160px;
+}
+
+.bx *,
+.bx *::before,
+.bx *::after {
+  box-sizing: border-box;
+}
+
+.bx :focus-visible {
+  outline: none;
+  box-shadow: var(--b-focus);
+  border-radius: var(--b-radius-sm);
+}
+
+.bx-num {
+  font-family: var(--b-font-display);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+  letter-spacing: 0.01em;
+}
+
+.bx-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--b-2);
+  margin: 0;
+  font-size: var(--b-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--b-ink-3);
+}
+.bx-eyebrow::before {
+  content: '';
+  width: 14px;
+  height: 2px;
+  background: var(--b-accent);
+  flex: none;
+}
+
+.bx-h1,
+.bx-h2,
+.bx-h3 {
+  margin: 0;
+  font-family: var(--b-font-display);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.005em;
+  color: var(--b-ink);
+}
+.bx-h1 { font-size: var(--b-text-2xl); }
+.bx-h2 { font-size: var(--b-text-xl); }
+.bx-h3 { font-size: var(--b-text-lg); }
+
+.bx-muted { color: var(--b-ink-3); }
+.bx-small { font-size: var(--b-text-sm); }
+
+/* ---- layout -------------------------------------------------------------- */
+
+.bx-page {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--b-4) var(--b-4) calc(var(--b-9) + env(safe-area-inset-bottom));
+}
+
+.bx-page--wide {
+  max-width: 1180px;
+}
+
+.bx-stack > * + * { margin-top: var(--b-4); }
+.bx-stack--tight > * + * { margin-top: var(--b-2); }
+.bx-stack--loose > * + * { margin-top: var(--b-6); }
+
+.bx-section > .bx-section__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--b-3);
+  margin-bottom: var(--b-3);
+}
+
+.bx-row {
+  display: flex;
+  align-items: center;
+  gap: var(--b-3);
+}
+
+/* ---- surfaces ------------------------------------------------------------ */
+
+.bx-surface {
+  background: var(--b-surface);
+  border: 1px solid var(--b-line);
+  border-radius: var(--b-radius);
+}
+
+.bx-surface--flush { overflow: hidden; }
+.bx-surface--pad { padding: var(--b-4); }
+
+.bx-float {
+  background: var(--b-surface);
+  border-radius: var(--b-radius-lg);
+  box-shadow: var(--b-shadow-2);
+}
+
+/* ---- buttons ------------------------------------------------------------- */
+
+.bx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--b-2);
+  min-height: var(--b-tap);
+  padding: 0 var(--b-5);
+  border: 1px solid transparent;
+  border-radius: var(--b-radius);
+  font: 700 1rem / 1 var(--b-font-body);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color var(--b-fast) var(--b-ease), transform var(--b-fast) var(--b-ease), border-color var(--b-fast);
+  user-select: none;
+}
+.bx-btn:active { transform: scale(0.98); }
+.bx-btn:disabled,
+.bx-btn[aria-disabled='true'] { opacity: 0.45; cursor: not-allowed; transform: none; }
+.bx-btn svg { width: 20px; height: 20px; flex: none; }
+
+.bx-btn--primary { background: var(--b-accent); color: var(--b-on-accent); }
+.bx-btn--primary:hover { background: var(--b-accent-hover); }
+.bx-btn--primary:active { background: var(--b-accent-press); }
+
+.bx-btn--secondary { background: var(--b-surface); color: var(--b-ink); border-color: var(--b-line-strong); }
+.bx-btn--secondary:hover { background: var(--b-surface-2); }
+
+.bx-btn--ghost { background: transparent; color: var(--b-ink-2); }
+.bx-btn--ghost:hover { background: var(--b-surface-2); color: var(--b-ink); }
+
+.bx-btn--ink { background: var(--b-ink); color: var(--b-ink-inverse); }
+.bx-btn--ink:hover { background: var(--b-ink-2); }
+
+.bx-btn--lg { min-height: 60px; font-size: 1.25rem; }
+.bx-btn--block { width: 100%; }
+.bx-btn--icon { padding: 0; width: var(--b-tap); }
+
+.bx-btn--busy { position: relative; color: transparent !important; }
+.bx-btn--busy::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-color: var(--b-on-accent) transparent var(--b-on-accent) transparent;
+  animation: bx-spin 700ms linear infinite;
+}
+.bx-btn--secondary.bx-btn--busy::after,
+.bx-btn--ghost.bx-btn--busy::after { border-color: var(--b-ink) transparent var(--b-ink) transparent; }
+
+@keyframes bx-spin { to { transform: rotate(360deg); } }
+
+/* ---- top bar ------------------------------------------------------------- */
+
+.bx-top {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--b-3);
+  min-height: 60px;
+  padding: calc(env(safe-area-inset-top) + var(--b-2)) var(--b-4) var(--b-2);
+  background: color-mix(in srgb, var(--b-ground) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--b-line);
+}
+.bx-top__title { flex: 1; min-width: 0; }
+.bx-top__title .bx-h2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bx-top__mark {
+  display: inline-block;
+  font-family: 'Khand', var(--b-font-display) !important;
+  padding: 3px 9px 0;
+  border-radius: var(--b-radius-sm);
+  background: var(--b-plate);
+  box-shadow: inset 0 0 0 2px var(--b-plate), inset 0 0 0 3.5px var(--b-plate-ink);
+  color: var(--b-plate-ink);
+  font-family: var(--b-font-display);
+  font-weight: 700;
+  font-size: 1.45rem;
+  line-height: 1.1;
+}
+
+/* ---- tab bar ------------------------------------------------------------- */
+
+.bx-tabs {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  padding: 0 var(--b-2) env(safe-area-inset-bottom);
+  background: var(--b-surface);
+  border-top: 1px solid var(--b-line);
+}
+.bx-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  position: relative;
+  min-height: 60px;
+  border: 0;
+  background: none;
+  color: var(--b-ink-3);
+  font: 600 0.8125rem / 1.1 var(--b-font-body);
+  cursor: pointer;
+}
+.bx-tab svg { width: 24px; height: 24px; }
+.bx-tab:hover { color: var(--b-ink); }
+.bx-tab[aria-current='page'] { color: var(--b-accent); }
+.bx-tab[aria-current='page'] svg { stroke-width: 2.2; }
+.bx-tab__badge {
+  position: absolute;
+  transform: translate(12px, -14px);
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--b-radius-pill);
+  background: var(--b-accent);
+  color: var(--b-on-accent);
+  font: 700 11px/18px var(--b-font-body);
+}
+
+/* On a wide screen the tab bar becomes a rail. */
+@media (min-width: 960px) {
+  .bx--railed { padding-left: 232px; }
+  .bx--railed .bx-tabs {
+    top: 0;
+    right: auto;
+    width: 232px;
+    grid-auto-flow: row;
+    grid-auto-rows: min-content;
+    align-content: start;
+    gap: var(--b-1);
+    padding: var(--b-5) var(--b-3);
+    border-top: 0;
+    border-right: 1px solid var(--b-line);
+  }
+  .bx--railed .bx-tabs::before {
+    content: attr(data-brand);
+    padding: 0 var(--b-3) var(--b-5);
+    font: 800 1.6rem/1 var(--b-font-display);
+    color: var(--b-accent);
+  }
+  .bx--railed .bx-tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--b-3);
+    min-height: var(--b-tap);
+    padding: 0 var(--b-3);
+    font-size: var(--b-text-md);
+  }
+  .bx--railed .bx-tab { border-radius: var(--b-radius); }
+  .bx--railed .bx-tab[aria-current='page'] { background: var(--b-accent-soft); }
+  .bx--railed .bx-page { padding-bottom: var(--b-8); }
+}
+
+/* ---- stats --------------------------------------------------------------- */
+
+.bx-stats {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+  background: var(--b-line);
+  gap: 1px;
+  border: 1px solid var(--b-line);
+  border-radius: var(--b-radius);
+  overflow: hidden;
+}
+.bx-stat {
+  padding: var(--b-4);
+  background: var(--b-surface);
+  min-width: 0;
+}
+.bx-stat__label { display: block; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.bx-stat__value {
+  display: block;
+  margin-top: var(--b-1);
+  font: 700 var(--b-text-2xl) / 1 var(--b-font-display);
+  font-variant-numeric: tabular-nums;
+  color: var(--b-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bx-stat__sub { display: block; margin-top: var(--b-1); font-size: var(--b-text-xs); color: var(--b-ink-3); }
+@media (min-width: 720px) {
+  .bx-stats--4 { --cols: 4; }
+}
+
+/* ---- lists --------------------------------------------------------------- */
+
+.bx-list { list-style: none; margin: 0; padding: 0; }
+.bx-list > li + li { border-top: 1px solid var(--b-line); }
+.bx-item {
+  display: flex;
+  align-items: center;
+  gap: var(--b-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--b-3) var(--b-4);
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+button.bx-item { cursor: pointer; }
+button.bx-item:hover { background: var(--b-surface-2); }
+.bx-item__icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--b-surface-2);
+  color: var(--b-ink-2);
+}
+.bx-item__icon svg { width: 20px; height: 20px; }
+.bx-item__icon--in { background: var(--b-in-soft); color: var(--b-in); }
+.bx-item__icon--accent { background: var(--b-accent-soft); color: var(--b-accent); }
+.bx-item__body { flex: 1; min-width: 0; }
+.bx-item__title { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bx-item__sub { display: block; font-size: var(--b-text-sm); color: var(--b-ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bx-item__end { flex: none; text-align: right; }
+.bx-item__chev { width: 18px; height: 18px; color: var(--b-ink-3); flex: none; }
+
+/* ---- money --------------------------------------------------------------- */
+
+.bx-money { font-family: var(--b-font-display); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bx-money--in { color: var(--b-in); }
+.bx-money--out { color: var(--b-ink); }
+
+/* ---- skeleton, empty, error ---------------------------------------------- */
+
+.bx-skel {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--b-surface-2) 0%, var(--b-surface-3) 50%, var(--b-surface-2) 100%);
+  background-size: 200% 100%;
+  animation: bx-shimmer 1.3s linear infinite;
+}
+@keyframes bx-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .bx-skel { animation: none; } }
+
+.bx-empty {
+  padding: var(--b-7) var(--b-5);
+  text-align: center;
+}
+.bx-empty__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: var(--b-3);
+  border-radius: 18px;
+  background: var(--b-surface-2);
+  color: var(--b-ink-3);
+}
+.bx-empty__icon svg { width: 26px; height: 26px; }
+.bx-empty p { max-width: 36ch; margin: var(--b-2) auto 0; color: var(--b-ink-3); }
+.bx-empty .bx-btn { margin-top: var(--b-4); }
+.bx-empty--error .bx-empty__icon { background: var(--b-bad-soft); color: var(--b-bad); }
+
+.bx-note {
+  display: flex;
+  gap: var(--b-3);
+  align-items: flex-start;
+  padding: var(--b-3) var(--b-4);
+  border-radius: var(--b-radius);
+  background: var(--b-surface-2);
+  color: var(--b-ink-2);
+  font-size: var(--b-text-sm);
+}
+.bx-note svg { width: 18px; height: 18px; flex: none; margin-top: 2px; }
+.bx-note--ok { background: var(--b-in-soft); color: var(--b-in); }
+.bx-note--warn { background: var(--b-warn-soft); color: var(--b-warn); }
+.bx-note--bad { background: var(--b-bad-soft); color: var(--b-bad); }
+
+/* ---- sync pill ----------------------------------------------------------- */
+
+.bx-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--b-2);
+  min-height: 34px;
+  padding: 0 var(--b-3);
+  border: 1px solid var(--b-line-strong);
+  border-radius: var(--b-radius-sm);
+  background: transparent;
+  color: var(--b-ink-2);
+  font: 600 var(--b-text-xs) / 1 var(--b-font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.bx-pill__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--b-in); flex: none; }
+.bx-pill--offline .bx-pill__dot { background: var(--b-ink-3); }
+.bx-pill--waiting .bx-pill__dot { background: var(--b-warn); }
+.bx-pill--error .bx-pill__dot { background: var(--b-bad); }
+.bx-pill--syncing .bx-pill__dot { animation: bx-pulse 900ms ease-in-out infinite; background: var(--b-accent); }
+@keyframes bx-pulse { 50% { opacity: 0.25; } }
+
+/* ---- sheet --------------------------------------------------------------- */
+
+.bx-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgb(10 9 7 / 0.48);
+  animation: bx-fade var(--b-med) var(--b-ease);
+}
+.bx-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 92dvh;
+  overflow: auto;
+  padding: var(--b-3) var(--b-5) calc(var(--b-5) + env(safe-area-inset-bottom));
+  background: var(--b-surface);
+  border-radius: var(--b-radius-lg) var(--b-radius-lg) 0 0;
+  border-top: 3px solid var(--b-accent);
+  box-shadow: var(--b-shadow-3);
+  animation: bx-rise var(--b-med) var(--b-ease);
+}
+.bx-sheet__grip { width: 40px; height: 4px; margin: 0 auto var(--b-4); border-radius: 2px; background: var(--b-line-strong); }
+@media (min-width: 720px) {
+  .bx-scrim { align-items: center; }
+  .bx-sheet { border-radius: var(--b-radius-lg); }
+}
+@keyframes bx-fade { from { opacity: 0; } }
+@keyframes bx-rise { from { transform: translateY(24px); opacity: 0; } }
+
+/* ---- fields -------------------------------------------------------------- */
+
+.bx-field { display: block; }
+.bx-field__label { display: block; margin-bottom: var(--b-2); font-size: var(--b-text-sm); font-weight: 600; color: var(--b-ink-2); }
+.bx-input {
+  width: 100%;
+  min-height: var(--b-tap);
+  padding: 0 var(--b-4);
+  border: 1px solid var(--b-line-strong);
+  border-radius: var(--b-radius);
+  background: var(--b-surface);
+  color: var(--b-ink);
+  font: 400 16px / 1.4 var(--b-font-body);
+}
+.bx-input:focus { outline: none; border-color: var(--b-accent); box-shadow: 0 0 0 3px var(--b-accent-soft); }
+.bx-field__hint { display: block; margin-top: var(--b-1); font-size: var(--b-text-xs); color: var(--b-ink-3); }
+.bx-field__error { display: block; margin-top: var(--b-1); font-size: var(--b-text-xs); color: var(--b-bad); }
+
+/* ---- segmented control ---------------------------------------------------- */
+
+.bx-seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--b-radius);
+  background: var(--b-surface-2);
+}
+.bx-seg button {
+  min-height: 40px;
+  padding: 0 var(--b-4);
+  border: 0;
+  border-radius: var(--b-radius-sm);
+  background: none;
+  color: var(--b-ink-3);
+  font: 600 var(--b-text-sm) / 1 var(--b-font-body);
+  cursor: pointer;
+}
+.bx-seg button[aria-pressed='true'] { background: var(--b-surface); color: var(--b-ink); box-shadow: var(--b-shadow-1); }
+
+/* The old global stylesheets paint body dark; a kit app owns the page ground. */
+body:has(> #root > .bx),
+body:has(> #root > .bx) #root {
+  margin: 0;
+  background: var(--b-ground);
+}
+
+@media (min-width: 960px) {
+  .bx--railed .bx-top__mark { display: none; }
+  .bx--railed .bx-tab__badge { position: static; transform: none; margin-left: auto; }
+}
+
+/* ---- the bus's own objects ------------------------------------------------ */
+
+/* Number plate: red, white letters, a white rule set in from the edge. */
+.bx-plate {
+  font-family: 'Khand', var(--b-font-display) !important;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px 11px 3px;
+  border-radius: var(--b-radius);
+  background: var(--b-plate);
+  box-shadow: inset 0 0 0 3px var(--b-plate), inset 0 0 0 4.5px var(--b-plate-ink);
+  color: var(--b-plate-ink);
+  font-family: var(--b-font-display);
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.bx-plate__top { font-size: 0.8em; letter-spacing: 0.08em; }
+.bx-plate__digits { font-size: 1.15em; letter-spacing: 0.06em; }
+.bx-plate--line { flex-direction: row; gap: 0.35em; padding: 6px 11px 4px; }
+.bx-plate--line .bx-plate__top,
+.bx-plate--line .bx-plate__digits { font-size: 1em; }
+
+/* Ticket: cut paper with a punched notch at each end of its tear line.
+   --tear is where the tear runs, measured along the ticket. */
+.bx-ticket {
+  --notch: 11px;
+  --tear: 70%;
+  position: relative;
+  border-radius: var(--b-radius);
+  -webkit-mask:
+    radial-gradient(circle var(--notch) at var(--tear) 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--tear) 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch) at var(--tear) 0, #0000 98%, #000) top / 100% 51% no-repeat,
+    radial-gradient(circle var(--notch) at var(--tear) 100%, #0000 98%, #000) bottom / 100% 51% no-repeat;
+}
+
+/* Perforation: the dotted tear line between a ticket and its stub. */
+.bx-perf {
+  flex: none;
+  align-self: stretch;
+  width: 0;
+  margin: var(--b-3) 0;
+  border-left: 2px dashed currentColor;
+  opacity: 0.4;
+}
+.bx-perf--h { width: auto; height: 0; margin: 0 var(--b-3); border-left: 0; border-top: 2px dashed currentColor; }
+
+/* Rubber stamp: double rule, slight tilt, ink that did not take everywhere. */
+.bx-stamp {
+  display: inline-block;
+  padding: 6px 14px 3px;
+  border: 4px double var(--b-stamp);
+  border-radius: var(--b-radius);
+  color: var(--b-stamp);
+  font: 700 1.6rem/1 var(--b-font-display);
+  letter-spacing: 0.04em;
+  transform: rotate(-7deg);
+  opacity: 0.88;
+  -webkit-mask: var(--b-grain) 0 0 / 70px, linear-gradient(#000, #000);
+  -webkit-mask-composite: xor;
+  mask: var(--b-grain) 0 0 / 70px exclude, linear-gradient(#000, #000);
+}
+.bx-stamp--in { --b-stamp: var(--b-in); }
+.bx-stamp--sm { font-size: 0.95rem; padding: 3px 8px 1px; border-width: 3px; }
+
+/* LED destination board: amber dots, the way a Sajha front board reads. */
+.bx-led {
+  font-family: var(--b-font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 0.9;
+  color: var(--b-led);
+  -webkit-mask: radial-gradient(circle at center, #000 1.4px, #0000 1.9px) 0 0 / 4px 4px;
+  mask: radial-gradient(circle at center, #000 1.4px, #0000 1.9px) 0 0 / 4px 4px;
+}
+.bx-led-board {
+  padding: var(--b-4);
+  border-radius: var(--b-radius);
+  background: #0b0a08;
+  box-shadow: inset 0 0 0 1px #2a2620, inset 0 2px 12px rgb(0 0 0 / 0.8);
+}
