@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import Icon from './Icon';
+import PasswordInput from '../../ui/PasswordInput';
 
 // The sign-in state and calls, shared by this office screen and the app
 // sign-in (src/ui/AppSignIn.jsx), so there is one way to sign in.
@@ -139,7 +140,7 @@ export default function SignIn({ title, subtitle, pitch, redirectPath, allowPhon
             </label>
             <label className="op-field">
               <span>पासवर्ड / Password</span>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+              <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)}
                 autoComplete={mode === 'in' ? 'current-password' : 'new-password'} minLength={mode === 'up' ? 8 : undefined} required />
               {mode === 'up' ? <small className="op-field__help">At least 8 characters.</small> : null}
             </label>

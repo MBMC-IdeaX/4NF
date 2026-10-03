@@ -5,6 +5,7 @@
 import '../styles/tokens.css';
 import { useSignIn } from '../portals/shared/SignIn';
 import { Button, Field, Note, Plate } from './index';
+import PasswordInput from './PasswordInput';
 import './sign-in.css';
 
 const SAMPLE_PLATE = { province: 'बा', number: '२', series: 'ख', digits: '४४१२' };
@@ -38,7 +39,7 @@ export default function AppSignIn({ embedded, app, title, lead, redirectPath, al
                 <input className="bx-input" type="email" value={s.email} onChange={(e) => s.setEmail(e.target.value)} autoComplete="email" required autoFocus />
               </Field>
               <Field label="पासवर्ड · Password" hint={signingUp ? 'At least 8 characters.' : undefined}>
-                <input className="bx-input" type="password" value={s.password} onChange={(e) => s.setPassword(e.target.value)}
+                <PasswordInput className="bx-input" value={s.password} onChange={(e) => s.setPassword(e.target.value)}
                   autoComplete={signingUp ? 'new-password' : 'current-password'} minLength={signingUp ? 8 : undefined} required />
               </Field>
               {s.error ? <Note tone="bad">{s.error}</Note> : null}

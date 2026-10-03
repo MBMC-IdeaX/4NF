@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase, supabaseConfigured } from '../../lib/supabase';
+import PasswordInput from '../../ui/PasswordInput';
 
 export function usePasswordRecovery() {
   const [recovering, setRecovering] = useState(
@@ -55,13 +56,13 @@ export function SetPassword({ onDone, onCancel }) {
         <div className="op-form">
           <label className="op-field">
             <span>नयाँ पासवर्ड / New password</span>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)}
               autoComplete="new-password" minLength={8} required />
             <small className="op-field__help">At least 8 characters.</small>
           </label>
           <label className="op-field">
             <span>फेरि / Again</span>
-            <input type="password" value={again} onChange={(e) => setAgain(e.target.value)}
+            <PasswordInput value={again} onChange={(e) => setAgain(e.target.value)}
               autoComplete="new-password" minLength={8} required />
           </label>
           {error ? <p className="op-error" role="alert">{error}</p> : null}
