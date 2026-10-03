@@ -206,21 +206,8 @@ function restLedger(db: Db) {
     // if it is the vehicle's own sequence of events rather than a summary
     // someone had the chance to tidy.
     // deno-lint-ignore no-explicit-any
-    appendDoorEvents: async (events: any[], { vehiclePlate }: { vehiclePlate: string }) => {
-      const { error } = await db.from('door_events').insert(
-        events.map((event) => ({
-          vehicle_plate: vehiclePlate,
-          trip_id: event.tripId,
-          at: event.at,
-          kind: event.kind,
-          door: event.door,
-          onboard: event.onboard,
-          capacity: event.capacity,
-          note: event.note,
-        })),
-      );
-      if (error) throw new Error(error.message);
-    },
+    appendDoorEvents: (events: any[], { vehiclePlate }: { vehiclePlate: string }) =>
+      rpc('append_door_events', { p_vehicle_plate: vehiclePlate, p_events: events }),
 
     // The box's own power tape, kept apart from the door tape for the same
     // reason a regulator's record stays about doors.

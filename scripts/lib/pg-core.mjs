@@ -151,14 +151,8 @@ function pgLedger(db, { autoRegisterVehicles }) {
       a.repricedNpr, a.refundNpr, a.outcome, a.claim,
     ]),
 
-    appendDoorEvents: async (events, { vehiclePlate }) => {
-      for (const event of events) {
-        await db.query(
-          'insert into door_events (vehicle_plate, trip_id, at, kind, door, onboard, capacity, note) values ($1,$2,$3,$4,$5,$6,$7,$8)',
-          [vehiclePlate, event.tripId, event.at, event.kind, event.door, event.onboard, event.capacity, event.note],
-        );
-      }
-    },
+    appendDoorEvents: (events, { vehiclePlate }) =>
+      rpc('append_door_events', [vehiclePlate, JSON.stringify(events)]),
 
     appendMeterEvents: (events, { vehiclePlate }) =>
       rpc('append_meter_events', [vehiclePlate, JSON.stringify(events)]),

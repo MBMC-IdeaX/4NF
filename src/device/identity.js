@@ -47,7 +47,9 @@ export function installRandomSource() {
 export async function loadIdentity({ now = Math.floor(Date.now() / 1000) } = {}) {
   installRandomSource();
   const database = await db();
-  const existing = await database.get('identity', 'me');
+  const tx = database.transaction('identity', 'readwrite');
+  const store = tx.store;
+  const existing = await store.get('me');
 
   if (existing) {
     // A device from before rotation has a root and no seed. Give it one now;
@@ -67,7 +69,8 @@ export async function loadIdentity({ now = Math.floor(Date.now() / 1000) } = {})
       secretKey: today.secretKey,
       day,
     };
-    if (changed) await database.put('identity', identity, 'me');
+    if (changed) await store.put(identity, 'me');
+    await tx.done;
     return identity;
   }
 
@@ -88,7 +91,8 @@ export async function loadIdentity({ now = Math.floor(Date.now() / 1000) } = {})
     unsettledTotal: 0,
     lastSettlementAt: Math.floor(Date.now() / 1000),
   };
-  await database.put('identity', identity, 'me');
+  await store.put(identity, 'me');
+  await tx.done;
   return identity;
 }
 
@@ -136,12 +140,14 @@ export function companionLinksFor(identity) {
 
 export async function noteCompanions(count) {
   const database = await db();
-  const identity = await database.get('identity', 'me');
+  const tx = database.transaction('identity', 'readwrite');
+  const identity = await tx.store.get('me');
   if (!identity) return;
   const day = dayIndex();
   const before = identity.companionsDay === day ? identity.companionsUsed ?? 0 : 0;
   if (count <= before) return;
-  await database.put('identity', { ...identity, companionsDay: day, companionsUsed: Math.min(MAX_COMPANIONS, count) }, 'me');
+  await tx.store.put({ ...identity, companionsDay: day, companionsUsed: Math.min(MAX_COMPANIONS, count) }, 'me');
+  await tx.done;
 }
 
 /*
@@ -222,4 +228,10 @@ export async function setConcession(concession) {
 
 export function shortKey(publicKey) {
   return `${publicKey.slice(0, 6)}…${publicKey.slice(-4)}`;
+}
+
+// Track each certificate, including companions added after primary registration.
+export function pendingKeyLinks(identity) {
+  const acknowledged = new Set(identity?.acknowledgedKeyLinks ?? []);
+  return [keyLinkFor(identity), ...companionLinksFor(identity)].filter((link) => link && !acknowledged.has(link));
 }

@@ -96,7 +96,7 @@ export function useSyncStatus({ name, pending, run, enabled = true }) {
   useEffect(() => {
     if (!enabled) return undefined;
     count();
-    const onOnline = () => { setOnline(true); state.current.failures = 0; attempt('online'); };
+    const onOnline = () => { setOnline(true); attempt('online'); };
     const onOffline = () => setOnline(false);
     const onVisible = () => { if (document.visibilityState === 'visible') attempt('focus'); };
     window.addEventListener('online', onOnline);

@@ -20,7 +20,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
-import { loadIdentity, shortKey, companionKeys, noteCompanions } from '../device/identity';
+import { trustedBusKey, authenticateRecord } from '../device/receipt-auth';
+import { loadIdentity, shortKey, companionKeys, noteCompanions, keyLinkFor, companionLinksFor } from '../device/identity';
 import { db } from '../storage/db';
 import { currentVehicle, plateFromId } from '../device/fleet';
 import { fixFromPosition, holdScreenOn } from '../device/positioning';
@@ -29,7 +30,7 @@ import Scanner from '../components/Scanner';
 import { buildTap, signTap, decodeLeg, decodePass, toMicro, fromMicro, PASS_MAX_AGE_S, buildGroup } from '../../protocol/leg.mjs';
 import { MAX_COMPANIONS } from '../../protocol/pseudonym.mjs';
 import { buildDispute, signDispute } from '../../protocol/dispute.mjs';
-import { initialOdometer, applyFix, odometerReading, priceDistance, TARIFF, CURRENT_TARIFF, stageNear, stageName } from '../../protocol/meter.mjs';
+import { initialOdometer, applyFix, odometerReading, priceDistance, TARIFFS, TARIFF, CURRENT_TARIFF, stageNear, stageName } from '../../protocol/meter.mjs';
 import { rupees } from '../lib/nepali';
 
 // The bus this device is provisioned for. A phone moved to another vehicle
@@ -44,7 +45,7 @@ const CLAIMS_KEY = 'passengerClaims';
 
 async function loadRide() {
   const database = await db();
-  return (await database.get('meter', RIDE_KEY)) ?? { phase: 'idle' };
+  return (await database.get('meter', RIDE_KEY)) ?? { phase: 'idle', state: 'ready' };
 }
 
 async function saveRide(ride) {
@@ -124,23 +125,33 @@ export default function Ride({ onBack, onStageFare }) {
   const odoRef = useRef(null);
 
   useEffect(() => {
+    trustedBusKey(vehicleId()).catch(() => {});
     loadIdentity().then(setIdentity).catch((error) => setProblem(error.message));
     loadRide().then((saved) => {
       setRide(saved);
       if (saved.phase === 'riding') setWitness((w) => ({ ...w, metres: saved.witnessM ?? 0 }));
     });
-    loadReceipts().then(setHistory);
+    const refresh = () => loadReceipts().then(setHistory);
+    refresh();
+    const timer = setInterval(refresh, 5000);
+    return () => clearInterval(timer);
   }, []);
 
   // The ride code. Re-signed every half minute: a tap is valid for five minutes, so the
   // code on screen is always fresh and a photographed one soon is not.
   const drawCode = useCallback(async () => {
     if (!identity) return;
-    const sign = (keys) => signTap(buildTap({ passengerPublicKey: keys.publicKey, vehicleId: vehicleId(), doorId: 'ANY' }), keys.secretKey);
+    const active = await loadRide();
+    if (active.phase !== 'riding') {
+      const today = await loadIdentity();
+      if (today.publicKey !== identity.publicKey) { setIdentity(today); return; }
+    }
+    const keys = active.phase === 'riding' && active.consentIdentity ? active.consentIdentity : identity;
+    const sign = (keys) => signTap(buildTap({ passengerPublicKey: keys.publicKey, vehicleId: active.vehicleId ?? vehicleId(), doorId: 'ANY' }), keys.secretKey);
     // One code for the whole group: the passenger's own, then each
     // companion's, in a BG1 the door takes apart (protocol/leg.mjs).
-    const own = sign(identity);
-    const text = family > 0 ? buildGroup([own, ...companionKeys(identity, family).map(sign)]) : own;
+    const own = sign(keys);
+    const text = family > 0 ? buildGroup([own, ...companionKeys(keys, family).map(sign)]) : own;
     const image = await QRCode.toDataURL(text, {
       errorCorrectionLevel: 'M', margin: 1, width: 640, color: { dark: '#16130fff', light: '#ffffffff' },
     });
@@ -240,14 +251,14 @@ export default function Ride({ onBack, onStageFare }) {
   }, [ride?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function startRiding(extra = {}) {
-    const next = { phase: 'riding', startedAt: Date.now(), witnessM: 0, ...extra };
+    const next = { phase: 'riding', state: extra.passQr ? 'riding' : 'awaiting_boarding_confirmation', startedAt: Date.now(), witnessM: 0, passengerPublicKey: identity.publicKey, consentIdentity: identity, ...extra };
     await saveRide(next);
     setWitness({ metres: 0, doppler: null, fixes: 0 });
     setRide(next);
   }
 
-  async function onScan(text) {
-    const mode = scanning;
+  async function onScan(text, injectedMode) {
+    const mode = injectedMode ?? scanning;
     setScanning(null);
     setProblem(null);
     const trimmed = String(text).trim();
@@ -255,14 +266,23 @@ export default function Ride({ onBack, onStageFare }) {
     if (mode === 'pass') {
       try {
         const { pass } = decodePass(trimmed);
-        if (pass.passengerPublicKey !== identity.publicKey) {
+        if (pass.passengerPublicKey !== (ride?.passengerPublicKey ?? identity.publicKey)) {
           setProblem('That pass belongs to someone else.');
           return;
+        }
+        const authentication = authenticateRecord(trimmed, pass, await trustedBusKey(pass.vehicleId), { passengerPublicKey: ride?.passengerPublicKey ?? identity.publicKey, vehicleId: ride?.vehicleId ?? vehicleId(), legId: ride?.legId });
+        if (!authentication.ok) {
+          if (authentication.reason === 'verification_pending') {
+            const database = await db();
+            const pending = (await database.get('meter', 'unverifiedBoardingPasses')) ?? [];
+            await database.put('meter', [...pending.filter((row) => row.pass.legId !== pass.legId), { pass, qrText: trimmed, state: 'verification_pending' }], 'unverifiedBoardingPasses');
+          }
+          setProblem(authentication.reason === 'verification_pending' ? 'Boarding pass saved, verification pending. Connect once to cache the bus key, then scan again.' : 'Boarding pass verification failed.'); return;
         }
         // The pass carries the door's position at boarding: that is the stage.
         const passStage = stageNear(CURRENT_TARIFF, { lat: fromMicro(pass.boardLatMicro), lon: fromMicro(pass.boardLonMicro) });
         if (ride?.phase === 'riding') {
-          const next = { ...ride, passQr: trimmed, legId: pass.legId, vehicleId: pass.vehicleId, ...(passStage ? { boardStage: passStage } : {}) };
+          const next = { ...ride, state: 'riding', passQr: trimmed, legId: pass.legId, vehicleId: pass.vehicleId, ...(passStage ? { boardStage: passStage } : {}) };
           await saveRide(next);
           setRide(next);
         } else {
@@ -282,13 +302,15 @@ export default function Ride({ onBack, onStageFare }) {
         setProblem('That is not a Bhada receipt.');
         return;
       }
-      if (leg.passengerPublicKey !== identity.publicKey) {
+      if (leg.passengerPublicKey !== (ride?.passengerPublicKey ?? identity.publicKey)) {
         setProblem('That receipt is for someone else.');
         return;
       }
+      const authentication = authenticateRecord(trimmed, leg, await trustedBusKey(leg.vehicleId), { passengerPublicKey: ride?.passengerPublicKey ?? identity.publicKey, vehicleId: ride?.vehicleId ?? vehicleId(), legId: ride?.legId });
+      if (!authentication.ok && authentication.reason !== 'verification_pending' && authentication.reason !== 'unsupported_tariff') { setProblem('Receipt verification failed. Keep the active ride and ask the crew to scan again.'); return; }
       // Re-priced with the tariff the receipt names, never today's: tariffs are
       // added, not edited, and an old receipt is judged by its own.
-      const repriced = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode, boardStage: leg.boardStage, alightStage: leg.alightStage, unclosed: leg.distanceSource === 'unclosed' });
+      const repriced = TARIFFS[leg.tariffCode] ? priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode, boardStage: leg.boardStage, alightStage: leg.alightStage, unclosed: leg.distanceSource === 'unclosed' }) : { amount: null, breakdown: [] };
       const phoneM = ride?.phase === 'riding' ? witness.metres : null;
       const entry = {
         legId: leg.legId,
@@ -297,15 +319,23 @@ export default function Ride({ onBack, onStageFare }) {
         leg,
         breakdown: repriced.breakdown,
         arithmeticOk: repriced.amount === leg.amount,
+        state: authentication.ok ? 'awaiting_reconciliation' : 'review_required',
+        recordState: 'exit_receipt_saved',
+        keyLinks: [keyLinkFor(ride?.consentIdentity ?? identity), ...companionLinksFor(ride?.consentIdentity ?? identity)].filter(Boolean),
+        verification: authentication.reason ?? (authentication.ok ? 'verified' : 'review_required'),
         phoneM,
         phoneDoppler: witness.doppler,
       };
-      const next = [entry, ...history.filter((h) => h.legId !== leg.legId)].slice(0, 30);
       const database = await db();
-      await database.put('meter', next, RECEIPTS_KEY);
-      await saveRide({ phase: 'idle' });
+      const tx = database.transaction('meter', 'readwrite');
+      const saved = (await tx.store.get(RECEIPTS_KEY)) ?? [];
+      const next = [entry, ...saved.filter((h) => h.legId !== leg.legId)];
+      await tx.store.put(next, RECEIPTS_KEY);
+      const nextRide = authentication.ok ? { phase: 'idle', state: 'awaiting_reconciliation', completedLegId: leg.legId } : { ...ride, pendingCompletion: leg.legId };
+      await tx.store.put(nextRide, RIDE_KEY);
+      await tx.done;
       setHistory(next);
-      setRide({ phase: 'idle' });
+      setRide(nextRide);
       setReceipt(entry);
     }
   }
@@ -315,8 +345,18 @@ export default function Ride({ onBack, onStageFare }) {
   const scanRef = useRef(onScan);
   scanRef.current = onScan;
   const stableScan = useCallback((text) => scanRef.current(text), []);
+  useEffect(() => {
+    // Explicit local browser fixture only; omitted from normal app builds.
+    if (import.meta.env.VITE_BROWSER_TESTS !== '1' || location.hostname !== 'localhost') return;
+    const scan = (event) => scanRef.current(event.detail.text, event.detail.mode);
+    window.addEventListener('bhada:test-scan', scan);
+    return () => window.removeEventListener('bhada:test-scan', scan);
+  }, []);
 
   async function endWithoutReceipt() {
+    const database = await db();
+    const abandoned = (await database.get('meter', 'unfinishedPassengerRides')) ?? [];
+    await database.put('meter', [...abandoned, { ...ride, endedAt: Date.now() }], 'unfinishedPassengerRides');
     await saveRide({ phase: 'idle' });
     setRide({ phase: 'idle' });
   }
@@ -334,7 +374,7 @@ export default function Ride({ onBack, onStageFare }) {
     if (!stranded || !identity) return;
     const claim = signDispute(
       buildDispute({
-        passengerPublicKey: identity.publicKey,
+        passengerPublicKey: ride.consentIdentity?.publicKey ?? identity.publicKey,
         vehicleId: stranded.vehicleId,
         legId: stranded.legId,
         witnessM: stranded.witnessM,
@@ -342,13 +382,13 @@ export default function Ride({ onBack, onStageFare }) {
         witnessLatMicro: stranded.witnessLatMicro,
         witnessLonMicro: stranded.witnessLonMicro,
       }),
-      identity.secretKey,
+      ride.consentIdentity?.secretKey ?? identity.secretKey,
     );
     const database = await db();
     const queued = (await database.get('meter', CLAIMS_KEY)) ?? [];
     await database.put(
       'meter',
-      [{ legId: stranded.legId, claim, at: Date.now(), sent: 0 }, ...queued.filter((c) => c.legId !== stranded.legId)].slice(0, 30),
+      [{ legId: stranded.legId, claim, at: Date.now(), sent: 0 }, ...queued.filter((c) => c.legId !== stranded.legId)],
       CLAIMS_KEY,
     );
     await saveRide({ phase: 'idle' });
@@ -367,7 +407,7 @@ export default function Ride({ onBack, onStageFare }) {
   }
 
   if (receipt) {
-    return <ReceiptView entry={receipt} onDone={() => setReceipt(null)} />;
+    return <ReceiptView entry={history.find((row) => row.legId === receipt.legId) ?? receipt} onDone={() => setReceipt(null)} />;
   }
 
   const riding = ride.phase === 'riding';
@@ -397,7 +437,7 @@ export default function Ride({ onBack, onStageFare }) {
         <div className="ride__status">
           {riding ? (
             <>
-              <b><i className="ride__live" aria-hidden="true" />यात्रामा · On ride</b>
+              <b><i className="ride__live" aria-hidden="true" />यात्रामा · {ride.passQr ? 'On ride - boarding confirmed' : 'Measuring locally - awaiting boarding confirmation'}</b>
               <span>Since {new Date(ride.startedAt ?? now).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} · {Math.max(0, Math.floor((now - (ride.startedAt ?? now)) / 60000))} min. Show the code below when you get off.</span>
             </>
           ) : (
@@ -580,7 +620,7 @@ export default function Ride({ onBack, onStageFare }) {
 function ReceiptView({ entry, onDone }) {
   const { leg } = entry;
   const comparison = compareDistances(leg.distanceM, entry.phoneM);
-  const repriced = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode, boardStage: leg.boardStage, alightStage: leg.alightStage, unclosed: leg.distanceSource === 'unclosed' });
+  const repriced = TARIFFS[leg.tariffCode] ? priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode, boardStage: leg.boardStage, alightStage: leg.alightStage, unclosed: leg.distanceSource === 'unclosed' }) : { amount: null, breakdown: [] };
   const arithmeticOk = repriced.amount === leg.amount;
   const plate = plateFromId(leg.vehicleId);
   const board = leg.boardAt ? new Date(leg.boardAt * 1000) : null;
@@ -603,8 +643,8 @@ function ReceiptView({ entry, onDone }) {
 
         {leg.boardStage ? (
           <dl className="ride__stages ride__stages--receipt">
-            <div><dt>Boarded</dt><dd>{stageName(CURRENT_TARIFF, leg.boardStage)?.en ?? leg.boardStage}</dd></div>
-            <div><dt>Got off</dt><dd>{stageName(CURRENT_TARIFF, leg.alightStage)?.en ?? leg.alightStage}</dd></div>
+            <div><dt>Boarded</dt><dd>{stageName(TARIFFS[leg.tariffCode] ?? {}, leg.boardStage)?.en ?? leg.boardStage}</dd></div>
+            <div><dt>Got off</dt><dd>{stageName(TARIFFS[leg.tariffCode] ?? {}, leg.alightStage)?.en ?? leg.alightStage}</dd></div>
           </dl>
         ) : null}
         <div className="ride__final">
@@ -625,14 +665,14 @@ function ReceiptView({ entry, onDone }) {
         </p>
 
         <div className="ride__states">
-          <span className={`ride__state ride__state--${arithmeticOk ? 'ok' : 'bad'}`}>
-            {arithmeticOk ? 'Ride verified' : 'Fare does not match'}
+          <span className={`ride__state ride__state--${entry.verification === 'verified' && arithmeticOk ? 'ok' : 'bad'}`}>
+            {entry.verification === 'verified' && arithmeticOk ? 'Ride verified' : 'Verification pending / review required'}
           </span>
-          <span className="ride__state ride__state--wait">Payment pending</span>
+          <span className="ride__state ride__state--wait">{entry.ledgerState === 'settled' ? 'Ledger settled' : entry.ledgerState === 'unpaid' ? 'Unpaid fare' : 'Awaiting reconciliation'}</span>
         </div>
         <p className="ride__basis">
           Signed receipt saved offline on this phone. The fare is taken from your balance when the bus syncs;
-          your statement in Account shows it once it has.
+          your statement in Account shows it once it has. A ledger result does not confirm an external payment transfer.
         </p>
         {comparison.verdict === 'over' || comparison.verdict === 'under' ? (
           <p className="ride__basis ride__basis--warn">{comparison.text}</p>

@@ -7,7 +7,7 @@
 
 import { db, currentTripId } from '../storage/db';
 import { currentVehicle } from './fleet';
-import { loadIdentity, keyLinkFor, accountLinkFor, companionLinksFor } from './identity';
+import { loadIdentity, keyLinkFor, accountLinkFor, companionLinksFor, pendingKeyLinks } from './identity';
 
 const ENDPOINT = import.meta.env.VITE_SYNC_URL ?? '';
 const ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
@@ -38,7 +38,11 @@ export function online() {
 }
 
 async function post(payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  try {
   const response = await fetch(ENDPOINT, {
+    signal: controller.signal,
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +51,8 @@ async function post(payload) {
     body: JSON.stringify(payload),
   });
   if (!response.ok) throw new Error(`Sync refused with ${response.status}.`);
-  return response.json();
+  return await response.json();
+  } finally { clearTimeout(timeout); }
 }
 
 /*
@@ -81,8 +86,9 @@ async function clearClaims(database, sent, results) {
   let cleared = 0;
   const next = rows.map((row) => {
     const result = byLeg.get(row.legId);
-    // Anything but a transport failure is final: the claim was judged.
-    if (!sent.some((s) => s.legId === row.legId) || !result) return row;
+    // Only documented final refusals clear a claim. Unknown-leg and backend
+    // failures can race the bus upload and must remain queued.
+    if (!sent.some((s) => s.legId === row.legId) || !result || (!result.ok && !['replay', 'bad_signature', 'too_late', 'not_your_leg', 'not_disputable', 'witness_outside_ride', 'phone_was_alive', 'witness_exceeds_ride', 'no_refund', 'refund_exceeds_charge'].includes(result.reason))) return row;
     cleared += 1;
     return { ...row, sent: 1, outcome: result.reason ?? (result.ok ? 'refunded' : 'refused'), refund: result.refund ?? 0 };
   });
@@ -90,73 +96,97 @@ async function clearClaims(database, sent, results) {
   return cleared;
 }
 
-export async function syncPassenger() {
+async function acknowledgeLinks(database, sent, results) {
+  const accepted = sent.filter((_, i) => results?.[i]?.ok);
+  if (!accepted.length) return;
+  const tx = database.transaction('identity', 'readwrite');
+  const store = tx.objectStore('identity');
+  const current = await store.get('me');
+  const candidates = [keyLinkFor(current), ...companionLinksFor(current)].filter(Boolean);
+  await store.put({ ...current, acknowledgedKeyLinks: [...new Set([...(current.acknowledgedKeyLinks ?? []), ...accepted])].filter((link) => candidates.includes(link)) }, 'me');
+  await tx.done;
+}
+
+function backendProblem(response) {
+  return Object.values(response).some((value) => Array.isArray(value)
+    ? value.some((row) => row?.reason === 'server_error')
+    : value?.reason === 'server_error');
+}
+
+async function syncPassengerWork() {
   if (!syncConfigured()) throw new Error('No sync endpoint configured. Set VITE_SYNC_URL.');
   const identity = await loadIdentity();
   const database = await db();
   const queued = (await database.getAll('payments')).filter((row) => !row.settled);
   const claims = await pendingClaims(database);
-  // Today's day-key needs filing even on a day this phone owes nothing. On a
-  // metered bus the door uploads the ride, not the passenger, so if the link
-  // waited for the passenger to have a fare of their own to send it would
-  // arrive after the leg it was needed for — and that leg settles against a
-  // wallet nobody can find.
-  const linkPending = Boolean(identity.masterSeed) && identity.day !== identity.linkedDay;
-  if (queued.length === 0 && claims.length === 0 && !linkPending) {
-    return { settled: 0, rejected: 0, cleared: 0, refunded: 0 };
+  const receipts = ((await database.get('meter', 'passengerReceipts')) ?? []).filter((row) => !row.reconciled);
+  let links = pendingKeyLinks(identity);
+  const total = { settled: 0, rejected: 0, cleared: 0, refunded: 0 };
+
+  // Each receipt keeps its original key certificate. At most five certificates
+  // per family receipt: keep the entire request within the existing batch cap.
+  for (const batch of chunked(receipts, Math.floor(UPLOAD_CHUNK / 6))) {
+    const certificates = [...new Set([...links, ...batch.flatMap((row) => row.keyLinks ?? [])])];
+    const response = await post({ devicePublicKey: identity.publicKey, keyLinks: certificates,
+      legs: batch.map((row) => ({ receipt: row.receipt, tap: row.tapQr ?? null, attestation: row.attestationQr ?? null })) });
+    await acknowledgeLinks(database, certificates, response.linkResults);
+    links = pendingKeyLinks(await loadIdentity());
+    const byLeg = new Map((response.legResults ?? []).map((r) => [r.legId, r]));
+    const tx = database.transaction('meter', 'readwrite');
+    const saved = (await tx.store.get('passengerReceipts')) ?? [];
+    await tx.store.put(saved.map((row) => {
+      const result = byLeg.get(row.legId);
+      if (!result) return row;
+      const state = isFinal(result) ? (result.owed ?? 0) > 0 ? 'unpaid' : 'settled'
+        : result.reason === 'insufficient_balance' ? 'unpaid'
+        : result.reason === 'awaiting_tap' ? 'awaiting_bus_upload' : 'review_required';
+      return { ...row, reconciliation: result, reconciled: isFinal(result) ? 1 : 0,
+        state, ledgerState: state, ...(isFinal(result) ? { verification: 'verified' } : {}) };
+    }), 'passengerReceipts');
+    const active = await tx.store.get('passengerRide');
+    if (active?.pendingCompletion && isFinal(byLeg.get(active.pendingCompletion))) {
+      await tx.store.put({ phase: 'idle', state: 'settled', completedLegId: active.pendingCompletion }, 'passengerRide');
+    }
+    await tx.done;
+    total.settled += response.legsSettled ?? 0;
+    total.rejected += response.legsRejected ?? 0;
+    if (backendProblem(response)) throw new Error('Backend could not reconcile every receipt. Saved progress will retry.');
   }
 
-  const response = await post({
-    devicePublicKey: identity.publicKey,
-    tickets: queued.map((row) => row.qrText),
-    disputes: claims.map((row) => row.claim),
-    // Today's key, and which wallet it spends from. Sent every time rather than
-    // tracked: it is one short string, the backend answers `already_registered`
-    // for a day it has seen, and a device that guessed wrong about what the
-    // backend knows would have its fares refused as an unknown passenger.
-    keyLinks: [keyLinkFor(identity), ...companionLinksFor(identity)].filter(Boolean),
-  });
-  await clearClaims(database, claims, response.disputeResults);
-
-  // The backend has this day-key on file now, so it is not sent again until the
-  // date rolls over in Kathmandu.
-  if (response.linkResults?.[0]?.ok) {
-    const store = await database.get('identity', 'me');
-    await database.put('identity', { ...store, linkedDay: identity.day }, 'me');
+  const work = [...queued.map((row) => ({ payment: row })), ...claims.map((row) => ({ claim: row }))];
+  const batches = work.length ? chunked(work) : links.length ? [[]] : [];
+  for (const batch of batches) {
+    const payments = batch.filter((item) => item.payment).map((item) => item.payment);
+    const disputes = batch.filter((item) => item.claim).map((item) => item.claim);
+    const response = await post({ devicePublicKey: identity.publicKey, keyLinks: links,
+      tickets: payments.map((row) => row.qrText), disputes: disputes.map((row) => row.claim) });
+    await acknowledgeLinks(database, links, response.linkResults);
+    links = pendingKeyLinks(await loadIdentity());
+    await clearClaims(database, disputes, response.disputeResults);
+    const byNonce = new Map((response.results ?? []).map((result) => [result?.nonce, result]));
+    const tx = database.transaction(['payments', 'identity'], 'readwrite');
+    const store = tx.objectStore('payments');
+    let clearedValue = 0;
+    for (const row of payments) {
+      const result = byNonce.get(row.nonce);
+      if (!isFinal(result)) {
+        if (result) await store.put({ ...row, outcome: result });
+        continue;
+      }
+      await store.put({ ...row, settled: 1, outcome: result });
+      total.cleared += 1;
+      clearedValue += row.amount;
+    }
+    const identityStore = tx.objectStore('identity');
+    const current = await identityStore.get('me');
+    await identityStore.put({ ...current, unsettledTotal: Math.max(0, (current.unsettledTotal ?? 0) - clearedValue), lastSettlementAt: Math.floor(Date.now() / 1000) }, 'me');
+    await tx.done;
+    total.settled += response.settled ?? 0;
+    total.rejected += response.rejected ?? 0;
+    total.refunded += response.refunded ?? 0;
+    if (backendProblem(response)) throw new Error('Backend could not finish every queued item. Saved progress will retry.');
   }
-
-  if (queued.length === 0) {
-    return { settled: 0, rejected: 0, cleared: 0, refunded: response.refunded ?? 0 };
-  }
-
-  const byNonce = new Map(response.results.map((result) => [result?.nonce, result]));
-  const tx = database.transaction(['payments', 'identity'], 'readwrite');
-  const payments = tx.objectStore('payments');
-  let cleared = 0;
-  let clearedValue = 0;
-
-  for (const row of queued) {
-    if (!isFinal(byNonce.get(row.nonce))) continue;
-    await payments.put({ ...row, settled: 1 });
-    cleared += 1;
-    clearedValue += row.amount;
-  }
-
-  // The offline allowance only frees up for fares the server has actually
-  // ruled on. Freeing it optimistically would let a device spend past the cap.
-  const store = tx.objectStore('identity');
-  const current = await store.get('me');
-  await store.put(
-    {
-      ...current,
-      unsettledTotal: Math.max(0, current.unsettledTotal - clearedValue),
-      lastSettlementAt: Math.floor(Date.now() / 1000),
-    },
-    'me',
-  );
-  await tx.done;
-
-  return { settled: response.settled, rejected: response.rejected, cleared, refunded: response.refunded ?? 0 };
+  return total;
 }
 
 /*
@@ -184,7 +214,7 @@ export async function walletKey() {
   return identity.rootPublicKey;
 }
 
-export async function syncConductor() {
+async function syncConductorWork() {
   if (!syncConfigured()) throw new Error('No sync endpoint configured. Set VITE_SYNC_URL.');
   const identity = await loadIdentity();
   const tripId = await currentTripId();
@@ -219,6 +249,7 @@ export async function syncConductor() {
     await tx.done;
     total.settled += response.settled ?? 0;
     total.rejected += response.rejected ?? 0;
+    if (backendProblem(response)) throw new Error('Backend could not finish every fare. Saved progress will retry.');
   }
 
   return total;
@@ -273,6 +304,7 @@ async function uploadLegs(database, payload) {
   const items = [
     ...receipts.map((row) => ({ receipt: row })),
     ...taps.map((row) => ({ tap: row })),
+    ...cash.map((row) => ({ cash: row })),
   ];
   // A meter with nothing queued still makes one call: it is how a new box gets
   // its key on file and how the door tape goes up.
@@ -283,7 +315,7 @@ async function uploadLegs(database, payload) {
     // The tape, the crew and the closed trips ride with the first chunk only;
     // later chunks carry the vehicle key so every receipt can be verified.
     const extra = index === 0
-      ? payload
+      ? { ...payload, closedTrips: [] }
       : { devicePublicKey: payload.devicePublicKey, ...(payload.meter ? { meter: payload.meter } : {}) };
     let result;
     try {
@@ -292,15 +324,15 @@ async function uploadLegs(database, payload) {
         extra,
         batch.filter((item) => item.receipt).map((item) => item.receipt),
         batch.filter((item) => item.tap).map((item) => item.tap),
-        // Cash tickets ride with the first chunk, beside the trip closes they
-        // count toward.
-        index === 0 ? cash.slice(0, UPLOAD_CHUNK) : [],
+        // Cash shares the bounded work queue with receipts and taps.
+        batch.filter((item) => item.cash).map((item) => item.cash),
       );
     } catch (problem) {
       // The first chunk carried the tape; if it failed, nothing moved and the
       // caller must keep its cursors. A later chunk failing leaves its rides
       // queued for next time, and what already went up stays settled.
       if (index === 0) throw problem;
+      total.partialError = problem.message;
       break;
     }
     total.settled += result.settled;
@@ -312,7 +344,21 @@ async function uploadLegs(database, payload) {
     total.tripResults.push(...result.tripResults);
     total.countResults.push(...result.countResults);
     total.cash += result.cash;
-    if (index === 0) total.meterResult = result.meterResult;
+    if (result.backendError) total.partialError = 'Backend could not acknowledge every work item.';
+    if (index === 0) { total.meterResult = result.meterResult; total.doorEventsResult = result.doorEventsResult; total.meterEventsResult = result.meterEventsResult; }
+  }
+  // A trip close is irreversible. Submit it only after all associated queues
+  // have been acknowledged, including earlier receipt/cash chunks and tapes.
+  const left = await pendingLegs(database);
+  const evidenceAccepted = (!payload.doorEvents?.length || total.doorEventsResult?.ok)
+    && (!payload.meterEvents?.length || total.meterEventsResult?.ok)
+    && (!payload.crew || total.crewResults.every((r) => r.ok) && total.crewResults.length >= payload.crew.tripIds.length)
+    && (!payload.tripCounts?.length || total.countResults.every((r) => r.ok) && total.countResults.length >= payload.tripCounts.length);
+  if (payload.closedTrips?.length && !total.partialError && !left.receipts.length && !left.taps.length && !left.cash.length && evidenceAccepted) {
+    try {
+      const result = await uploadLegBatch(database, { devicePublicKey: payload.devicePublicKey, meter: payload.meter, closedTrips: payload.closedTrips }, [], []);
+      total.tripResults.push(...result.tripResults);
+    } catch (error) { total.partialError = error.message; }
   }
   return total;
 }
@@ -371,13 +417,16 @@ async function uploadLegBatch(database, payload, receipts, taps, cash = []) {
     crewResults: response.crewResults ?? [],
     // What the backend said about this phone being the bus (0034).
     meterResult: response.meterResult ?? null,
+    doorEventsResult: response.doorEventsResult ?? null,
+    meterEventsResult: response.meterEventsResult ?? null,
     tripResults: response.tripResults ?? [],
     countResults: response.countResults ?? [],
+    backendError: backendProblem(response),
     cash: cashRecorded,
   };
 }
 
-export async function syncMeter({ vehicleId, publicKey, capacity, firmware }) {
+async function syncMeterWork({ vehicleId, publicKey, capacity, firmware }) {
   if (!syncConfigured()) throw new Error('No sync endpoint configured. Set VITE_SYNC_URL.');
   const database = await db();
 
@@ -414,12 +463,14 @@ export async function syncMeter({ vehicleId, publicKey, capacity, firmware }) {
     // this phone's key to the bus; after that it is spent and ignored.
     meter: { vehicleId, publicKey, capacity, firmware, ...(currentVehicle().enrolCode ? { enrolCode: currentVehicle().enrolCode } : {}) },
     doorEvents: tape.map((event) => ({
+      eventId: `${publicKey}:${event.seq}`,
       at: new Date(event.at).toISOString(),
       kind: doorEventKind(event),
       tripId: event.tripId ?? null,
       note: event.text,
     })),
     meterEvents: powerTape.map((event) => ({
+      eventId: `${publicKey}:${event.seq}`,
       at: new Date(event.at).toISOString(),
       kind: meterEventKind(event),
       tripId: event.tripId ?? null,
@@ -430,13 +481,16 @@ export async function syncMeter({ vehicleId, publicKey, capacity, firmware }) {
       ? { crew: { signOn: crew.signOn, tripIds: crew.trips } }
       : {}),
     ...(tripCounts.length > 0 ? { tripCounts } : {}),
-    ...(closedTrips.length > 0 ? { closedTrips } : {}),
+    ...(closedTrips.length > 0
+      && events.filter((event) => event.seq > lastSent && doorEventKind(event)).length <= tape.length
+      && events.filter((event) => event.seq > lastPower && meterEventKind(event)).length <= powerTape.length
+      ? { closedTrips } : {}),
   });
 
-  if (tape.length > 0) {
+  if (tape.length > 0 && result.doorEventsResult?.ok === true) {
     await database.put('meter', tape[tape.length - 1].seq, 'doorTapeCursor');
   }
-  if (powerTape.length > 0) {
+  if (powerTape.length > 0 && result.meterEventsResult?.ok === true) {
     await database.put('meter', powerTape[powerTape.length - 1].seq, 'meterTapeCursor');
   }
   /*
@@ -472,16 +526,33 @@ export async function syncMeter({ vehicleId, publicKey, capacity, firmware }) {
   if (result.meterResult) {
     await database.put('meter', { ...result.meterResult, at: Date.now() }, 'unitStatus');
   }
+  if ((tape.length && !result.doorEventsResult?.ok) || (powerTape.length && !result.meterEventsResult?.ok)) throw new Error('Evidence upload was not acknowledged. Saved events will retry.');
+  if (result.partialError) throw new Error(`Partial upload saved. ${result.partialError}`);
   return { ...result, tape: tape.length, powerTape: powerTape.length };
 }
 
 // A door phone's own upload. Two door phones with no signal between them each
 // hold half of some rides — one has the tap, the other the receipt — and either
 // may be the first to find a network.
-export async function syncTerminal({ vehiclePublicKey }) {
+async function syncTerminalWork({ vehiclePublicKey }) {
   if (!syncConfigured()) throw new Error('No sync endpoint configured. Set VITE_SYNC_URL.');
   const database = await db();
   const { receipts, taps, cash } = await pendingLegs(database);
   if (receipts.length === 0 && taps.length === 0 && cash.length === 0) return { settled: 0, rejected: 0, awaiting: 0, cleared: 0, taps: 0, cash: 0 };
-  return uploadLegs(database, { devicePublicKey: vehiclePublicKey });
+  const result = await uploadLegs(database, { devicePublicKey: vehiclePublicKey });
+  if (result.partialError) throw new Error(`Partial upload saved. ${result.partialError}`);
+  return result;
 }
+
+// Screens and manual Upload share the same lock, including meter/door uploads.
+const flights = new Map();
+function singleFlight(key, work) {
+  if (flights.has(key)) return flights.get(key);
+  const flight = Promise.resolve().then(work).finally(() => flights.delete(key));
+  flights.set(key, flight);
+  return flight;
+}
+export const syncPassenger = (...args) => singleFlight('passenger', () => syncPassengerWork(...args));
+export const syncConductor = (...args) => singleFlight('conductor', () => syncConductorWork(...args));
+export const syncMeter = (...args) => singleFlight('vehicle', () => syncMeterWork(...args));
+export const syncTerminal = (...args) => singleFlight('vehicle', () => syncTerminalWork(...args));

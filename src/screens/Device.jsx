@@ -1,3 +1,4 @@
+import { pendingVehicleEvidence } from '../device/outbox';
 // The bus interface: what the box shows the crew, and what it would show an
 // engineer with the lid off.
 //
@@ -66,7 +67,7 @@ function useMeterSync(snap, unit) {
       // what the owner reads as "last seen".
       const status = await (await db()).get('meter', 'unitStatus');
       const stale = !status?.ok || Date.now() - (status.at ?? 0) > HEARTBEAT_MS;
-      return (latest.current.queued ?? 0) + (stale ? 1 : 0);
+      return (await pendingVehicleEvidence({ includeMeter: true })) + (stale ? 1 : 0);
     },
     run: async () => {
       // The first attempt can land before the meter has loaded its key.

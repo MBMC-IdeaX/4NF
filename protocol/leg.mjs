@@ -352,13 +352,16 @@ export function verifyLeg(text, { vehiclePublicKey, priceFn, seenLegIds } = {}) 
   }
 
   if (priceFn) {
-    const repriced = priceFn(leg.distanceM, {
+    let repriced;
+    try { repriced = priceFn(leg.distanceM, {
       concession: leg.concession,
       tariffCode: leg.tariffCode,
       unclosed: leg.distanceSource === 'unclosed',
       boardStage: leg.boardStage,
       alightStage: leg.alightStage,
-    });
+    }); } catch (error) {
+      return { ok: false, reason: 'unknown_tariff', message: error.message, leg };
+    }
     if (repriced.amount !== leg.amount) {
       return {
         ok: false,

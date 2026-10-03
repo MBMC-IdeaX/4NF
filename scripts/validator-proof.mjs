@@ -455,12 +455,19 @@ section('10. Vehicle power: power_lost goes in meter_events, never door_events')
   globalThis.__BHADA_ENV__ = { ...(globalThis.__BHADA_ENV__ ?? {}), VITE_SYNC_URL: 'https://proof.invalid/sync' };
   const { syncMeter } = await import('../src/device/sync.js');
   let sent = null;
+  let acknowledged = false;
   const trap = globalThis.fetch;
   globalThis.fetch = async (url, init) => {
     sent = JSON.parse(init.body);
-    return { ok: true, json: async () => ({ legsSettled: 0, legResults: [], tapResults: [] }) };
+    return { ok: true, json: async () => ({ legsSettled: 0, legResults: [], tapResults: [], ...(acknowledged ? { meterEventsResult: { ok: true, written: sent.meterEvents.length } } : {}) }) };
   };
+  let missingAckRefused = false;
+  try { await syncMeter({ vehicleId: VEHICLE, publicKey: vehicleKeys.publicKey, capacity: 42, firmware: 'proof' }); }
+  catch (error) { missingAckRefused = error.message.includes('not acknowledged'); }
+  check('HTTP success without an event acknowledgement retains the power tape', missingAckRefused && !(await tapeDb.get('meter', 'meterTapeCursor')));
+  acknowledged = true;
   await syncMeter({ vehicleId: VEHICLE, publicKey: vehicleKeys.publicKey, capacity: 42, firmware: 'proof' });
+  check('an acknowledged retry advances the power cursor', (await tapeDb.get('meter', 'meterTapeCursor')) === (await tapeDb.getAll('deviceEvents'))[0].seq);
   globalThis.fetch = trap;
   check('sync.js sends it as a meter event', sent?.meterEvents?.length === 1 && sent.meterEvents[0].kind === 'power_lost' && sent.meterEvents[0].moving === true);
   check('...and puts nothing on the door tape', Array.isArray(sent?.doorEvents) && sent.doorEvents.length === 0);
@@ -621,6 +628,8 @@ section('13. Getting rides to the database: store, forward, never twice');
         legsSettled: body.legs.length,
         legResults: body.legs.map((item) => ({ ok: true, legId: item.receipt.split('|')[3] })),
         tapResults: [],
+        doorEventsResult: { ok: true, written: body.doorEvents?.length ?? 0 },
+        meterEventsResult: { ok: true, written: body.meterEvents?.length ?? 0 },
       }),
     };
   };

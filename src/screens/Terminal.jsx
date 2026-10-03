@@ -13,6 +13,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
+import { useSyncStatus } from '../lib/useSyncStatus';
+import { pendingVehicleEvidence } from '../device/outbox';
 import { terminal } from '../device/terminal';
 import { DOORS } from '../device/meter';
 import { rupees, STOPS, stageMetres } from '../lib/nepali';
@@ -78,6 +80,7 @@ function DoorPicker({ onPick }) {
 function Door({ doorId, simple, onSwitch }) {
   const unit = terminal(doorId);
   const [snap, setSnap] = useState(() => unit.snapshot());
+  useSyncStatus({ name: `door-${doorId}`, enabled: syncConfigured() && Boolean(snap.vehiclePublicKey), pending: pendingVehicleEvidence, run: () => syncTerminal({ vehiclePublicKey: snap.vehiclePublicKey }) });
   const [scanning, setScanning] = useState(false);
   const [scanMode, setScanMode] = useState('pass'); // 'pass' | 'pairing'
   const [verdict, setVerdict] = useState(null);

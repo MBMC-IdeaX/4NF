@@ -312,7 +312,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
     const plate = receipt.split('|')[1] ?? '';
     const vehicleKey = await keyFor(plate);
     if (!vehicleKey) {
-      legResults.push({ ok: false, reason: 'unknown_vehicle', message: `No meter key on file for ${plate}.` });
+      legResults.push({ ok: false, legId: receipt.split('|')[3] ?? null, reason: 'unknown_vehicle', message: `No meter key on file for ${plate}.` });
       continue;
     }
 
@@ -322,7 +322,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
     // published tariff advisory.
     const verdict = verifyLeg(receipt, { vehiclePublicKey: vehicleKey, priceFn: priceDistance });
     if (!verdict.ok) {
-      legResults.push({ ok: false, reason: verdict.reason, message: verdict.message });
+      legResults.push({ ok: false, legId: verdict.leg?.legId ?? null, reason: verdict.reason, message: verdict.message });
       continue;
     }
     const { leg } = verdict;
@@ -363,7 +363,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
       unclosed: leg.distanceSource === 'unclosed',
     });
 
-    legResults.push(await attempt(async () => {
+    legResults.push({ legId: leg.legId, ...await attempt(async () => {
       await registerPassenger(leg.passengerPublicKey);
       return ledger.settleLeg({
         legId: leg.legId,
@@ -386,7 +386,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
         fullAmount: Number.isFinite(fullPrice.amount) ? fullPrice.amount : leg.amount,
         issuerPublicKey,
       });
-    }));
+    }) });
 
     /*
       Does this receipt describe something a bus can do?
@@ -420,11 +420,11 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
   for (const text of disputes) {
     const verdict = verifyDispute(String(text ?? ''), { now });
     if (!verdict.ok) {
-      disputeResults.push({ ok: false, reason: verdict.reason, message: verdict.message });
+      disputeResults.push({ ok: false, legId: verdict.claim?.legId ?? null, reason: verdict.reason, message: verdict.message });
       continue;
     }
     const { claim } = verdict;
-    disputeResults.push(await attempt(async () => {
+    disputeResults.push({ legId: claim.legId, ...await attempt(async () => {
       const leg = await ledger.settledLeg(claim.legId);
       const assessment = assessDispute(claim, leg, { priceFn: priceDistance });
 
@@ -449,7 +449,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
         claim: String(text),
       });
       return assessment.ok ? filed : { ...filed, message: assessment.message };
-    }));
+    }) });
   }
 
   // ------------------------------------------------------------ cash tickets
@@ -493,6 +493,8 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
     }
   }
 
+  let doorEventsResult = null;
+  let meterEventsResult = null;
   // --------------------------------------------------------------- door tape
 
   // Appended, never merged. The interlock record is only useful to a regulator
@@ -500,6 +502,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
   // had the chance to tidy.
   if (Array.isArray(body.doorEvents) && body.doorEvents.length > 0 && hasMeter) {
     const events = body.doorEvents.slice(0, MAX_BATCH).map((event) => ({
+      eventId: event.eventId ?? null,
       tripId: event.tripId ?? body.tripId ?? null,
       at: event.at ?? new Date(now * 1000).toISOString(),
       kind: event.kind ?? 'refused',
@@ -508,7 +511,10 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
       capacity: event.capacity ?? null,
       note: event.note ?? null,
     }));
-    await attempt(() => ledger.appendDoorEvents(events, { vehiclePlate: body.meter.vehicleId }));
+    doorEventsResult = await attempt(async () => {
+      const result = await ledger.appendDoorEvents(events, { vehiclePlate: body.meter.vehicleId });
+      return result ?? { ok: true };
+    });
   }
 
   // ---------------------------------------------------------- the power tape
@@ -520,6 +526,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
     const events = body.meterEvents.slice(0, MAX_BATCH)
       .filter((event) => event.kind === 'power_lost' || event.kind === 'power_restored')
       .map((event) => ({
+        eventId: event.eventId ?? null,
         tripId: event.tripId ?? body.tripId ?? null,
         at: event.at ?? new Date(now * 1000).toISOString(),
         kind: event.kind,
@@ -527,7 +534,7 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
         note: event.note ?? null,
       }));
     if (events.length > 0) {
-      await attempt(() => ledger.appendMeterEvents(events, { vehiclePlate: body.meter.vehicleId }));
+      meterEventsResult = await attempt(() => ledger.appendMeterEvents(events, { vehiclePlate: body.meter.vehicleId }));
     }
   }
 
@@ -649,6 +656,8 @@ export async function settleBatch(body, ledger, { signupCredit = 0, now = Math.f
     linkResults,
     accountResult,
     meterResult,
+    doorEventsResult,
+    meterEventsResult,
     crewResults,
     tripResults,
     cashResults,
