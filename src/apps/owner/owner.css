@@ -1,0 +1,233 @@
+/* Owner app: a ledger (खाता) on paper. Dense where an owner reads figures,
+   calm where they act. Built on the kit (bx-); this file adds only what the
+   owner's pages need. */
+
+.ow > * + * { margin-top: var(--b-6); }
+
+.ow-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--b-4);
+  flex-wrap: wrap;
+}
+.ow-head h1 {
+  margin: var(--b-1) 0 0;
+  font: 700 2.25rem / 0.95 var(--b-font-display);
+  letter-spacing: -0.01em;
+}
+.ow-head p { margin: var(--b-1) 0 0; color: var(--b-ink-3); max-width: 52ch; }
+.ow-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--b-ink-3);
+  font: 600 var(--b-text-sm) / 1 var(--b-font-body);
+  cursor: pointer;
+}
+.ow-back:hover { color: var(--b-ink); }
+.ow-back svg { width: 18px; height: 18px; }
+
+/* ---- the big figure ---- */
+
+.ow-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: var(--b-2) 0 0;
+  font: 700 3.5rem / 0.95 var(--b-font-display);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.ow-figure small { font-size: 1.4rem; font-weight: 600; color: var(--b-ink-3); }
+.ow-figure--neg { color: var(--b-bad); }
+
+/* ---- getting started: a ruled checklist, not a progress bar ---- */
+
+.ow-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 2px solid var(--b-ink);
+}
+.ow-step {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: var(--b-3);
+  align-items: center;
+  padding: var(--b-4) 0;
+  border-bottom: 1px solid var(--b-line);
+}
+.ow-step__mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--b-line-strong);
+  border-radius: 50%;
+  font: 700 0.95rem / 1 var(--b-font-display);
+  color: var(--b-ink-3);
+}
+.ow-step__mark svg { width: 18px; height: 18px; }
+.ow-step--done .ow-step__mark { border-color: var(--b-in); background: var(--b-in); color: #fff; }
+.ow-step--now .ow-step__mark { border-color: var(--b-accent); color: var(--b-accent); }
+.ow-step--wait .ow-step__mark { border-color: var(--b-warn); color: var(--b-warn); }
+.ow-step--fix .ow-step__mark { border-color: var(--b-bad); background: var(--b-bad); color: #fff; }
+.ow-step__title { display: block; font: 700 1.1rem / 1.2 var(--b-font-display); }
+.ow-step__sub { display: block; margin-top: 2px; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.ow-step--done .ow-step__title { color: var(--b-ink-3); }
+
+/* ---- tags ---- */
+
+.ow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 2px;
+  border-radius: var(--b-radius-sm);
+  font: 600 0.75rem / 1.2 var(--b-font-body);
+  white-space: nowrap;
+  background: var(--b-surface-2);
+  color: var(--b-ink-2);
+}
+.ow-tag::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ow-tag--ok { background: var(--b-in-soft); color: var(--b-in); }
+.ow-tag--warn { background: var(--b-warn-soft); color: var(--b-warn); }
+.ow-tag--bad { background: var(--b-bad-soft); color: var(--b-bad); }
+
+/* ---- fleet ---- */
+
+.ow-fleet { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--b-ink); }
+.ow-bus {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--b-4);
+  align-items: center;
+  width: 100%;
+  padding: var(--b-4) 0;
+  border: 0;
+  border-bottom: 1px solid var(--b-line);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ow-bus:hover .ow-bus__name { color: var(--b-accent); }
+.ow-bus__name { display: block; font: 700 1.15rem / 1.15 var(--b-font-display); }
+.ow-bus__sub { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 4px; font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.ow-bus__end { text-align: right; }
+.ow-bus__end b { display: block; font: 700 1.2rem / 1 var(--b-font-display); font-variant-numeric: tabular-nums; }
+.ow-bus__end small { color: var(--b-ink-3); font-size: var(--b-text-xs); }
+
+/* ---- papers grid: one row per subject, one cell per paper ---- */
+
+.ow-papers { border-top: 2px solid var(--b-ink); }
+.ow-subject { padding: var(--b-4) 0; border-bottom: 1px solid var(--b-line); }
+.ow-subject__head { display: flex; align-items: center; justify-content: space-between; gap: var(--b-3); margin-bottom: var(--b-3); }
+.ow-subject__head b { font: 700 1.15rem / 1.1 var(--b-font-display); }
+.ow-paper-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr));
+  gap: 1px;
+  background: var(--b-line);
+  border: 1px solid var(--b-line);
+  border-radius: var(--b-radius);
+  overflow: hidden;
+}
+.ow-paper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--b-3);
+  background: var(--b-surface);
+  min-height: 116px;
+}
+.ow-paper__name { font: 700 1rem / 1.15 var(--b-font-display); }
+.ow-paper__name small { display: block; font: 400 var(--b-text-xs) / 1.3 var(--b-font-body); color: var(--b-ink-3); }
+.ow-paper__note { font-size: var(--b-text-xs); color: var(--b-bad); }
+.ow-paper__meta { font-size: var(--b-text-xs); color: var(--b-ink-3); }
+.ow-paper .bx-btn { margin-top: auto; align-self: flex-start; min-height: 40px; padding: 0 var(--b-3); font-size: 0.95rem; }
+
+/* ---- a ledger table ---- */
+
+.ow-table-wrap { overflow-x: auto; border-top: 2px solid var(--b-ink); }
+.ow-table { width: 100%; border-collapse: collapse; font-size: var(--b-text-sm); }
+.ow-table th {
+  padding: var(--b-2) var(--b-2);
+  border-bottom: 1px solid var(--b-line-strong);
+  color: var(--b-ink-3);
+  font-weight: 600;
+  font-size: var(--b-text-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: right;
+  white-space: nowrap;
+}
+.ow-table th:first-child, .ow-table td:first-child { text-align: left; }
+.ow-table td {
+  padding: var(--b-3) var(--b-2);
+  border-bottom: 1px solid var(--b-line);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ow-table tfoot td { border-top: 2px solid var(--b-ink); border-bottom: 0; font-weight: 700; }
+.ow-table .in { color: var(--b-in); }
+.ow-table .out { color: var(--b-ink-2); }
+.ow-table b { font-family: var(--b-font-display); font-size: 1rem; }
+
+/* ---- QR on paper ---- */
+
+.ow-qr {
+  display: grid;
+  justify-items: center;
+  gap: var(--b-3);
+  padding: var(--b-5);
+  border: 2px dashed var(--b-line-strong);
+  border-radius: var(--b-radius);
+  text-align: center;
+}
+.ow-qr img { width: min(260px, 70vw); height: auto; image-rendering: pixelated; background: #fff; padding: 10px; border-radius: var(--b-radius-sm); }
+.ow-code {
+  font: 700 1.6rem / 1 var(--b-font-display);
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ow-grid-2 { display: grid; gap: var(--b-5); }
+@media (min-width: 900px) {
+  .ow-grid-2 { grid-template-columns: 1.3fr 1fr; align-items: start; }
+}
+
+.ow-plate-fields { display: grid; grid-template-columns: 1.2fr 0.8fr 1.1fr 1.1fr; gap: var(--b-2); }
+.ow-plate-fields .bx-input, .ow-plate-fields select.bx-input { padding: 0 var(--b-2); }
+.ow-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b-3); }
+
+.ow-actions { display: flex; flex-wrap: wrap; gap: var(--b-2); }
+.ow-danger { color: var(--b-bad) !important; }
+
+.ow-kv { display: grid; grid-template-columns: auto 1fr; gap: var(--b-2) var(--b-4); margin: 0; font-size: var(--b-text-sm); }
+.ow-kv dt { color: var(--b-ink-3); }
+.ow-kv dd { margin: 0; font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; }
+
+.ow-who { display: flex; align-items: center; gap: var(--b-2); font-size: var(--b-text-sm); color: var(--b-ink-3); }
+.ow-who b { color: var(--b-ink); }
+
+/* ---- an agreement, read in full before it is accepted ---- */
+
+.ow-agreement {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--b-4);
+  border: 1px solid var(--b-line);
+  border-radius: var(--b-radius);
+  background: var(--b-surface-2);
+  font: 400 var(--b-text-sm) / 1.6 var(--b-font-body);
+  white-space: pre-wrap;
+}
