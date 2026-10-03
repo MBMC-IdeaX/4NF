@@ -63,7 +63,7 @@ function DoorPicker({ onPick }) {
         The choice is only a label on the receipt and a role for the interlock. Either door can
         board and either can alight — the terminal works out which from the pass.
       </p>
-      <button type="button" className="pick__away" onClick={() => navigate('/device')}>
+      <button type="button" className="pick__away" onClick={() => navigate('/crew/bus')}>
         Open the meter console instead
       </button>
     </div>
@@ -677,8 +677,9 @@ function Log({ snap }) {
   if (snap.events.length === 0) return null;
   return (
     <ol className="term__log">
-      {snap.events.slice(0, 6).map((event) => (
-        <li key={event.at} className={event.severity !== 'info' ? `is-${event.severity}` : undefined}>
+      {snap.events.slice(0, 6).map((event, i) => (
+        // Two events can land in the same millisecond (a tap and its echo).
+        <li key={`${event.at}-${event.seq ?? i}`} className={event.severity !== 'info' ? `is-${event.severity}` : undefined}>
           <time className="tabular">{new Date(event.at).toLocaleTimeString('en-GB')}</time>
           <span>{event.text}</span>
         </li>

@@ -2,7 +2,8 @@
 // append to the local ledger. Nothing here contacts a server.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import jsQR from 'jsqr';
+import { useQrCamera } from '../lib/useQrCamera';
+import { codeKind, KIND_LABEL } from '../lib/code-kind.mjs';
 import { installRandomSource } from '../device/identity';
 import { collectFare, tripTally } from '../device/collect';
 import { endTrip } from '../storage/db';
@@ -16,8 +17,6 @@ import { currentVehicle } from '../device/fleet';
 // is re-provisioned, not rebuilt.
 // Provisioned per device, read at the moment of use.
 const conductorId = () => currentVehicle().id;
-const SCANS_PER_SECOND = 8;   // a full-res read every frame heats a cheap phone
-const DECODE_WIDTH = 640;     // downscale before decoding; QR needs no more
 
 export default function Conductor({ onBack, debug }) {
   const videoRef = useRef(null);
@@ -25,7 +24,6 @@ export default function Conductor({ onBack, debug }) {
   const busyRef = useRef(false);
   const [result, setResult] = useState(null);
   const [tally, setTally] = useState({ passengers: 0, total: 0, recent: [] });
-  const [cameraError, setCameraError] = useState(null);
   const [pasted, setPasted] = useState('');
   const [syncNote, setSyncNote] = useState(null);
   const [syncing, setSyncing] = useState(false);
@@ -41,7 +39,10 @@ export default function Conductor({ onBack, debug }) {
     // tells a conductor to stop holding the phone still.
     setSighted(true);
     try {
-      const verdict = await collectFare(qrText, { conductorId: conductorId() });
+      const kind = codeKind(qrText);
+      const verdict = kind === 'stage-ticket'
+        ? await collectFare(qrText, { conductorId: conductorId() })
+        : { ok: false, reason: 'wrong_kind', message: wrongKindMessage(kind) };
       feedbackForVerdict(verdict.ok);
       // Three signals for one event: the screen, the phone in the hand, and
       // the sound. Any one of them is enough to know what happened.
@@ -62,59 +63,7 @@ export default function Conductor({ onBack, debug }) {
 
   // Camera. Paused while a verdict is on screen so the loop is not decoding
   // behind a full-bleed panel.
-  useEffect(() => {
-    if (result) return undefined;
-    let stream = null;
-    let timer = null;
-    let stopped = false;
-    let detector = null;
-
-    async function start() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
-          audio: false,
-        });
-      } catch (error) {
-        setCameraError(`Camera is blocked. Allow it in the browser bar, then reopen this screen. (${error.name})`);
-        return;
-      }
-      // StrictMode runs effects twice; the second run must not leak the first stream.
-      if (stopped) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      const video = videoRef.current;
-      if (!video) return;
-      video.srcObject = stream;
-      await video.play().catch(() => {});
-
-      if ('BarcodeDetector' in window) {
-        try {
-          detector = new window.BarcodeDetector({ formats: ['qr_code'] });
-        } catch {
-          detector = null;
-        }
-      }
-
-      const tick = async () => {
-        if (stopped) return;
-        const text = detector
-          ? await readNative(detector, video)
-          : readCanvas(video, canvasRef.current);
-        if (text) await collect(text);
-        if (!stopped) timer = setTimeout(tick, 1000 / SCANS_PER_SECOND);
-      };
-      timer = setTimeout(tick, 1000 / SCANS_PER_SECOND);
-    }
-
-    start();
-    return () => {
-      stopped = true;
-      if (timer) clearTimeout(timer);
-      if (stream) stream.getTracks().forEach((track) => track.stop());
-    };
-  }, [result, collect]);
+  const { error: cameraError } = useQrCamera({ videoRef, canvasRef, paused: Boolean(result), onText: collect });
 
   return (
     <div className="board">
@@ -264,25 +213,15 @@ const REFUSALS = {
   stale: 'पुरानो',
   unreadable: 'पढिएन',
   ledger_error: 'त्रुटि',
+  wrong_kind: 'यो टिकट होइन',
 };
 
-async function readNative(detector, video) {
-  try {
-    const codes = await detector.detect(video);
-    return codes.length ? codes[0].rawValue : null;
-  } catch {
-    return null;
+// A good code shown to the wrong reader. Say what it is and where it goes.
+function wrongKindMessage(kind) {
+  const label = KIND_LABEL[kind] ?? KIND_LABEL.unknown;
+  if (kind === 'ride-code' || kind === 'group-code') {
+    return `This is a ${label.en}. On a metered bus it is read at the door, not by the stage-fare tally.`;
   }
-}
-
-function readCanvas(video, canvas) {
-  if (!canvas || !video.videoWidth) return null;
-  const scale = Math.min(1, DECODE_WIDTH / video.videoWidth);
-  canvas.width = Math.round(video.videoWidth * scale);
-  canvas.height = Math.round(video.videoHeight * scale);
-  const context = canvas.getContext('2d', { willReadFrequently: true });
-  context.drawImage(video, 0, 0, canvas.width, canvas.height);
-  const image = context.getImageData(0, 0, canvas.width, canvas.height);
-  const found = jsQR(image.data, image.width, image.height, { inversionAttempts: 'dontInvert' });
-  return found ? found.data : null;
+  if (kind === 'unknown') return 'This is not a Bhada ticket. Ask the passenger to open their ticket in the Bhada app.';
+  return `This is a ${label.en}, not a fare ticket. Ask the passenger for their ticket.`;
 }

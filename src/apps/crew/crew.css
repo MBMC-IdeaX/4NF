@@ -1,0 +1,16 @@
+/* Crew app: first-run setup and the bus status line. */
+
+.cs { display: flex; flex-direction: column; gap: var(--b-3); max-width: 460px; margin: 0 auto; }
+.cs-hero { display: flex; flex-direction: column; align-items: center; gap: var(--b-3); padding: var(--b-6) 0 var(--b-4); text-align: center; }
+.cs-hero h1 { margin: 0; font: 800 1.9rem / 1.1 var(--b-font-display); }
+.cs-hero p { margin: 0; color: var(--b-ink-3); max-width: 34ch; }
+.cs-icon { display: grid; place-items: center; width: 84px; height: 84px; border-radius: 50%; background: var(--b-accent-soft); color: var(--b-accent); }
+.cs-icon svg { width: 40px; height: 40px; }
+.cs-demo { min-height: 48px; border: 0; background: none; color: var(--b-ink-3); font: 600 var(--b-text-sm) / 1 var(--b-font-body); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+.cs-camera { position: relative; overflow: hidden; aspect-ratio: 1; border-radius: var(--b-radius-lg); background: #000; }
+.cs-camera video { width: 100%; height: 100%; object-fit: cover; }
+.cs-camera__frame { position: absolute; inset: 18%; border: 3px solid #fff; border-radius: 18px; box-shadow: 0 0 0 999px rgb(0 0 0 / 0.35); }
+.cs-camera__error { position: absolute; left: 12px; right: 12px; bottom: 12px; margin: 0; padding: 10px 12px; border-radius: 10px; background: rgb(0 0 0 / 0.7); color: #fff; font-size: var(--b-text-sm); }
+
+.cs-status { margin-bottom: var(--b-4); }
