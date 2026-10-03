@@ -16,6 +16,7 @@ import { randomBytes as nodeRandomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { useRandomSource } from '../protocol/random.mjs';
 import { openBackend, handleSync } from './lib/pg-backend.mjs';
+import { prepareLocalAuth, handleLocalSupabase, seedDemo, DEMO_LOGINS, DEMO_PASSWORD } from './lib/local-supabase.mjs';
 
 useRandomSource((length) => new Uint8Array(nodeRandomBytes(length)));
 
@@ -27,10 +28,17 @@ const DATA_DIR = fileURLToPath(new URL('../.pgdata/', import.meta.url));
 // New migrations are applied on start; old ones are not replayed.
 const { db, migrations } = await openBackend({ dataDir: DATA_DIR });
 
+// The office screens' Supabase calls, answered locally (scripts/lib/local-supabase.mjs),
+// with a login for every role.
+const FILES_DIR = fileURLToPath(new URL('../.pgdata-files/', import.meta.url));
+await prepareLocalAuth(db);
+const demo = await seedDemo(db, FILES_DIR);
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+  'Access-Control-Expose-Headers': 'content-type',
 };
 
 function send(response, status, body) {
@@ -38,10 +46,14 @@ function send(response, status, body) {
   response.end(JSON.stringify(body));
 }
 
-async function readBody(request) {
+async function readBuffer(request) {
   const chunks = [];
   for await (const chunk of request) chunks.push(chunk);
-  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+  return Buffer.concat(chunks);
+}
+
+async function readBody(request) {
+  return JSON.parse((await readBuffer(request)).toString('utf8') || '{}');
 }
 
 // Read-only views, so the state can be inspected without psql.
@@ -73,6 +85,26 @@ createServer(async (request, response) => {
       send(response, status, body);
       return;
     }
+    if (url.pathname.startsWith('/local/')) {
+      const answer = await handleLocalSupabase(db, {
+        method: request.method,
+        pathname: url.pathname,
+        search: url.search,
+        headers: request.headers,
+        readJson: () => readBody(request),
+        readBuffer: () => readBuffer(request),
+        filesRoot: FILES_DIR,
+        origin: `http://localhost:${PORT}`,
+      });
+      if (answer) {
+        const [status, body, headers] = answer;
+        if (Buffer.isBuffer(body)) {
+          response.writeHead(status, { ...CORS, ...headers });
+          response.end(body);
+        } else send(response, status, body);
+        return;
+      }
+    }
     if (request.method === 'GET' && READS[url.pathname]) {
       send(response, 200, (await db.query(READS[url.pathname])).rows);
       return;
@@ -87,5 +119,9 @@ createServer(async (request, response) => {
   console.log(`  migrations       ${migrations.length} (${migrations[0]} … ${migrations[migrations.length - 1]})`);
   console.log('  POST /sync       fares, metered legs, taps, meter keys, door tape');
   for (const path of Object.keys(READS)) console.log(`  GET  ${path.padEnd(12)} read-only`);
+  console.log('  /local/*         the Supabase calls the office screens make (BHADA_LOCAL_DB=1)');
+  console.log(`\nDemo logins, password ${DEMO_PASSWORD}:`);
+  for (const [role, email] of Object.entries(DEMO_LOGINS)) console.log(`  ${role.padEnd(10)} ${email}`);
+  console.log(`  company    ${demo.company}`);
   console.log(`\nSet VITE_SYNC_URL=http://localhost:${PORT}/sync in .env.local`);
 });
