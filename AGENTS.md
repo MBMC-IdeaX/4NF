@@ -3,8 +3,8 @@
 Offline-first bus fare payment for Nepal. React + Vite PWA, deployed as a static
 site; Supabase Postgres and an Edge Function handle sync and reconciliation.
 
-Fares are metered by distance, not by stop pair: an on-vehicle unit (`/device`)
-integrates GNSS fixes into an odometer, two door terminals (`/terminal?door=A|B`)
+Fares are stage fares from a configured fare table; GPS finds the stages. An
+on-vehicle unit (`/device`) integrates GNSS fixes into an odometer, two door terminals (`/terminal?door=A|B`)
 open and close rides against it, and the same passenger count drives a boarding
 door interlock at the vehicle's permitted capacity. Passengers carry their own
 key: the ride card (`/app`, passenger) shows a signed BT1 ride code, measures the
@@ -41,6 +41,13 @@ Rules that are easy to break:
   migration 0008). Anything that closes a ride must carry `tapQr` with it.
 - Tariffs are added, never edited: a receipt is re-priced with the tariff code
   it names (`TARIFFS` in `protocol/meter.mjs`, `tariffs` table).
+- Fares are stage fares. GPS finds the boarding and exit stages
+  (`stageNear`/`stageAlong`, stops in `protocol/stages.mjs`), and the stage
+  tariff (`CURRENT_TARIFF`, a `kind = 'stage'` row with `stage_fares`,
+  migration 0039) prices them. A stage receipt is a BM2 that signs both stage
+  codes; a ride with no GPS stage falls back to the distance tariff as a BM1.
+  Distance is the journey record, never the price on a stage tariff. The R11
+  table is a demo, not a published one; a real table is a new tariff code.
 - A sync batch is verified in exactly one place: `settleBatch()` in
   `protocol/settle.mjs`. Both `supabase/functions/sync/index.ts` and
   `scripts/lib/pg-backend.mjs` are adapters over it, supplying a ledger of
