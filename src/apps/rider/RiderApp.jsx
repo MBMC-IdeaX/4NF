@@ -13,9 +13,11 @@ import RiderHome from './RiderHome';
 const Ride = lazy(() => import('../../screens/Ride'));
 const Passenger = lazy(() => import('../../screens/Passenger'));
 const Account = lazy(() => import('../../portals/account/Account'));
+const RiderRoutes = lazy(() => import('./RiderRoutes'));
 
 const TABS = [
   { id: 'home', label: 'गृह', icon: 'home' },
+  { id: 'routes', label: 'मार्गहरू', icon: 'route' },
   { id: 'ride', label: 'यात्रा', icon: 'qr' },
   { id: 'ticket', label: 'टिकट', icon: 'ticket' },
   { id: 'wallet', label: 'खाता', icon: 'wallet' },
@@ -34,6 +36,7 @@ export default function RiderApp({ page }) {
     <AppFrame tabs={TABS} tab={tab} onTab={go} sync={sync} railed glance={tab === 'ride'}>
       <Suspense fallback={<BusLoader />}>
         {tab === 'home' ? <RiderHome go={go} /> : null}
+        {tab === 'routes' ? <RiderRoutes go={go} onBack={() => go('home')} /> : null}
         {tab === 'ride' ? <Ride onBack={() => go('home')} onStageFare={() => go('ticket')} /> : null}
         {tab === 'ticket' ? <Passenger onBack={() => go('home')} /> : null}
         {tab === 'wallet' ? <Account /> : null}

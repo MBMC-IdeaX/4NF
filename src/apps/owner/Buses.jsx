@@ -40,7 +40,10 @@ function Fleet({ go }) {
           <h1>{active.length} bus{active.length === 1 ? '' : 'es'}</h1>
           <p>{active.filter((b) => verified(b.plate)).length} verified · {active.filter((b) => b.unit_bound).length} with a phone set up</p>
         </div>
-        <Button icon="plus" onClick={() => go('buses/new')}>Ask for a new bus</Button>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <Button variant="secondary" icon="route" onClick={() => go('map')}>लाइभ नक्सा · Live Map</Button>
+          <Button icon="plus" onClick={() => go('buses/new')}>Ask for a new bus</Button>
+        </div>
       </header>
       <Requests requests={data.requests} onChange={reload} />
       {active.length === 0 ? (

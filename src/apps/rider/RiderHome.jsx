@@ -91,6 +91,57 @@ export default function RiderHome({ go }) {
         </span>
       </button>
 
+      {/* Live Route Explorer Card (Sajha Plus & Multi-Vendor Tracking) */}
+      <button
+        type="button"
+        onClick={() => go('routes')}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'linear-gradient(135deg, #16130f 0%, #2a241d 100%)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '16px',
+          padding: '16px 20px',
+          marginTop: '14px',
+          marginBottom: '20px',
+          cursor: 'pointer',
+          textAlign: 'left',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '12px',
+              background: 'var(--color-brand, #a8202f)',
+              display: 'grid',
+              placeItems: 'center',
+              color: '#fff',
+              fontSize: '20px',
+            }}
+          >
+            🗺️
+          </div>
+          <div>
+            <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              लाइभ नक्सा · Live Fleet Tracking
+            </div>
+            <div style={{ fontSize: '16px', fontWeight: '800', color: '#fff', marginTop: '2px' }}>
+              मार्ग र बसहरू खोज्नुहोस् · Explore Routes
+            </div>
+            <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px' }}>
+              Live positions, available seats, next stops & arrival ETA
+            </div>
+          </div>
+        </div>
+        <div style={{ fontSize: '20px', color: '#f8fafc', paddingLeft: '8px' }}>→</div>
+      </button>
+
       <section className="rh-trips" aria-label="Recent rides">
         <div className="rh-trips__head">
           <p className="bx-eyebrow">हालका यात्रा · Recent rides</p>

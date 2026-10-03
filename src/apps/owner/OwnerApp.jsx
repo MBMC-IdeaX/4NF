@@ -29,9 +29,11 @@ import './owner.css';
 // fetched when first opened.
 const Money = lazy(() => import('./Money'));
 const Reports = lazy(() => import('./Reports'));
+const OwnerFleetMap = lazy(() => import('./OwnerFleetMap'));
 
 const ALL_TABS = [
   { id: 'today', label: 'आज', icon: 'home' },
+  { id: 'map', label: 'लाइभ नक्सा', icon: 'route' },
   { id: 'buses', label: 'बसहरू', icon: 'bus' },
   { id: 'people', label: 'मानिस', icon: 'users' },
   { id: 'papers', label: 'कागजात', icon: 'statement' },
@@ -147,6 +149,7 @@ export default function OwnerApp({ page = '' }) {
     >
       <Suspense fallback={<BusLoader />}>
         {tab === 'today' ? <Today {...ctx} /> : null}
+        {tab === 'map' ? <OwnerFleetMap {...ctx} /> : null}
         {tab === 'buses' ? <Buses {...ctx} plate={rest[0]} /> : null}
         {tab === 'people' ? <People {...ctx} /> : null}
         {tab === 'papers' ? <Papers {...ctx} focus={rest[0]} /> : null}
