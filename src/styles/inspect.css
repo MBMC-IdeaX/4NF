@@ -5,15 +5,16 @@
 */
 
 .insp {
-  --i-panel: #0f0e0c;
-  --i-raised: #1a1815;
-  --i-read: #ece7d8;
-  --i-dim: #8f8a7c;
-  --i-rule: #34312b;
-  --i-live: #6fbf73;
-  --i-caution: #e0a437;
-  --i-halt: #d7514b;
-  --i-plate: #a8202f;
+  /* Light, like the rest of Bhada. */
+  --i-panel: #ffffff;
+  --i-raised: #f3f4f6;
+  --i-read: #111318;
+  --i-dim: #5f6573;
+  --i-rule: #e5e7eb;
+  --i-live: #0b7a43;
+  --i-caution: #8a5300;
+  --i-halt: #b42318;
+  --i-plate: #c8102e;
 
   min-height: 100vh;
   box-sizing: border-box;
@@ -90,8 +91,8 @@
   min-height: 64px;
   margin-top: 12px;
   border: 0;
-  background: var(--i-read);
-  color: #16130f;
+  background: var(--i-plate);
+  color: #ffffff;
   font: 700 22px/1 var(--display);
   letter-spacing: 0.04em;
   text-transform: uppercase;

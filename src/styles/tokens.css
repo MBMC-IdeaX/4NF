@@ -14,8 +14,8 @@
   Every name is prefixed --b- so these tokens can live beside the old
   stylesheets until they are deleted.
 
-  Grounds: light (white), dark (re-decided, not inverted), and glance on top of
-  either for screens read on a moving bus.
+  Grounds: light (white) for everyone, night only for Crew, and glance on top
+  for screens read on a moving bus.
 */
 
 @import '/fonts/fonts.css';
@@ -105,35 +105,9 @@
   --b-focus: 0 0 0 3px var(--b-ground), 0 0 0 5px var(--b-accent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --b-ground: #0f1115;
-    --b-surface: #171a20;
-    --b-surface-2: #1f232b;
-    --b-surface-3: #2a2f39;
-    --b-line: #2a2f39;
-    --b-line-strong: #3b414d;
-    --b-ink: #f3f4f6;
-    --b-ink-2: #cdd1d9;
-    --b-ink-3: #9aa1ad;
-    --b-ink-inverse: #111318;
-    --b-accent: #ff5a6e;
-    --b-accent-hover: #ff7385;
-    --b-accent-press: #e94a5e;
-    --b-accent-soft: #331219;
-    --b-on-accent: #1a0207;
-    --b-in: #45c98a;
-    --b-in-soft: #0f2a1d;
-    --b-warn: #e5a63a;
-    --b-warn-soft: #2e2311;
-    --b-bad: #f0715f;
-    --b-bad-soft: #351914;
-    --b-shadow-1: none;
-    --b-shadow-2: 0 8px 24px -6px rgb(0 0 0 / 0.6);
-    --b-shadow-3: 0 24px 64px -12px rgb(0 0 0 / 0.75);
-  }
-}
+/* Light everywhere, whatever the phone is set to: people read Bhada in daylight
+   on a bus and compare it with eSewa and Pathao, which are light. The only dark
+   ground is Crew's night tone, chosen on purpose for the conductor. */
 
 :root[data-theme='dark'],
 [data-tone='night'] {
@@ -178,4 +152,11 @@
     --b-fast: 0ms;
     --b-med: 0ms;
   }
+}
+
+/* The page itself is light too, so no dark strip shows past the content. */
+html,
+body {
+  background: var(--b-ground);
+  color-scheme: light;
 }

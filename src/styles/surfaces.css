@@ -888,7 +888,8 @@
   position: fixed;
   inset: 0;
   z-index: 40;
-  background: var(--ink);
+  /* Light, like every app it stands in front of. */
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -936,7 +937,7 @@
   height: 3px;
   background: repeating-linear-gradient(
     to right,
-    var(--rule) 0 22px,
+    #d1d5db 0 22px,
     transparent 22px 40px
   );
   animation: road-run 620ms linear infinite;
@@ -951,7 +952,7 @@
   font-weight: 700;
   font-size: 28px;
   line-height: 1;
-  color: var(--stock);
+  color: #111318;
   text-align: center;
 }
 
@@ -960,7 +961,7 @@
   font-family: var(--body);
   font-weight: 400;
   font-size: 14px;
-  color: var(--rule);
+  color: #5f6573;
   padding-top: 5px;
 }
 
