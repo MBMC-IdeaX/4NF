@@ -104,24 +104,33 @@ export default function Device() {
     <div className="panel">
       <Masthead snap={snap} />
 
+      <TripGlance snap={snap} unit={unit} />
+
       <div className="panel__grid">
-        <Readouts snap={snap} />
-        <Corridor snap={snap} />
-        <Accuracy snap={snap} unit={unit} />
+        <Manifest snap={snap} />
         <Doors
           snap={snap}
           unit={unit}
           confirmOverride={confirmOverride}
           setConfirmOverride={setConfirmOverride}
         />
-        <Manifest snap={snap} />
         <Completed snap={snap} />
         <Crew snap={snap} unit={unit} />
-        <Registry snap={snap} />
-        <Telemetry snap={snap} />
-        <Tape snap={snap} />
-        <Bench snap={snap} unit={unit} onPair={showPairing} onRoster={showRoster} />
       </div>
+
+      {/* Everything an engineer or an inspector wants, one tap away from the crew. */}
+      <details className="panel__eng">
+        <summary>Engineering, inspection and bench controls</summary>
+        <div className="panel__grid">
+          <Readouts snap={snap} />
+          <Corridor snap={snap} />
+          <Accuracy snap={snap} unit={unit} />
+          <Registry snap={snap} />
+          <Telemetry snap={snap} />
+          <Tape snap={snap} />
+          <Bench snap={snap} unit={unit} onPair={showPairing} onRoster={showRoster} />
+        </div>
+      </details>
 
       {pairing ? <Pairing pairing={pairing} onClose={() => setPairing(null)} /> : null}
       {roster ? <Roster roster={roster} snap={snap} onRefresh={showRoster} onClose={() => setRoster(null)} /> : null}
@@ -146,9 +155,9 @@ function Masthead({ snap }) {
 
       <div className="panel__ident">
         <b>{vehicle.label || vehicle.routeName || vehicle.routeId}</b>
-        <small>
-          {vehicle.firmware ?? VEHICLE.firmware} · {vehicle.hardware ?? VEHICLE.hardware}
-        </small>
+        {/* The phone is the meter here; the box this firmware string names is the
+            design, not what is running. */}
+        <small>This phone is the bus meter · {vehicle.firmware ?? VEHICLE.firmware}</small>
       </div>
 
       <div className="panel__chips">
@@ -179,6 +188,92 @@ function Chip({ label, value, tone }) {
       <small>{label}</small>
       <b className="tabular">{value}</b>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------- at a glance */
+
+/*
+  What a conductor holding a rail needs in one look: is the trip running, how
+  far, how full, what has been taken, can the GPS be trusted, is anything
+  waiting to upload — and the one button that ends the trip.
+*/
+const GPS_WORDS = {
+  [FIX_QUALITY.NONE]: ['GPS unavailable', 'Distance holds at the last good reading until a fix returns.', 'bad'],
+  [FIX_QUALITY.WARMUP]: ['GPS finding position', 'Distance starts once the fix settles.', 'warn'],
+  [FIX_QUALITY.POOR]: ['GPS weak', 'Poor fixes are not counted, so distance may run low here.', 'warn'],
+  [FIX_QUALITY.GOOD]: ['GPS active', 'Distance is being measured.', 'ok'],
+};
+
+function TripGlance({ snap, unit }) {
+  const [confirmEnd, setConfirmEnd] = useState(false);
+  const { onboard, atCapacity, nearCapacity } = snap.occupancy;
+  const fill = snap.capacity ? Math.min(1, onboard / snap.capacity) : 0;
+  const tone = atCapacity ? 'bad' : nearCapacity ? 'warn' : 'ok';
+  const [gpsTitle, gpsNote, gpsTone] = snap.simulating
+    ? ['Bench drive', 'Simulated GPS for a demo — not a real road.', 'warn']
+    : GPS_WORDS[snap.quality] ?? GPS_WORDS[FIX_QUALITY.NONE];
+  const takings = snap.accrued + (snap.cash?.npr ?? 0);
+  return (
+    <section className="glance" aria-label="Current trip">
+      <div className="glance__status">
+        <span className={`glance__state glance__state--${snap.tripId ? 'on' : 'off'}`}>
+          <i aria-hidden="true" />{snap.tripId ? `Trip ${snap.tripId} · active` : 'No trip running'}
+        </span>
+        {snap.simulating ? <span className="glance__demo">Simulated</span> : null}
+      </div>
+
+      <div className="glance__figs">
+        <div className="glance__fig">
+          <small>Distance this trip</small>
+          <b className="tabular">{(snap.odometerM / 1000).toFixed(1)}<span>km</span></b>
+        </div>
+        <div className="glance__fig">
+          <small>Fares this trip</small>
+          <b className="tabular glance__money">रु {takings}</b>
+          <em>{snap.closed.length} ride{snap.closed.length === 1 ? '' : 's'} closed · रु {snap.cash?.npr ?? 0} cash</em>
+        </div>
+      </div>
+
+      <div className={`glance__load glance__load--${tone}`}>
+        <div className="glance__loadhead">
+          <small>Passengers</small>
+          <b className="tabular">{onboard} / {snap.capacity}</b>
+          <span>{atCapacity ? 'FULL — boarding refused' : nearCapacity ? `${snap.occupancy.seatsLeft} places left` : `${snap.occupancy.seatsLeft} places left`}</span>
+        </div>
+        <div className="glance__bar" role="meter" aria-valuemin={0} aria-valuemax={snap.capacity} aria-valuenow={onboard} aria-label="Passengers aboard">
+          <i style={{ width: `${fill * 100}%` }} />
+        </div>
+      </div>
+
+      <div className="glance__row">
+        <span className={`glance__pill glance__pill--${gpsTone}`} title={gpsNote}><i aria-hidden="true" />{gpsTitle}</span>
+        <span className={`glance__pill glance__pill--${snap.queued > 0 ? 'warn' : 'ok'}`}>
+          <i aria-hidden="true" />{snap.queued > 0 ? `${snap.queued} to upload — saved on this phone` : 'All uploaded'}
+        </span>
+      </div>
+      <p className="glance__note">{gpsNote}</p>
+
+      <div className="glance__actions">
+        <button type="button" className="glance__btn" onClick={() => navigate('/crew/door')}>
+          चढाउने / ओराल्ने
+          <small>Board or exit a passenger</small>
+        </button>
+        <button type="button" className="glance__btn" onClick={() => navigate('/crew/trip')}>
+          नगद टिकट
+          <small>Cash or stage ticket</small>
+        </button>
+      </div>
+      {confirmEnd ? (
+        <div className="glance__confirm">
+          <p>End this trip? {onboard > 0 ? `${onboard} still aboard will be charged the ${rupees(snap.tariff.unclosedLegFare)} cap.` : 'Nobody is aboard.'}</p>
+          <button type="button" className="danger" onClick={() => { unit.endTrip(); setConfirmEnd(false); }}>Yes, end trip</button>
+          <button type="button" className="quiet" onClick={() => setConfirmEnd(false)}>Keep running</button>
+        </div>
+      ) : (
+        <button type="button" className="glance__end" onClick={() => setConfirmEnd(true)}>End trip<small>the next one starts at once</small></button>
+      )}
+    </section>
   );
 }
 

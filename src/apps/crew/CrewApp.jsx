@@ -26,16 +26,18 @@ const Device = lazy(() => import('../../screens/Device'));
 const Terminal = lazy(() => import('../../screens/Terminal'));
 const Crew = lazy(() => import('../../screens/Crew'));
 
+// The trip (the meter, with the glance on top) is home: it is what a conductor
+// checks between stops. Tickets is the stage-fare and cash scanner.
 const TABS = [
-  { id: 'trip', label: 'यात्रा', icon: 'scan' },
-  { id: 'bus', label: 'मिटर', icon: 'gauge' },
+  { id: 'bus', label: 'यात्रा', icon: 'gauge' },
+  { id: 'trip', label: 'टिकट', icon: 'scan' },
   { id: 'door', label: 'ढोका', icon: 'door' },
   { id: 'shift', label: 'सिफ्ट', icon: 'user' },
 ];
 
 export function crewTab(page) {
   const first = page.split('/')[0];
-  return TABS.some((tab) => tab.id === first) ? first : 'trip';
+  return TABS.some((tab) => tab.id === first) ? first : 'bus';
 }
 
 const debug = new URLSearchParams(window.location.search).has('debug');
@@ -51,7 +53,7 @@ export default function CrewApp({ page }) {
   const [meterOn, setMeterOn] = useState(tab === 'bus');
   useEffect(() => { if (tab === 'bus') setMeterOn(true); }, [tab]);
   const sync = useSyncStatus({ name: 'crew', pending: pendingConductor, run: syncConductor });
-  const go = (id) => navigate(id === 'trip' ? '/crew' : `/crew/${id}`);
+  const go = (id) => navigate(id === 'bus' ? '/crew' : `/crew/${id}`);
   const [setup, setSetup] = useState(() => !isProvisioned() && !demoChosen());
 
   if (setup) {
