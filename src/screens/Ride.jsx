@@ -26,10 +26,10 @@ import { currentVehicle, plateFromId } from '../device/fleet';
 import { fixFromPosition, holdScreenOn } from '../device/positioning';
 import { nfcSupported, writeNfc } from '../device/nfc';
 import Scanner from '../components/Scanner';
-import { buildTap, signTap, decodeLeg, decodePass, toMicro, PASS_MAX_AGE_S, buildGroup } from '../../protocol/leg.mjs';
+import { buildTap, signTap, decodeLeg, decodePass, toMicro, fromMicro, PASS_MAX_AGE_S, buildGroup } from '../../protocol/leg.mjs';
 import { MAX_COMPANIONS } from '../../protocol/pseudonym.mjs';
 import { buildDispute, signDispute } from '../../protocol/dispute.mjs';
-import { initialOdometer, applyFix, odometerReading, priceDistance, TARIFF } from '../../protocol/meter.mjs';
+import { initialOdometer, applyFix, odometerReading, priceDistance, TARIFF, CURRENT_TARIFF, stageNear, stageName } from '../../protocol/meter.mjs';
 import { rupees } from '../lib/nepali';
 
 // The bus this device is provisioned for. A phone moved to another vehicle
@@ -205,7 +205,17 @@ export default function Ride({ onBack, onStageFare }) {
         const fix = fixFromPosition(position);
         odoRef.current = applyFix(odoRef.current, fix).state;
         const metres = odometerReading(odoRef.current);
-        setWitness((w) => ({ metres, doppler: Number.isFinite(fix.speed), fixes: w.fixes + 1 }));
+        const here = stageNear(CURRENT_TARIFF, fix);
+        setWitness((w) => ({ metres, doppler: Number.isFinite(fix.speed), fixes: w.fixes + 1, stage: here ?? w.stage ?? null }));
+        if (here) {
+          loadRide().then((current) => {
+            if (current.phase !== 'riding') return;
+            const boardStage = current.boardStage ?? here;
+            if (current.boardStage === boardStage && current.currentStage === here) return;
+            saveRide({ ...current, boardStage, currentStage: here });
+            setRide((r) => (r?.phase === 'riding' ? { ...r, boardStage, currentStage: here } : r));
+          }).catch(() => {});
+        }
         if (Date.now() - lastSaved > 10_000) {
           lastSaved = Date.now();
           // The time and place of the reading, not just the reading. A phone
@@ -249,12 +259,14 @@ export default function Ride({ onBack, onStageFare }) {
           setProblem('That pass belongs to someone else.');
           return;
         }
+        // The pass carries the door's position at boarding: that is the stage.
+        const passStage = stageNear(CURRENT_TARIFF, { lat: fromMicro(pass.boardLatMicro), lon: fromMicro(pass.boardLonMicro) });
         if (ride?.phase === 'riding') {
-          const next = { ...ride, passQr: trimmed, legId: pass.legId, vehicleId: pass.vehicleId };
+          const next = { ...ride, passQr: trimmed, legId: pass.legId, vehicleId: pass.vehicleId, ...(passStage ? { boardStage: passStage } : {}) };
           await saveRide(next);
           setRide(next);
         } else {
-          await startRiding({ passQr: trimmed, legId: pass.legId, vehicleId: pass.vehicleId });
+          await startRiding({ passQr: trimmed, legId: pass.legId, vehicleId: pass.vehicleId, ...(passStage ? { boardStage: passStage } : {}) });
         }
       } catch {
         setProblem('That is not a Bhada boarding pass.');
@@ -276,7 +288,7 @@ export default function Ride({ onBack, onStageFare }) {
       }
       // Re-priced with the tariff the receipt names, never today's: tariffs are
       // added, not edited, and an old receipt is judged by its own.
-      const repriced = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode });
+      const repriced = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode, boardStage: leg.boardStage, alightStage: leg.alightStage, unclosed: leg.distanceSource === 'unclosed' });
       const phoneM = ride?.phase === 'riding' ? witness.metres : null;
       const entry = {
         legId: leg.legId,
@@ -362,7 +374,14 @@ export default function Ride({ onBack, onStageFare }) {
   const stranded = strandedRide(ride, Math.floor(now / 1000));
   const strandedFare = stranded ? priceDistance(stranded.witnessM) : null;
   const freshFor = code ? Math.max(0, CODE_REFRESH_S - Math.floor((now - code.madeAt) / 1000)) : 0;
-  const soFar = priceDistance(witness.metres);
+  // The fare so far is the stage fare from the boarding stage to the stage the
+  // bus is at now. It changes when the stage changes, not with every metre.
+  const boardStage = ride.boardStage ?? null;
+  const currentStage = witness.stage ?? ride.currentStage ?? null;
+  const soFar = boardStage && currentStage
+    ? priceDistance(witness.metres, { tariff: CURRENT_TARIFF, boardStage, alightStage: currentStage })
+    : null;
+  const stageLabel = (code) => stageName(CURRENT_TARIFF, code)?.en ?? '—';
   // Riding with a pass: show the pass to get off, because a pass closes the
   // ride at any door, online or not. Otherwise the ride code does both.
   const showPass = riding && passImage;
@@ -391,20 +410,24 @@ export default function Ride({ onBack, onStageFare }) {
 
         {riding ? (
           <div className="ride__witness">
+            <dl className="ride__stages">
+              <div><dt>Boarded</dt><dd>{boardStage ? stageLabel(boardStage) : 'Finding your stage…'}</dd></div>
+              <div><dt>Now at</dt><dd>{currentStage ? stageLabel(currentStage) : '—'}</dd></div>
+            </dl>
             <div>
-              <small>Distance</small>
-              <b className="tabular">{(witness.metres / 1000).toFixed(2)}<span>km</span></b>
+              <small>Fare so far</small>
+              <b className="tabular ride__fare">{soFar ? rupees(soFar.amount) : '—'}</b>
             </div>
             <div>
-              <small>Fare so far · updating</small>
-              <b className="tabular ride__fare">{rupees(soFar.amount)}</b>
+              <small>Journey</small>
+              <b className="tabular ride__km">{(witness.metres / 1000).toFixed(1)}<span>km</span></b>
             </div>
             <p>
               {witness.doppler === null
                 ? 'Waiting for your phone’s GPS. Keep this screen open.'
-                : witness.doppler
-                  ? 'Measured by your own phone, with the same meter the bus runs. The bus’s reading sets the final fare; compare them on the receipt.'
-                  : 'Your phone reports position only, so its count runs low in traffic. Still a fair check.'}
+                : soFar
+                  ? `Stage fare ${soFar.fareRule.toLowerCase()} on the route\u2019s fare table. The door works out the final fare from the stage you get off at.`
+                  : 'Your phone is not near a stage on this route yet. The door still prices the ride from its own GPS.'}
               {' '}{typeof navigator !== 'undefined' && !navigator.onLine ? 'Offline — the ride continues normally.' : ''}
             </p>
           </div>
@@ -461,20 +484,21 @@ export default function Ride({ onBack, onStageFare }) {
         {riding ? null : (
           <div className="ride__tariff">
             <div className="ride__tariff-row">
-              <span>First {TARIFF.includedKm} km</span>
-              <b className="tabular">{rupees(TARIFF.boardingCharge)}</b>
+              <span>To the next stage</span>
+              <b className="tabular">{rupees(CURRENT_TARIFF.boardingCharge)}</b>
             </div>
             <div className="ride__tariff-row">
-              <span>Each km after that</span>
-              <b className="tabular">+{rupees(TARIFF.perStep)}</b>
+              <span>Each stage after that</span>
+              <b className="tabular">+{rupees(5)}</b>
             </div>
             <div className="ride__tariff-row">
               <span>Never more than</span>
-              <b className="tabular">{rupees(TARIFF.cap)}</b>
+              <b className="tabular">{rupees(CURRENT_TARIFF.cap)}</b>
             </div>
             <p>
-              You pay for the kilometres you ride, not the stage the conductor guesses. Student and senior
-              half fares are applied at the door once your card has been seen.
+              Your fare is the stage fare from where you get on to where you get off. The bus&rsquo;s GPS works out both
+              stages, so nobody has to guess. Students and seniors pay half.
+              {CURRENT_TARIFF.demo ? ' This is a demo fare table, not the published one.' : ''}
             </p>
           </div>
         )}
@@ -556,7 +580,8 @@ export default function Ride({ onBack, onStageFare }) {
 function ReceiptView({ entry, onDone }) {
   const { leg } = entry;
   const comparison = compareDistances(leg.distanceM, entry.phoneM);
-  const arithmeticOk = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode }).amount === leg.amount;
+  const repriced = priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode, boardStage: leg.boardStage, alightStage: leg.alightStage, unclosed: leg.distanceSource === 'unclosed' });
+  const arithmeticOk = repriced.amount === leg.amount;
   const plate = plateFromId(leg.vehicleId);
   const board = leg.boardAt ? new Date(leg.boardAt * 1000) : null;
   const alight = new Date(leg.alightAt * 1000);
@@ -576,18 +601,27 @@ function ReceiptView({ entry, onDone }) {
           </span>
         </div>
 
+        {leg.boardStage ? (
+          <dl className="ride__stages ride__stages--receipt">
+            <div><dt>Boarded</dt><dd>{stageName(CURRENT_TARIFF, leg.boardStage)?.en ?? leg.boardStage}</dd></div>
+            <div><dt>Got off</dt><dd>{stageName(CURRENT_TARIFF, leg.alightStage)?.en ?? leg.alightStage}</dd></div>
+          </dl>
+        ) : null}
         <div className="ride__final">
-          <div>
-            <small>Distance</small>
-            <b className="tabular">{(leg.distanceM / 1000).toFixed(1)}<span>km</span></b>
-          </div>
           <div>
             <small>Final fare</small>
             <b className="tabular">{rupees(leg.amount)}</b>
           </div>
+          <div>
+            <small>Journey</small>
+            <b className="tabular">{(leg.distanceM / 1000).toFixed(1)}<span>km</span></b>
+          </div>
         </div>
         <p className="ride__basis">
-          Fare basis: distance travelled{leg.concession && leg.concession !== 'none' ? `, ${leg.concession} rate` : ''}
+          {leg.boardStage
+            ? `Fare basis: stage fare, ${repriced.fareRule ?? 'stage to stage'}${repriced.demo ? ' (demo fare table)' : ''}`
+            : 'Fare basis: distance tariff (issued before stage fares, or without a GPS stage)'}
+          {leg.concession && leg.concession !== 'none' ? `, ${leg.concession} rate` : ''}
         </p>
 
         <div className="ride__states">
@@ -608,7 +642,7 @@ function ReceiptView({ entry, onDone }) {
           <summary>Fare breakdown and security details</summary>
           <p className="tabular">Ride {leg.legId}</p>
         <ul className="ride__lines">
-          {(entry.breakdown ?? priceDistance(leg.distanceM, { concession: leg.concession, tariffCode: leg.tariffCode }).breakdown).map((item) => (
+          {(entry.breakdown ?? repriced.breakdown).map((item) => (
             <li key={item.label}>
               <span>{item.label}</span>
               <b className="tabular">{item.value}</b>

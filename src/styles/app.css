@@ -1494,3 +1494,34 @@ button {
   color: #5b554b;
   overflow-wrap: anywhere;
 }
+
+/* Shift sign-on on the bus's own phone: one big button, the QR below it. */
+.crew__here {
+  display: block;
+  width: 100%;
+  min-height: 64px;
+  margin: 8px 0 4px;
+  border: 0;
+  border-radius: 12px;
+  background: #c8102e;
+  color: #fff;
+  font: 700 20px/1.2 var(--display);
+  cursor: pointer;
+}
+.crew__here:focus-visible { outline: 3px solid #111318; outline-offset: 3px; }
+.crew__or { margin: 12px 0 0; font-size: 14px; color: #5d574c; }
+
+/* Stages first on a ride card: where you got on, where the bus is now. */
+.ride__stages {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 0;
+}
+.ride__stages dt { font-size: 13px; color: #5d574c; }
+.ride__stages dd { margin: 2px 0 0; font: 700 22px/1.15 var(--display); }
+.ride__stages--receipt { margin: 14px 18px 0; }
+.ride__witness .ride__km { font-size: 32px; text-align: right; }
+.ride__witness .ride__km span { font-size: 16px; }
+.ride__witness .ride__fare { text-align: left; }

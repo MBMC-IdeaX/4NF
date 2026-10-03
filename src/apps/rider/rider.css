@@ -291,3 +291,9 @@
 }
 .rh-empty__ticket svg { width: 28px; height: 28px; }
 .rh-balance .bx-btn { flex: none; white-space: nowrap; }
+.rh-journey__stages { display: grid; grid-template-columns: 1fr 1fr; gap: var(--b-3); margin: var(--b-4) 0 0; }
+.rh-journey__stages dt { font-size: var(--b-text-xs); letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
+.rh-journey__stages dd { margin: 2px 0 0; font: 700 1.25rem/1.15 var(--b-font-display); }
+.rh-journey__figs > div:first-child b { color: var(--b-led); }
+.rh-journey__figs > div + div b { color: inherit; }
+.rh-journey__km { font-size: 1.75rem !important; }

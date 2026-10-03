@@ -11,7 +11,7 @@ import { loadIdentity } from '../../device/identity';
 import { plateFromId } from '../../device/fleet';
 import { db } from '../../storage/db';
 import { stop } from '../../lib/nepali';
-import { priceDistance } from '../../../protocol/meter.mjs';
+import { priceDistance, CURRENT_TARIFF, stageName } from '../../../protocol/meter.mjs';
 import { OVERDRAFT_NPR } from '../../../protocol/policy.mjs';
 import './rider.css';
 
@@ -189,7 +189,11 @@ export default function RiderHome({ go }) {
 */
 function Journey({ ride, now, onOpen }) {
   const metres = Number.isFinite(ride.witnessM) ? ride.witnessM : 0;
-  const fare = priceDistance(metres).amount;
+  // Stage fare from where they got on to where the bus is now, as the ride
+  // screen last saw it. The distance is the record, not the price.
+  const board = ride.boardStage ? stageName(CURRENT_TARIFF, ride.boardStage) : null;
+  const here = ride.currentStage ? stageName(CURRENT_TARIFF, ride.currentStage) : null;
+  const fare = board && here ? priceDistance(metres, { tariff: CURRENT_TARIFF, boardStage: board.code, alightStage: here.code }).amount : null;
   const plate = ride.vehicleId ? plateFromId(ride.vehicleId) : null;
   const online = typeof navigator === 'undefined' || navigator.onLine;
   return (
@@ -199,17 +203,21 @@ function Journey({ ride, now, onOpen }) {
         {plate ? <Plate plate={plate} size={16} /> : null}
       </div>
       <p className="rh-journey__since">Since {clock(ride.startedAt ?? now)} · {elapsed(ride.startedAt ?? now, now)}</p>
+      <dl className="rh-journey__stages">
+        <div><dt>Boarded</dt><dd>{board?.en ?? 'Finding your stage…'}</dd></div>
+        <div><dt>Now at</dt><dd>{here?.en ?? '—'}</dd></div>
+      </dl>
       <div className="rh-journey__figs">
         <div>
-          <small>Distance</small>
-          <b className="bx-num">{(metres / 1000).toFixed(1)}<span>km</span></b>
+          <small>Fare so far</small>
+          <b className="bx-num">{fare === null ? '—' : `रु ${fare}`}</b>
         </div>
         <div>
-          <small>Fare so far</small>
-          <b className="bx-num">रु {fare}</b>
+          <small>Journey</small>
+          <b className="bx-num rh-journey__km">{(metres / 1000).toFixed(1)}<span>km</span></b>
         </div>
       </div>
-      <p className="rh-journey__note">Measured by your phone · the bus's meter sets the final fare</p>
+      <p className="rh-journey__note">Stage fare from the route's fare table · the door sets the final fare from the stage you get off at</p>
       <Button block onClick={onOpen} icon="qr">Get off — show code</Button>
       <p className="rh-journey__net">
         <Icon name={online ? 'check' : 'offline'} />
