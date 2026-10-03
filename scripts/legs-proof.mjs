@@ -994,6 +994,24 @@ console.log('\n20. A gateway top-up is credited on the gateway\'s word, once');
   check('and cannot be completed afterwards',
     (await call('gateway_complete_topup($1, $2, $3, $4)', [abandoned.reference, 'esewa', 100, 'X'])).reason === 'already_decided');
 
+  // A rider who never comes back from eSewa: no success or failure URL is hit.
+  const stale = await call('gateway_open_topup($1, $2, $3)', [RIDER, 'esewa', 120]);
+  const fresh = await call('gateway_open_topup($1, $2, $3)', [RIDER, 'esewa', 130]);
+  await db.query("update topup_requests set created_at = now() - interval '16 minutes' where reference = $1", [stale.reference]);
+  await as(RIDER);
+  const listed = await call('my_topup_requests()');
+  await as(null);
+  const statusOf = (reference) => listed.find((r) => r.reference === reference)?.status;
+  check('a payment left unfinished for 15 minutes is shown as failed', statusOf(stale.reference) === 'failed', statusOf(stale.reference));
+  check('one still inside the window keeps waiting', statusOf(fresh.reference) === 'initiated', statusOf(fresh.reference));
+  const lateBefore = await balance(riderWallet);
+  const late = await call('gateway_complete_topup($1, $2, $3, $4)', [stale.reference, 'esewa', 120, 'LATE1']);
+  check('eSewa confirming it late still credits the wallet', late.ok === true && (await balance(riderWallet)) === lateBefore + 120, JSON.stringify(late));
+  await call('gateway_fail_topup($1, $2, $3)', [fresh.reference, 'esewa', 'User cancelled']);
+  await db.query("update topup_requests set created_at = now() - interval '16 minutes' where reference = $1", [fresh.reference]);
+  check('a cancelled payment is still never completed',
+    (await call('gateway_complete_topup($1, $2, $3, $4)', [fresh.reference, 'esewa', 130, 'X'])).reason === 'already_decided');
+
   await as(RIDER);
   const statement = await call('my_statement()');
   check('the gateway top-up is on the statement with its eSewa code',
