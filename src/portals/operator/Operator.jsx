@@ -7,8 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase, supabaseConfigured } from '../../lib/supabase';
 import BusLoader from '../../components/BusLoader';
 import Shell, { PageError } from '../shared/Shell';
-import Icon from '../shared/Icon';
-import SignIn from '../shared/SignIn';
+import AppSignIn from '../../ui/AppSignIn';
 import { usePasswordRecovery, SetPassword } from '../shared/Recovery';
 import { useSession, signOut } from '../shared/session';
 import Overview from './Overview';
@@ -49,28 +48,13 @@ export default function Operator() {
   if (session === undefined) return <BusLoader label="पर्खनुहोस्" sub="Checking your session" />;
   if (!session) {
     return (
-      <Shell label="Operator" bare>
-        <SignIn
-          title="अपरेटर लगइन"
-          subtitle="Sign in to your bus company"
-          redirectPath="/operator"
-          pitch={(
-            <>
-              <h1>तपाईंको बस,<br />किलोमिटरमा।</h1>
-              <p>
-                Every ride your buses carry, priced by the kilometre and settled once — with the
-                overload record the regulator asks for, computed rather than written up.
-              </p>
-              <ul>
-                <li><Icon name="check" size={20} /><span><b>Rides and rupees</b> by bus, hour and segment</span></li>
-                <li><Icon name="check" size={20} /><span><b>Rs per passenger-km</b>, the number a fare review turns on</span></li>
-                <li><Icon name="check" size={20} /><span><b>DoTM return</b> as a spreadsheet, straight from settled rides</span></li>
-                <li><Icon name="check" size={20} /><span><b>Crew bonuses</b>, what each clean trip cost and what the rest went wrong on</span></li>
-              </ul>
-            </>
-          )}
-        />
-      </Shell>
+      <AppSignIn
+        app="Owner"
+        title="साइन इन"
+        lead="Your buses, their fares and your payouts."
+        redirectPath="/owner"
+        signUpLabel="Register your bus company"
+      />
     );
   }
   if (error && !operator) {
