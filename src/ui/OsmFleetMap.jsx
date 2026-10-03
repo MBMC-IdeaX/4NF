@@ -142,11 +142,12 @@ export default function OsmFleetMap({
       attributionControl: true,
     });
 
-    // CartoDB Positron / OSM clean transit basemap
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
+    // OpenStreetMap's own tiles: free, no API key, attribution required.
+    // (CARTO's basemaps now answer every keyless request with an
+    // "API key required" tile.) Fine for a demo's traffic; heavy use needs a
+    // tile provider of our own, per the OSM tile usage policy.
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 19,
     }).addTo(map);
 

@@ -121,7 +121,7 @@ a stop-to-stop fare table (`fares`, route R11), cached on the phone for offline 
 | Backend | Supabase Postgres: 39 numbered migrations with row-level security, every money rule enforced in SQL functions; Edge Functions `sync` (settlement) and `payments` (eSewa) |
 | Shared logic | `protocol/`: platform-free ESM used by the apps, the Edge Function and the proofs. The Edge Function's copy is generated (`npm run sync:protocol`), never edited by hand |
 | Proofs | Node scripts; Postgres runs in-process with PGlite, so settlement is proven on a real database without a server |
-| Maps | Leaflet with OpenStreetMap data and CARTO basemap tiles (free, no key) |
+| Maps | Leaflet with OpenStreetMap tiles (free, no key) |
 | Hosting | Vercel (the static site, deployed from GitHub `main`), Supabase (database and functions) |
 
 ### Architecture
@@ -293,8 +293,9 @@ and the भाडा mark at the top left always leads back to the front page, w
 | **Bhada Staff** | `/staff` | Bhada staff | Companies, buses from their papers, paper review, routes, payouts, rates |
 | Site | `/` | Everyone | Front page, how-it-works tour, `/demo` (a simulated trip), `/inspect` (inspector's offline check), `/admin` |
 
-The map uses OpenStreetMap data with CARTO's free basemap tiles. No API key is needed; the
-attribution shows on the map.
+The map uses OpenStreetMap's own tiles: free, no API key, attribution shown on the map. That
+is fine for a demo's traffic; heavy production use needs our own tile provider under the OSM
+tile usage policy.
 
 ---
 
@@ -798,7 +799,7 @@ PGlite), `local-supabase.mjs` (the office screens' calls), `scripts/local-sync-s
   its own entry (`apps/<name>/index.html`), service worker, manifest and IndexedDB. The site
   builds first, because it empties `dist/`.
 - `vercel.json` sends each path prefix to its build, keeps service workers uncached, and sets
-  the security headers: the CSP allows Supabase, eSewa forms and the CARTO map tiles.
+  the security headers: the CSP allows Supabase, eSewa forms and the OpenStreetMap tiles.
 - Vercel builds from GitHub `main` with `npm run proof:all && npm run build`; a failing proof
   stops the deploy.
 - Release order: `supabase db push` → `npm run sync:protocol` → `supabase functions deploy
