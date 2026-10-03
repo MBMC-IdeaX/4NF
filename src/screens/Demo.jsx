@@ -69,7 +69,7 @@ function buildScenes(stage) {
     {
       key: 'family',
       title: 'Gita and her two children',
-      say: 'One phone, one code, three people. Each child rides under a key made from Gita’s phone, and all three fares come out of her one wallet.',
+      say: 'One phone, one code, three people. Each child rides under a key made from Gita’s phone, and all three fares are charged to her one account.',
       run: async () => { await stage.familyCode(); },
     },
     {
@@ -152,7 +152,7 @@ function buildScenes(stage) {
     {
       key: 'signal',
       title: 'Signal. The money moves.',
-      say: 'The bus reaches signal and uploads — the same code a real bus runs — to the real backend on Postgres, inside this laptop. Every wallet charged once. The count matched the record, so the conductor earns his Rs 50.',
+      say: 'The bus reaches signal and uploads — the same code a real bus runs — to the real backend on Postgres, inside this laptop. Every account charged once. The count matched the record, so the conductor earns his Rs 50.',
       run: async () => { await stage.signalBack(); },
     },
     {
@@ -336,7 +336,7 @@ function Show({ stage }) {
             <b>{p.name}</b>
             <span>{personLine(p)}</span>
             {p.balance ? (
-              <small className="tabular">{p.balance.shared ? 'on Gita’s wallet' : `${rupees(p.balance.before)} → ${rupees(p.balance.after)}`}</small>
+              <small className="tabular">{p.balance.shared ? 'on Gita’s account' : `${rupees(p.balance.before)} → ${rupees(p.balance.after)}`}</small>
             ) : null}
           </div>
         ))}
@@ -429,7 +429,7 @@ function Door({ entry, rush, onCamera }) {
     else if (result.action === 'out') detail = `${((result.leg?.distanceM ?? 0) / 1000).toFixed(2)} km by ${result.leg?.distanceSource ?? 'odometer'}`;
     else if (result.action === 'in') detail = 'Ride open · nothing charged yet';
     else if (result.action === 'cash') detail = `${stopName(result.ticket.fromStop)} → ${stopName(result.ticket.toStop)}, signed by the bus`;
-    else if (result.action === 'group') detail = result.alighted ? `${rupees(result.amount)} from one wallet` : 'one code, three people, one wallet';
+    else if (result.action === 'group') detail = result.alighted ? `${rupees(result.amount)} on one account` : 'one code, three people, one account';
     else detail = result.message ?? '';
   }
   return (

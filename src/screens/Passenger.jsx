@@ -121,7 +121,7 @@ export default function Passenger({ onBack }) {
     return (
       <div className="stub-page">
         <div className="stub">
-          <p className="stub__empty">{error ?? 'Opening your wallet.'}</p>
+          <p className="stub__empty">{error ?? 'Opening your account.'}</p>
         </div>
       </div>
     );

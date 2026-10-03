@@ -44,7 +44,7 @@ export default function Statement() {
       <div className="op-pagehead">
         <div>
           <h1>विवरण</h1>
-          <p>Every ride and top-up on this wallet, newest first, with the balance after each.</p>
+          <p>Every ride and top-up on this account, newest first, with the balance after each.</p>
         </div>
       </div>
 

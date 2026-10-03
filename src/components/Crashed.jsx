@@ -27,7 +27,7 @@ export default class Crashed extends Component {
     return (
       <div className="crashed" role="alert">
         <h1>केही बिग्रियो</h1>
-        <p>Something on this screen broke. Your rides, receipts and wallet are saved on this phone and are not affected.</p>
+        <p>Something on this screen broke. Your rides, receipts and balance are saved on this phone and are not affected.</p>
         <button type="button" className="crashed__reload" onClick={() => window.location.reload()}>
           फेरि खोल्नुहोस् · Reload
         </button>

@@ -88,7 +88,7 @@ export default function TopUp({ session, onDone }) {
       <div className="op-pagehead">
         <div>
           <h1>रिचार्ज</h1>
-          <p>Add money to your wallet. It is ready for your next ride as soon as it is loaded.</p>
+          <p>Top up your ride balance through eSewa. It is ready for your next ride once eSewa confirms the payment.</p>
         </div>
       </div>
 
@@ -138,7 +138,7 @@ export default function TopUp({ session, onDone }) {
                   {busy ? 'Opening payment…' : `Pay ${rupees(amount + (fee || 0))} with ${METHOD_NAMES[method]}`}
                 </button>
                 <small className="op-field__help">
-                  {fee ? `${rupees(amount)} goes to your wallet; ${rupees(fee)} is Bhada’s top-up fee, shown by ${METHOD_NAMES[method]} as a service charge. ` : ''}
+                  {fee ? `${rupees(amount)} goes to your ride balance; ${rupees(fee)} is Bhada’s top-up fee, shown by ${METHOD_NAMES[method]} as a service charge. ` : ''}
                   You will be taken to {METHOD_NAMES[method]} and brought back here.
                 </small>
               </>

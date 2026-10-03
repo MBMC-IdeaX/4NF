@@ -35,7 +35,7 @@ export default function Settings({ session, account, onSignOut }) {
       <div className="op-pagehead">
         <div>
           <h1>सेटिङ</h1>
-          <p>Your login, your wallet, and how this phone protects them.</p>
+          <p>Your login, your ride account, and how this phone protects them.</p>
         </div>
       </div>
 
@@ -44,9 +44,9 @@ export default function Settings({ session, account, onSignOut }) {
           <div className="op-section__head"><h2>खाता<small>Account</small></h2></div>
           <dl className="op-facts">
             <div><dt>Login</dt><dd>{account.email ?? session.user.phone ?? '—'}</dd></div>
-            <div><dt>Wallet</dt><dd className="tabular">{shortKey(account.wallet)}</dd></div>
+            <div><dt>Account key</dt><dd className="tabular">{shortKey(account.wallet)}</dd></div>
             <div><dt>Linked</dt><dd>{when(account.linked_at)}</dd></div>
-            <div><dt>Ride credit</dt><dd>Up to Rs {account.overdraft} below zero</dd></div>
+            <div><dt>Short allowance</dt><dd>A fare may leave you up to Rs {account.overdraft} short</dd></div>
           </dl>
           <p className="op-note">
             Bus companies see a different key for you every day and never your login. Bhada keeps

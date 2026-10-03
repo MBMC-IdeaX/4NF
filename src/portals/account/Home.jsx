@@ -23,16 +23,16 @@ export default function Home({ account, onTab }) {
 
   return (
     <>
-      <section className={`op-wallet${owed ? ' op-wallet--owed' : ''}`} aria-label="Wallet balance">
+      <section className={`op-wallet${owed ? ' op-wallet--owed' : ''}`} aria-label="Ride balance">
         <div className="op-wallet__top">
-          <span>मौज्दात · Balance</span>
+          <span>मौज्दात · Ride balance</span>
           <span className="tabular">{shortKey(account.wallet)}</span>
         </div>
         <div className="op-wallet__figure tabular">{rupees(account.balance)}</div>
         <p className="op-wallet__note">
           {owed
-            ? `You are ${rupees(account.owed)} behind. Top up to clear it — ${rupees(account.overdraft - account.owed)} of ride credit left.`
-            : `Rides can go up to ${rupees(account.overdraft)} below zero, so a low balance never leaves you at the stop.`}
+            ? `You are ${rupees(account.owed)} short. A bus still takes you while you are less than ${rupees(account.overdraft)} short — top up to clear it.`
+            : `Top-ups are paid through eSewa. A bus still takes you if a fare leaves you up to ${rupees(account.overdraft)} short, and the next top-up clears it.`}
         </p>
         <div className="op-wallet__actions">
           <button type="button" className="op-btn" onClick={() => onTab('topup')}>

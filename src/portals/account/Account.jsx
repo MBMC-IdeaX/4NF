@@ -104,7 +104,7 @@ export default function Account() {
   if (!account) return <BusLoader label="खाता खुल्दै" sub="Loading your wallet" />;
   if (settling) return <BusLoader label="भुक्तानी जाँच" sub="Checking your payment" />;
 
-  const who = { name: account.email ?? session.user.phone ?? 'My account', sub: account.linked ? rupees(account.balance) : 'Wallet not linked' };
+  const who = { name: account.email ?? session.user.phone ?? 'My account', sub: account.linked ? rupees(account.balance) : 'Phone not linked' };
 
   if (!account.linked || account.elsewhere) {
     const linked = (amount) => {
@@ -167,7 +167,7 @@ function LinkWallet({ session, onLinked, elsewhere: startElsewhere = false, bala
       const result = await linkWalletToAccount({ accessToken: session.access_token, userId: session.user.id, move });
       if (result?.ok) onLinked(result.moved ? result.amount : null);
       else if (result?.reason === 'account_has_wallet') setElsewhere(true);
-      else setError(explain(result, 'The wallet could not be linked.'));
+      else setError(explain(result, 'This phone could not be linked.'));
     } catch (problem) {
       setError(problem.message);
     }
@@ -228,12 +228,12 @@ function LinkWallet({ session, onLinked, elsewhere: startElsewhere = false, bala
       <div className="op-sheet">
         <h2>
           वालेट जोड्ने
-          <small>Link this phone’s wallet</small>
+          <small>Link this phone’s ride account</small>
         </h2>
         <div className="op-form">
           {error ? <p className="op-error" role="alert">{error}</p> : null}
           <button type="button" className="op-btn op-btn--block" onClick={() => link(false)} disabled={busy}>
-            {busy ? 'Linking…' : 'Link this phone’s wallet'}
+            {busy ? 'Linking…' : 'Link this phone’s ride account'}
           </button>
           <p className="op-field__help">Needs a network connection for a few seconds.</p>
         </div>
