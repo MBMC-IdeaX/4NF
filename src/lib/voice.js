@@ -290,7 +290,7 @@ function say(keys, devanagari, english) {
   playClips(keys).then((played) => { if (!played) speak(devanagari, english); });
 }
 
-const amountKey = (amount) => `n:${Math.round(Number(amount))}`;
+const amountKey = (kind, amount) => `${kind}:${Math.round(Number(amount))}`;
 
 /*
   Announcements. Devanagari first, with an English line for a device that only
@@ -302,12 +302,12 @@ const amountKey = (amount) => `n:${Math.round(Number(amount))}`;
 */
 export function announceReceived(amount) {
   cueAccepted();
-  say([amountKey(amount), 'after:received'], `${amount} रुपैयाँ प्राप्त भयो`, `${amount} rupees received`);
+  say([amountKey('received', amount)], `${amount} रुपैयाँ प्राप्त भयो`, `${amount} rupees received`);
 }
 
 export function announceSent(amount) {
   cueAccepted();
-  say([amountKey(amount), 'after:ticket'], `${amount} रुपैयाँ को टिकट तयार भयो`, `Ticket ready for ${amount} rupees`);
+  say([amountKey('ticket', amount)], `${amount} रुपैयाँ को टिकट तयार भयो`, `Ticket ready for ${amount} rupees`);
 }
 
 export function announceRefused(reason) {
@@ -339,7 +339,7 @@ export function announceBoarded() {
 
 export function announceFare(amount) {
   cueAccepted();
-  say([amountKey(amount), 'after:deducted'], `${amount} रुपैयाँ कट्यो`, `${amount} rupees deducted`);
+  say([amountKey('deducted', amount)], `${amount} रुपैयाँ कट्यो`, `${amount} rupees deducted`);
 }
 
 export function announceBusFull() {
