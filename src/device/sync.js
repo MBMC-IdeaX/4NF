@@ -6,6 +6,7 @@
 // correct answer, not an error.
 
 import { db, currentTripId } from '../storage/db';
+import { currentVehicle } from './fleet';
 import { loadIdentity, keyLinkFor, accountLinkFor, companionLinksFor } from './identity';
 
 const ENDPOINT = import.meta.env.VITE_SYNC_URL ?? '';
@@ -311,6 +312,7 @@ async function uploadLegs(database, payload) {
     total.tripResults.push(...result.tripResults);
     total.countResults.push(...result.countResults);
     total.cash += result.cash;
+    if (index === 0) total.meterResult = result.meterResult;
   }
   return total;
 }
@@ -367,6 +369,8 @@ async function uploadLegBatch(database, payload, receipts, taps, cash = []) {
     // The meter's own verdicts travel back untouched: the caller decides what
     // to clear from the crew and trip queues, exactly as it does for legs.
     crewResults: response.crewResults ?? [],
+    // What the backend said about this phone being the bus (0034).
+    meterResult: response.meterResult ?? null,
     tripResults: response.tripResults ?? [],
     countResults: response.countResults ?? [],
     cash: cashRecorded,
@@ -406,7 +410,9 @@ export async function syncMeter({ vehicleId, publicKey, capacity, firmware }) {
   // box gets its key on file.
   const result = await uploadLegs(database, {
     devicePublicKey: publicKey,
-    meter: { vehicleId, publicKey, capacity, firmware },
+    // The owner's one-time setup code (0034), sent until the backend has bound
+    // this phone's key to the bus; after that it is spent and ignored.
+    meter: { vehicleId, publicKey, capacity, firmware, ...(currentVehicle().enrolCode ? { enrolCode: currentVehicle().enrolCode } : {}) },
     doorEvents: tape.map((event) => ({
       at: new Date(event.at).toISOString(),
       kind: doorEventKind(event),
@@ -460,6 +466,11 @@ export async function syncMeter({ vehicleId, publicKey, capacity, firmware }) {
     if (left.length !== crew.trips.length) {
       await database.put('meter', { ...crew, trips: left }, 'crew');
     }
+  }
+  // What the backend said about this phone being the bus, for the Crew app to
+  // show: bound, still waiting for a setup code, or refused.
+  if (result.meterResult) {
+    await database.put('meter', { ...result.meterResult, at: Date.now() }, 'unitStatus');
   }
   return { ...result, tape: tape.length, powerTape: powerTape.length };
 }

@@ -74,7 +74,8 @@ export async function loadVehicle() {
   const database = await db();
   const saved = await database.get('meter', KEY);
   if (saved) {
-    cached = { ...DEFAULT_VEHICLE, ...saved };
+    const kept = Object.fromEntries(Object.entries(saved).filter(([, value]) => value !== undefined));
+    cached = { ...DEFAULT_VEHICLE, ...kept };
     return cached;
   }
 
@@ -88,6 +89,12 @@ export async function loadVehicle() {
 
   cached = DEFAULT_VEHICLE;
   return cached;
+}
+
+// Whether this device has been told which bus it is — by a setup code, a
+// pairing QR, a technician's URL — rather than running as the demo default.
+export function isProvisioned() {
+  return Boolean(cached && cached !== DEFAULT_VEHICLE);
 }
 
 // The synchronous answer, for a render that cannot wait. Whatever was last
@@ -108,9 +115,12 @@ export async function provisionVehicle(vehicle) {
   if (!/^[A-Z0-9]{4,16}$/.test(id)) {
     return { ok: false, reason: 'bad_plate', message: 'A plate is letters and digits, like BA2KHA4412.' };
   }
+  // A field left undefined (a typed setup code carries no route name) keeps
+  // the default rather than blanking it.
+  const given = Object.fromEntries(Object.entries(vehicle ?? {}).filter(([, value]) => value !== undefined));
   const next = {
     ...DEFAULT_VEHICLE,
-    ...vehicle,
+    ...given,
     id,
     plate: vehicle?.plate ?? plateFromId(id) ?? DEFAULT_VEHICLE.plate,
   };

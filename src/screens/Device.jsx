@@ -12,7 +12,7 @@
 // aboard → what is it charging them → what did it just do → what is it saying
 // on the radio.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { meter, VEHICLE, short } from '../device/meter';
 import { syncMeter, syncConfigured } from '../device/sync';
@@ -21,6 +21,8 @@ import { decodeFrame } from '../../protocol/frame.mjs';
 import { STOPS, ROUTE_LENGTH_M, rupees } from '../lib/nepali';
 import { navigate } from '../lib/router';
 import { downloadText } from '../device/positioning';
+import { useSyncStatus } from '../lib/useSyncStatus';
+import { db } from '../storage/db';
 
 const QUALITY_LABEL = {
   [FIX_QUALITY.NONE]: 'no fix',
@@ -45,9 +47,41 @@ export function useMeter() {
   return snap;
 }
 
+/*
+  The meter sends by itself: receipts it signed, and — until the backend has
+  bound this phone to the bus — the owner's setup code (0034). Nobody on a bus
+  should have to press "upload"; the bench button stays for a unit on a desk.
+*/
+const HEARTBEAT_MS = 5 * 60_000;
+
+function useMeterSync(snap, unit) {
+  const latest = useRef(snap);
+  latest.current = snap;
+  return useSyncStatus({
+    name: 'meter',
+    enabled: syncConfigured(),
+    pending: async () => {
+      // Not yet confirmed, or not heard from for five minutes: check in. The
+      // check-in is how a replaced phone learns it is no longer the bus, and
+      // what the owner reads as "last seen".
+      const status = await (await db()).get('meter', 'unitStatus');
+      const stale = !status?.ok || Date.now() - (status.at ?? 0) > HEARTBEAT_MS;
+      return (latest.current.queued ?? 0) + (stale ? 1 : 0);
+    },
+    run: async () => {
+      // The first attempt can land before the meter has loaded its key.
+      const now = latest.current.vehiclePublicKey ? latest.current : await unit.boot();
+      if (!now?.vehiclePublicKey) throw new Error('The meter has not made its key yet.');
+      await syncMeter({ vehicleId: now.vehicleId, publicKey: now.vehiclePublicKey, capacity: now.capacity, firmware: VEHICLE.firmware });
+      await unit.refreshQueue();
+    },
+  });
+}
+
 export default function Device() {
   const snap = useMeter();
   const unit = meter();
+  useMeterSync(snap, unit);
   const [pairing, setPairing] = useState(null);
   const [confirmOverride, setConfirmOverride] = useState(false);
 
@@ -98,7 +132,9 @@ export default function Device() {
 /* ------------------------------------------------------------------ header */
 
 function Masthead({ snap }) {
-  const { plate } = VEHICLE;
+  // The bus this phone was set up as, not the demo default.
+  const vehicle = snap.vehicle ?? VEHICLE;
+  const plate = vehicle.plate ?? VEHICLE.plate;
   return (
     <header className="panel__head">
       <div className="panel__plate">
@@ -109,9 +145,9 @@ function Masthead({ snap }) {
       </div>
 
       <div className="panel__ident">
-        <b>{VEHICLE.routeName}</b>
+        <b>{vehicle.label || vehicle.routeName || vehicle.routeId}</b>
         <small>
-          {VEHICLE.firmware} · {VEHICLE.hardware}
+          {vehicle.firmware ?? VEHICLE.firmware} · {vehicle.hardware ?? VEHICLE.hardware}
         </small>
       </div>
 
@@ -188,7 +224,7 @@ function Readouts({ snap }) {
         ))}
       </div>
       <p className="card__note">
-        {VEHICLE.seated} seated + {VEHICLE.standing} standing is the figure on this vehicle&apos;s route permit.
+        {snap.vehicle?.seated ?? VEHICLE.seated} seated + {snap.vehicle?.standing ?? VEHICLE.standing} standing is the figure on this vehicle&apos;s route permit.
         On a one-door bus the door stays open at the permit for people getting off, and the next
         tap-in is refused. A second, rear door is never held shut by capacity.
       </p>
