@@ -1,9 +1,58 @@
 {
   "buildCommand": "npm run proof:all && npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    {
+      "source": "/operator/:path*",
+      "destination": "/owner",
+      "permanent": false
+    },
+    {
+      "source": "/device",
+      "destination": "/crew/bus",
+      "permanent": false
+    },
+    {
+      "source": "/terminal",
+      "destination": "/crew/door",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
-      "source": "/((?!assets/|fonts/|sw\\.js|workbox-|registerSW\\.js|manifest\\.webmanifest|.*\\.png|.*\\.svg|.*\\.ico).*)",
+      "source": "/app/((?!assets/|fonts/|voice/|sw\\.js|workbox-|registerSW\\.js|manifest\\.webmanifest|.*\\.png|.*\\.svg|.*\\.ico).*)",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/app",
+      "destination": "/app/index.html"
+    },
+    {
+      "source": "/crew/((?!assets/|fonts/|voice/|sw\\.js|workbox-|registerSW\\.js|manifest\\.webmanifest|.*\\.png|.*\\.svg|.*\\.ico).*)",
+      "destination": "/crew/index.html"
+    },
+    {
+      "source": "/crew",
+      "destination": "/crew/index.html"
+    },
+    {
+      "source": "/owner/((?!assets/|fonts/|voice/|sw\\.js|workbox-|registerSW\\.js|manifest\\.webmanifest|.*\\.png|.*\\.svg|.*\\.ico).*)",
+      "destination": "/owner/index.html"
+    },
+    {
+      "source": "/owner",
+      "destination": "/owner/index.html"
+    },
+    {
+      "source": "/staff/((?!assets/|fonts/|voice/|sw\\.js|workbox-|registerSW\\.js|manifest\\.webmanifest|.*\\.png|.*\\.svg|.*\\.ico).*)",
+      "destination": "/staff/index.html"
+    },
+    {
+      "source": "/staff",
+      "destination": "/staff/index.html"
+    },
+    {
+      "source": "/((?!app/|crew/|owner/|staff/|assets/|fonts/|voice/|sw\\.js|workbox-|registerSW\\.js|manifest\\.webmanifest|.*\\.png|.*\\.svg|.*\\.ico).*)",
       "destination": "/index.html"
     }
   ],
@@ -61,6 +110,42 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/app/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/crew/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/owner/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/staff/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }

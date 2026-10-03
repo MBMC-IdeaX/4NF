@@ -80,3 +80,8 @@ __pycache__/
 /*.png
 .playwright-mcp/
 .bench/
+
+# Design reference copy, never part of Bhada
+datajewellery-main/
+.superpowers/
+.pgdata-files/

@@ -28,13 +28,22 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 createServer(async (request, response) => {
   const path = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
-  const target = join(ROOT, normalize(path === '/' ? '/index.html' : path));
+  const target = join(ROOT, normalize(path.endsWith('/') ? `${path}index.html` : path));
   try {
     const body = await readFile(target);
     response.writeHead(200, { ...headersFor(path), 'Content-Type': TYPES[extname(target)] ?? 'application/octet-stream' });
     response.end(body);
   } catch {
+    // The same routing vercel.json does: legacy links move, and each app's
+    // paths fall back to that app's own page.
+    const moved = vercel.redirects?.find((rule) => new RegExp(`^${rule.source.replace('/:path*', '(/.*)?')}$`).test(path));
+    if (moved) {
+      response.writeHead(307, { Location: moved.destination + new URL(request.url, 'http://localhost').search });
+      response.end();
+      return;
+    }
+    const app = /^\/(app|crew|owner)(\/|$)/.exec(path)?.[1];
     response.writeHead(200, { ...headersFor(path), 'Content-Type': 'text/html' });
-    response.end(await readFile(join(ROOT, 'index.html')));
+    response.end(await readFile(join(ROOT, app ? `${app}/index.html` : 'index.html')));
   }
 }).listen(4173, () => console.log('serving dist on http://localhost:4173'));
