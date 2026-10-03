@@ -124,8 +124,8 @@ function buildScenes(stage) {
     },
     {
       key: 'alight',
-      title: 'Tap out, pay by the kilometre',
-      say: 'Three kilometres on, people tap out at the same door. Each fare is the published tariff for the kilometres actually ridden, spoken aloud, with a signed receipt on the passenger’s phone.',
+      title: 'Tap out, pay the stage fare',
+      say: 'Three kilometres on, people tap out at the same door. The bus’s GPS knows the stage each one got on at and gets off at, and each fare comes from the route’s fare table, spoken aloud, with a signed receipt on the passenger’s phone.',
       run: async () => {
         await stage.driveFor(3100);
         for (const id of [1, 2, 3, 4, 5]) {
@@ -193,21 +193,21 @@ export default function Demo() {
     return (
       <div className="demo demo--cover">
         <div className="demo-cover">
-          <p className="demo-cover__eyebrow">Live demonstration</p>
+          <button type="button" className="demo-cover__back" onClick={() => navigate('/')}>← Back to Bhada</button>
+          <p className="demo-cover__eyebrow">Watch one bus trip</p>
           <h1>भाडा</h1>
-          <p className="demo-cover__line">Bus fares by the kilometre. Loads by the permit. No signal needed for either.</p>
+          <p className="demo-cover__line">A bus runs one trip on this screen. People get on and off, the bus’s GPS finds each stage, the fare comes from the stage fare table, and nothing needs the internet.</p>
           <ul className="demo-cover__facts">
-            <li>A real one-door bus: meter, door, a counter at the step</li>
-            <li>Cash riders, families, fare dodgers and an inspector</li>
-            <li>Real Postgres backend, running in this browser</li>
-            <li>Zero requests to the internet — counted on screen</li>
+            <li>Passengers show a code at the door to get on and off</li>
+            <li>Each fare is the stage fare from where they got on to where they got off</li>
+            <li>The bus refuses people once it is full</li>
+            <li>At the end, the trip uploads and every fare settles once</li>
           </ul>
           {error ? <p className="demo-cover__error">{error}</p> : null}
           <button type="button" className="demo-cover__go" onClick={start} disabled={booting}>
             {booting ? 'Starting the bus…' : 'Start the bus'}
           </button>
-          <p className="demo-cover__hint">Space or → for the next scene · Turn Wi-Fi off first, for effect</p>
-          <button type="button" className="demo-cover__back" onClick={() => navigate('/')}>← bhada-one.vercel.app</button>
+          <p className="demo-cover__hint">Tap Next for each step. Everything on this screen is a simulated bus.</p>
         </div>
       </div>
     );
@@ -288,16 +288,16 @@ function Show({ stage }) {
     <div className="demo">
       <header className="demo-head">
         <div className="demo-head__brand">
-          <b>भाडा</b>
-          <span>Live · {stage.vehicleId} · one door</span>
+          <button type="button" className="demo-head__home" onClick={() => navigate('/')} aria-label="Back to Bhada">← भाडा</button>
+          <span>Simulated bus · {stage.vehicleId} · one door</span>
         </div>
         <Stat
-          label="Requests to the internet"
+          label="Internet used"
           value={demo.internetRequests}
           tone={demo.internetRequests === 0 ? 'good' : demo.signal ? 'quiet' : 'bad'}
           note={demo.signal ? 'signal is back' : 'no signal'}
         />
-        <Stat label="Backend" value={demo.backend ? 'Postgres, in this laptop' : 'starting…'} note={demo.backendStep} tone={demo.backend ? 'good' : 'quiet'} small />
+        <Stat label="Bhada server" value={demo.backend ? 'Running in this browser' : 'starting…'} note={demo.backendStep} tone={demo.backend ? 'good' : 'quiet'} small />
         <Stat label="Signal" value={demo.signal ? 'ON' : 'OFF'} tone={demo.signal ? 'good' : 'bad'} note={demo.signal ? `${demo.backendRequests} uploads answered` : 'everything waits on the bus'} />
       </header>
 

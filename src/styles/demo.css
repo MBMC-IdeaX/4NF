@@ -9,15 +9,16 @@
 */
 
 .demo {
-  --d-panel: #0f0e0c;
-  --d-raised: #1a1815;
-  --d-read: #ece7d8;
-  --d-dim: #8f8a7c;
-  --d-rule: #34312b;
-  --d-live: #6fbf73;
-  --d-caution: #e0a437;
-  --d-halt: #d7514b;
-  --d-plate: #a8202f;
+  /* Light, like the rest of Bhada. */
+  --d-panel: #f6f7f9;
+  --d-raised: #ffffff;
+  --d-read: #111318;
+  --d-dim: #5f6573;
+  --d-rule: #e5e7eb;
+  --d-live: #0b7a43;
+  --d-caution: #8a5300;
+  --d-halt: #b42318;
+  --d-plate: #c8102e;
   --d-ink: #16130f;
   --d-display: 'Mukta', 'Noto Sans Devanagari', sans-serif;
   --d-body: 'Mukta', 'Noto Sans Devanagari', sans-serif;
@@ -561,7 +562,7 @@
   z-index: 50;
   display: grid;
   place-items: center;
-  background: rgba(15, 14, 12, 0.92);
+  background: rgba(17, 19, 24, 0.55);
 }
 
 .demo-yours__card {
@@ -706,3 +707,24 @@
 .demo-person--dodger { border-left-color: var(--d-halt); }
 .demo-person--dodger span { color: var(--d-halt); }
 .demo-person--caught { border-left-color: var(--d-caution); }
+
+/* The way out, always visible. */
+.demo-head__home {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--d-plate);
+  font: 700 22px/1 var(--d-display);
+  cursor: pointer;
+}
+.demo-cover__back { order: -1; }
+.demo-cover__go { color: #fff; }
+.demo-cover__back {
+  align-self: flex-start;
+  min-height: 44px;
+  margin: 0 0 12px;
+  color: var(--d-plate);
+  font-weight: 700;
+  font-size: 16px;
+}

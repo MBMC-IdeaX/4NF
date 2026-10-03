@@ -21,8 +21,8 @@ export default function Overview({ overview: o, onTab }) {
       <dl className="op-stats">
         <Stat label="भित्रिएको" sub="Money loaded" value={rupees(o.loaded_npr)} accent />
         <Stat label="भाडा" sub="Fares settled" value={rupees(o.fares_npr)} />
-        <Stat label="वालेटमा" sub="Held in wallets" value={rupees(o.wallet_npr)} />
-        <Stat label="उधारो" sub="Owed in overdraft" value={rupees(o.overdraft_npr)} warn={o.overdraft_npr > 0} />
+        <Stat label="मौज्दात" sub="Ride balances on the ledger" value={rupees(o.wallet_npr)} />
+        <Stat label="उधारो" sub="Riders short (up to Rs 50)" value={rupees(o.overdraft_npr)} warn={o.overdraft_npr > 0} />
       </dl>
 
       <div className="op-grid op-grid--halves">

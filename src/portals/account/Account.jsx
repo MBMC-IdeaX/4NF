@@ -214,20 +214,20 @@ function LinkWallet({ session, onLinked, elsewhere: startElsewhere = false, bala
   return (
     <div className="op-auth">
       <div className="op-auth__pitch">
-        <h1>यो फोनको वालेट जोड्नुहोस्</h1>
+        <h1>यो फोन खातामा जोड्नुहोस्</h1>
         <p>
-          Your money lives in a wallet on this phone. Linking it to your login keeps it safe: see
-          its statement, top it up from anywhere, and if you ever lose the phone, sign in on a new
-          one and move the money there.
+          Your rides and ride balance belong to a key on this phone. Linking it to your login lets you
+          see your statement, top up through eSewa from anywhere, and move your balance to a new phone
+          if this one is lost.
         </p>
         <ul>
-          <li><b>Lost your phone?</b> Your login gets the money back, not the phone.</li>
+          <li><b>Lost your phone?</b> Sign in on a new one and your balance moves with you.</li>
           <li><b>Nothing changes on the bus.</b> Tapping on and off works the same.</li>
         </ul>
       </div>
       <div className="op-sheet">
         <h2>
-          वालेट जोड्ने
+          फोन जोड्ने
           <small>Link this phone’s ride account</small>
         </h2>
         <div className="op-form">

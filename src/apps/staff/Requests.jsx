@@ -220,7 +220,7 @@ function RouteBuilder({ name, onClose, onBuilt }) {
           <Button type="submit" busy={busy} icon="route">Build and put the bus on it</Button>
           <Button variant="ghost" onClick={onClose}>Cancel</Button>
         </div>
-        <p className="bx-small bx-muted"><Icon name="info" /> A route is built once and is then there for every company with a permit for it. Fares are by distance; nothing here sets a price.</p>
+        <p className="bx-small bx-muted"><Icon name="info" /> A route is built once and is then there for every company with a permit for it. Fares come from the published stage fare table for the route; nothing here sets a price.</p>
       </form>
     </Sheet>
   );

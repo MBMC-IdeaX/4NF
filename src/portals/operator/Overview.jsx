@@ -225,7 +225,7 @@ export default function Overview({ onAddBus }) {
           <div className="op-section__head">
             <h2>
               किलोमिटरमा
-              <small>Metered rides, priced by the kilometre</small>
+              <small>Metered rides, priced by stage fare</small>
             </h2>
           </div>
           <dl className="op-stats op-stats--inset">
@@ -241,7 +241,7 @@ export default function Overview({ onAddBus }) {
                 <div key={bus.plate}>
                   <div className="op-row__name">
                     <Plate plate={bus.plate} />
-                    <small>{bus.rides} rides · Rs {(bus.km > 0 ? bus.collected / bus.km : 0).toFixed(2)} per km</small>
+                    <small>{bus.rides} rides · {bus.km.toFixed(1)} passenger-km on record</small>
                   </div>
                   <div className="op-row__bar" aria-hidden="true">
                     <span style={{ width: `${Math.round((bus.km / top) * 100)}%` }} />
