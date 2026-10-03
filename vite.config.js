@@ -60,7 +60,9 @@ export default defineConfig({
       // Everything the app needs offline is precached on install, so a phone in
       // airplane mode can cold-start the app.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // voice/ is the recorded Nepali announcements (scripts/make-voice.mjs):
+        // a door with no signal still has to speak.
+        globPatterns: ['**/*.{js,css,html,svg,png,woff2}', 'voice/*.{json,wav,mp3,ogg,webm}'],
         // The operator dashboard is an office tool that always has a network.
         // Precaching it would make every conductor phone download Recharts and
         // the Supabase client before it could go offline, which is exactly

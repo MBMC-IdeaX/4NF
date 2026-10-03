@@ -9,11 +9,12 @@
 //
 //   Layer 1  A synthesised cue, generated with the Web Audio API. No files, no
 //            network, no voice pack. It always plays. This is the signal.
-//   Layer 2  The amount spoken aloud through speechSynthesis, when a usable
-//            voice exists on the device. This is a bonus on top of layer 1,
-//            never the thing being relied on.
+//   Layer 2  The amount spoken aloud in Nepali: recorded clips when they have
+//            been made (public/voice/, see scripts/make-voice.mjs), otherwise
+//            speechSynthesis when a usable voice exists on the device. This is
+//            a bonus on top of layer 1, never the thing being relied on.
 //
-// Layer 2 is genuinely unreliable in the field: Nepali (ne-NP) voices are
+// Device speech is genuinely unreliable in the field: Nepali (ne-NP) voices are
 // rarely installed, iOS Safari has no offline guarantee, and a device with its
 // language packs stripped has nothing to speak with. Treating speech as an
 // enhancement rather than the signal is the only honest way to ship it.
@@ -219,6 +220,78 @@ function speak(devanagari, english) {
   }
 }
 
+// --------------------------------------------------------------- recorded clips
+
+/*
+  A recorded Nepali voice, made ahead of time by scripts/make-voice.mjs and
+  precached with the app, so it plays with the radio off on a phone that has
+  no Nepali voice of its own. It sits in front of speechSynthesis: when every
+  clip a sentence needs is recorded, the clips play; otherwise the device
+  speaks, exactly as before. No manifest, no clips, no change.
+*/
+
+let manifest = null;
+let manifestLoad = null;
+const clips = new Map();
+let playing = [];
+
+function loadManifest() {
+  manifestLoad ??= fetch('/voice/manifest.json')
+    .then((response) => (response.ok ? response.json() : {}))
+    .catch(() => ({}))
+    .then((loaded) => { manifest = loaded; return loaded; });
+  return manifestLoad;
+}
+
+function clip(key) {
+  if (!clips.has(key)) {
+    const loading = fetch(`/voice/${manifest[key]}`)
+      .then((response) => response.arrayBuffer())
+      .then((data) => context.decodeAudioData(data))
+      .catch(() => { clips.delete(key); return null; });
+    clips.set(key, loading);
+  }
+  return clips.get(key);
+}
+
+function stopClips() {
+  for (const source of playing) {
+    try { source.stop(); } catch { /* already finished */ }
+  }
+  playing = [];
+}
+
+// Plays the clips back to back. Resolves false when any is missing, so the
+// caller can speak the sentence instead.
+async function playClips(keys) {
+  if (!context) return false;
+  if (!manifest) await loadManifest();
+  if (!keys.every((key) => manifest[key])) return false;
+  const buffers = await Promise.all(keys.map(clip));
+  if (buffers.some((buffer) => !buffer)) return false;
+
+  // The newest announcement is the only one anybody cares about.
+  stopClips();
+  stopSpeaking();
+  // After the cue has landed, not over it.
+  let at = context.currentTime + 0.18;
+  for (const buffer of buffers) {
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(context.destination);
+    source.start(at);
+    at += buffer.duration;
+    playing.push(source);
+  }
+  return true;
+}
+
+function say(keys, devanagari, english) {
+  playClips(keys).then((played) => { if (!played) speak(devanagari, english); });
+}
+
+const amountKey = (amount) => `n:${Math.round(Number(amount))}`;
+
 /*
   Announcements. Devanagari first, with an English line for a device that only
   has a Latin-script voice.
@@ -229,12 +302,12 @@ function speak(devanagari, english) {
 */
 export function announceReceived(amount) {
   cueAccepted();
-  speak(`${amount} रुपैयाँ प्राप्त भयो`, `${amount} rupees received`);
+  say([amountKey(amount), 'after:received'], `${amount} रुपैयाँ प्राप्त भयो`, `${amount} rupees received`);
 }
 
 export function announceSent(amount) {
   cueAccepted();
-  speak(`${amount} रुपैयाँ को टिकट तयार भयो`, `Ticket ready for ${amount} rupees`);
+  say([amountKey(amount), 'after:ticket'], `${amount} रुपैयाँ को टिकट तयार भयो`, `Ticket ready for ${amount} rupees`);
 }
 
 export function announceRefused(reason) {
@@ -247,7 +320,7 @@ export function announceRefused(reason) {
     unreadable: ['टिकट पढ्न सकिएन', 'Could not read the ticket'],
   };
   const [devanagari, english] = lines[reason] ?? ['टिकट मिलेन', 'Ticket not accepted'];
-  speak(devanagari, english);
+  say([`refused:${lines[reason] ? reason : 'other'}`], devanagari, english);
 }
 
 /*
@@ -261,22 +334,23 @@ export function announceRefused(reason) {
 */
 export function announceBoarded() {
   cueAccepted();
-  speak('चढ्नुहोस्', 'Board');
+  say(['board'], 'चढ्नुहोस्', 'Board');
 }
 
 export function announceFare(amount) {
   cueAccepted();
-  speak(`${amount} रुपैयाँ कट्यो`, `${amount} rupees deducted`);
+  say([amountKey(amount), 'after:deducted'], `${amount} रुपैयाँ कट्यो`, `${amount} rupees deducted`);
 }
 
 export function announceBusFull() {
   cueRefused();
-  speak('सिट सकियो, अर्को गाडी जानुस्', 'Bus is full, please take the next one');
+  say(['bus_full'], 'सिट सकियो, अर्को गाडी जानुस्', 'Bus is full, please take the next one');
 }
 
 // Voice lists load asynchronously in Chrome; warming it early means the first
 // announcement is not the one that gets skipped.
 export function warmVoices() {
+  loadManifest();
   try {
     window.speechSynthesis?.getVoices?.();
     if (window.speechSynthesis && 'onvoiceschanged' in window.speechSynthesis) {
