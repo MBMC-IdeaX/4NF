@@ -1,53 +1,36 @@
-# Bhada Payment Breach, Fraud Simulation & Defense Matrix
-**System Architecture & Threat Model Specification**  
-**Jurisdiction:** Kathmandu Valley Transit, Nepal (Bagmati Province Gazetted Tariffs & NRB PSP Act 2075)
+# Bhada — fraud and breach matrix
 
----
+Ten ways someone could cheat a bus fare system in Kathmandu, and what Bhada does
+about each **today**. Every row says whether the defence is built and proven,
+built but not proven on real hardware, or only designed. Where a defence is not
+built, the row says so; do not quote this document as if it were.
 
-## 1. Executive Summary
+Status key:
 
-In a transit environment where **85–90% of transactions are cash**, **cellular connectivity is intermittent**, and **operating margins are razor-thin**, payment security cannot rely on naive Web2 client-server trust. Every entity in the ecosystem—**Passenger (यात्रु)**, **Conductor / Khalasi (खलासी)**, and **Bus Owner / Samiti (मालिक)**—has distinct economic incentives to game or bypass the system.
+- **Proven**: built, and held by one of the five proofs (`npm run proof:all`).
+- **Built**: in the code, but not yet tried on real buses or real hardware.
+- **Designed**: an idea with no code behind it yet.
+- **Open**: a known gap.
 
-This document specifies the threat model, attack simulations, and cryptographic/hardware defense architecture implemented across the Bhada protocol.
+| # | Threat | Who | What Bhada does today | Status |
+| :-: | :-- | :-- | :-- | :-- |
+| 01 | **Tap in, never tap out.** Rides 16 km, slips out of the back door. | Passenger | A ride left open at the end of a trip is charged the unclosed-ride fare, which is the tariff cap (Rs 25 on the current tariff, half for concessions). A passenger whose phone died can claim back the difference once, priced at the distance their own phone signed (BD1, migration 0012); a refused claim is final. There is **no Rs 50 hold at tap-in and no refund at exit**. `calculateExitReconciliation()` in `protocol/policy.mjs` only computes a figure for display; no money is held or returned. | Proven (cap, claim) |
+| 02 | **Screenshot of a ride code** sent to a friend. | Passenger | The ride code (BT1) is signed by the passenger's key and re-signed every 30 s. A door takes each code once (its nonce is remembered) and only within `TAP_MAX_AGE_S` (300 s), which is duplicated in SQL in `settle_leg()`. A second tap by someone already on board is read as getting off, not as a second boarding. The extra "already riding" check added to `board()` in `src/device/terminal.js` is never reached, because `present()` routes an open rider to tap-out first. | Proven (nonce, window) |
+| 03 | **Phone clock moved back** to revive an old code. | Passenger | The door judges a code by its own clock, not the phone's, and refuses codes outside the window. The Pi validator refuses every tap when no clock source is trusted (DS3231 RTC or network time). A phone door uses its own phone clock and records the skew it sees. | Proven in software; RTC not tried on real parts |
+| 04 | **Edited balance** in the browser's storage. | Passenger | The balance on the phone is a display. Money moves only in `settle_leg()` on the backend, on `wallet_for(key)`, against the backend's own balance. The door never checks a balance. There are no server-signed "pass vouchers". | Proven |
+| 05 | **Burner accounts** to ride on the short allowance and walk away. | Passenger | Any account may go Rs 50 below zero on a metered ride (`OVERDRAFT_NPR`, enforced in SQL). There is **no KYC gate**: `isOverdraftAllowed()` in `protocol/policy.mjs` is not called anywhere. New wallets on the live backend get a demo signup credit (`SIGNUP_CREDIT_NPR`) that must be unset before real money. | Open |
+| 06 | **Conductor pockets cash** and issues no ticket. | Conductor | The meter compares the door count with the rides and cash tickets on record. A trip whose count matches pays the crew a flat Rs 50 clean-trip bonus once (`cleanTripVerdict()`, `award_clean_trip()`), taken from the operator's fare payable. The door count comes from a counter input; **no break-beam or optical counter is wired to a bus yet**. | Proven (rule); counter hardware not built |
+| 07 | **Meter unplugged** to claim a broken machine. | Conductor | When the charger goes away while the bus is moving, the meter files `power_lost` in `meter_events` (never on the door tape) and the trip misses the bonus. A parked bus losing the same socket does not raise it (`assessPower()`). There is **no supercapacitor watchdog** or signed last-gasp event. | Proven (rule) |
+| 08 | **Invented trips** to claim fares or subsidy. | Owner | A metered ride never settles without the passenger's own signed BT1 tap on file (`leg_taps`, migration 0008). The odometer rejects fixes implying more than 120 km/h and other implausible jumps (`FUSION` in `protocol/meter.mjs`). | Proven |
+| 09 | **Days offline** fill the device. | System | Phones keep rides in IndexedDB, the Pi in SQLite, and both upload in the same signed batches when a signal returns. Nothing is deleted until the backend has ruled on it; the Pi keeps settled rides for 14 days then prunes them. There is **no Merkle hash chain**. | Proven (Pi store and upload) |
+| 10 | **Owner does not pay** the monthly fee. | Owner | The per-bus monthly app fee is deducted from the owner's payout under the signed payout mandate (migration 0035). Payouts themselves are carried out by the licensed payment partner; Bhada keeps the ledger. Every fee starts at Rs 0 until an admin sets one. | Proven (ledger) |
 
----
+## What would change these rows
 
-## 2. Threat & Vulnerability Simulation Matrix
-
-| # | Threat Vector | Attacking Entity | Attack Mechanism | Real-World Impact | Bhada Defense Architecture |
-| :---: | :--- | :--- | :--- | :--- | :--- |
-| **01** | **Tap-In & Escape (Unclosed Leg)** | Passenger | Rider taps in at Ratnapark (short hop, Rs 24), rides 16 km to Suryabinayak (Rs 39), but slips out the rear door without tapping out. | System undercharges Rs 15; operator loses revenue on high-distance rides. | **Max Corridor Hold & Exit Refund:** Stanchion validator holds maximum route fare (Rs 50) upon tap-in. When passenger taps out, difference is instantly refunded to exact distance (Rs 24). If passenger runs without tapping out, full Rs 50 is forfeited. |
-| **02** | **QR Screenshot Replay ("One Pass for Two Friends")** | Passenger | Rider screenshots valid QR ticket on WhatsApp/Bluetooth to a friend boarding 5 seconds behind them. | Two passengers ride on a single fare. | **In-Flight Public Key Lock + 30s Rolling Nonce:** Stanchion validator locks the passenger's public key into `RIDING` state. Any subsequent tap-in with the same public key is rejected (`refused-replay.mp3`). QR codes rotate every 30 seconds using an Ed25519 time-decaying nonce. |
-| **03** | **Clock Manipulation (Time-Spoofing)** | Passenger | Passenger shifts phone system clock back 6 months to make an expired pass or spent balance appear active. | Replay of historical offline allowances. | **Vehicle Hardware RTC as Single Authority:** Stanchion unit uses a battery-backed DS3231 Real-Time Clock and vehicle odometer chainage. Phone clocks are strictly ignored; validity is verified against vehicle RTC. |
-| **04** | **DevTools Wallet Forgery & Root Exploit** | Passenger | Tech-savvy passenger edits `identity.balance = 99999` in browser IndexedDB or rooted Android. | Attempting to generate counterfeit tickets. | **Server-Attested Cryptographic Pass Vault:** Validator does not check client balance; it validates cryptographic pass vouchers signed by Bhada server private keys during the last sync. Server ledger settles with eSewa; forged client data fails signature checks. |
-| **05** | **Burner SIM Overdraft Evasion** | Passenger | Rider uses Rs 50 overdraft grace, throws away SIM/app, registers fresh guest account for another free ride. | Perpetual leakage of free transit credit. | **KYC-Gated Overdraft:** Guest/anonymous accounts have Rs 0 overdraft limit. Overdraft privileges are only unlocked for accounts verified via eSewa/Khalti KYC or National Identity Card (NID). |
-| **06** | **Conductor Cash Pocketing (No Ticket Issued)** | Conductor | Conductor accepts Rs 24 cash from rider, but does not press the terminal button to log a `CT1` ticket. | Conductor pockets fare; operator receives zero cash revenue. | **Door Counter Reconciliation & Value-Share:** Stanchion optical/ToF door sensor logs every physical boarding. Trips with >10% discrepancy forfeit the conductor's 25% clean-trip value-share bonus and trigger an audit flag. |
-| **07** | **Physical Hardware Sabotage / Unplugging** | Conductor | Conductor unplugs the meter power cable under the seat or tapes over sensors to claim "machine failure". | Complete disabling of digital & cash auditing. | **Anti-Tamper Supercapacitor Watchdog:** Unit features a backup supercapacitor circuit that logs a signed `POWER_CUT_UNEXPECTED` event before shutdown. If power is severed while GNSS/wheel pulses show motion, the entire shift bonus is cancelled and flagged in the Owner portal. |
-| **08** | **Ghost Vehicle / Subsidy Fraud** | Bus Owner | Operator fabricates fake GNSS traces and trip receipts to claim government student/senior concession subsidies. | Government/DoTM subsidy embezzlement. | **Cryptographic Rider Attestation & Doppler Validation:** Trips cannot be fabricated because each leg requires cryptographically signed tokens from unique rider private keys. Odometer traces are audited for physical Doppler speed plausibility (rejecting velocity jumps > 85 km/h). |
-| **09** | **Prolonged Offline Storage Saturation** | System | Bus operates for 3–5 days in remote valley fringe (Dakshinkali/Nagdhunga) without cellular sync. | Risk of memory overflow, data corruption, or lost fare journals. | **Append-Only Merkle Journal & Micro-Sync:** Transactions are stored in an append-only hash chain (`Hash_N = SHA256(Hash_N-1 + Payload)`). High-priority journals compress to < 80 KB per shift, auto-syncing during cellular handovers at major terminals (Ratnapark, Gongabu). |
-| **10** | **SaaS Subscription Default** | Bus Owner | Owner operates buses but refuses to pay the monthly software fee (NPR 3,000/bus). | Platform revenue default. | **Automated Escrow Deduction:** Bhada automatically deducts the monthly per-bus SaaS fee from the digital fare settlement escrow before releasing net revenue payouts to the company bank account. |
-
----
-
-## 3. Protocol Enforcement Implementation
-
-### 3.1 Unclosed Leg Policy (`protocol/policy.mjs`)
-- **Default Hold Amount:** `MAX_CORRIDOR_HOLD_NPR = 50`
-- **Minimum Fare:** `MIN_FARE_NPR = 24`
-- **Formula:**
-  $$\text{Charged Fare} = \begin{cases} \text{Actual Metered Fare}(\text{distance}) & \text{if Tap-Out verified} \\ \text{MAX\_CORRIDOR\_HOLD\_NPR} & \text{if Unclosed Leg} \end{cases}$$
-
-### 3.2 In-Flight Key Locking (`src/device/terminal.js`)
-```javascript
-// Door validator locks active passenger public keys
-if (activeRiders.has(token.passengerPublicKey)) {
-  if (action === 'TAP_IN') {
-    announceRefused('replay');
-    return { ok: false, reason: 'ALREADY_RIDING' };
-  }
-}
-```
-
-### 3.3 Anti-Tamper Telemetry (`src/device/meter.js`)
-- Watches power input pin voltage.
-- Dispatches signed event `TAMPER_POWER_CUT` if power drops while odometer velocity $> 0$.
+- Rows 03, 06 and 07 move to *Proven* only after the Pi validator and a door
+  counter have run on a real bus.
+- Row 05 needs a decision: gate the short allowance on a verified identity, or
+  remove it. Both are a migration plus a `proof:legs` section, not a UI change.
+- Row 01's display-only reconciliation in `src/device/terminal.js` and the
+  "corridor hold" lines on the door screen (`src/screens/Terminal.jsx`) should be
+  removed, since they describe money that never moves.
